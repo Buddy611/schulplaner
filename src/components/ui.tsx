@@ -1,7 +1,9 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Hct, hexFromArgb } from '@material/material-color-utilities'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { IconBubble, type IconName, type Tone } from './Icons'
+import { confirmDialog } from './dialogs'
 
 export function Segmented<T extends string>({
   value,
@@ -80,8 +82,18 @@ export function ColorDot({ color, size = 12 }: { color: string; size?: number })
   return <span className="color-dot" style={{ background: color, width: size, height: size }} />
 }
 
+/** Große Farbpalette (Farbkreis × Helligkeit) für den eigenen Farbwähler */
+const PALETTE: string[][] = (() => {
+  const tones = [30, 45, 60, 75]
+  const rows: string[][] = []
+  for (let h = 0; h < 360; h += 24) rows.push(tones.map((t) => hexFromArgb(Hct.from(h, 60, t).toInt())))
+  rows.push([25, 45, 65, 85].map((t) => hexFromArgb(Hct.from(0, 0, t).toInt())))
+  return rows
+})()
+
 export function ColorPicker({ value, colors, onChange }: { value: string; colors: string[]; onChange: (c: string) => void }) {
   const isPreset = colors.includes(value)
+  const [open, setOpen] = useState(false)
   return (
     <div className="swatches">
       {colors.map((c) => (
@@ -94,15 +106,38 @@ export function ColorPicker({ value, colors, onChange }: { value: string; colors
           onClick={() => onChange(c)}
         />
       ))}
-      <label
+      <button
+        type="button"
         className={`swatch custom ${!isPreset ? 'active has-color' : ''}`}
         style={!isPreset ? { background: value } : undefined}
-        aria-label="Eigene Farbe"
-        title="Eigene Farbe"
+        aria-label="Weitere Farben"
+        onClick={() => setOpen(true)}
       >
         +
-        <input type="color" value={value} onChange={(e) => onChange(e.target.value)} />
-      </label>
+      </button>
+      {open && (
+        <Sheet title="Farbe wählen" onClose={() => setOpen(false)}>
+          <div className="palette">
+            {PALETTE.map((row, i) => (
+              <div key={i} className="palette-row">
+                {row.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={c}
+                    className={`swatch ${value.toLowerCase() === c.toLowerCase() ? 'active' : ''}`}
+                    style={{ background: c }}
+                    onClick={() => {
+                      onChange(c)
+                      setOpen(false)
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </Sheet>
+      )}
     </div>
   )
 }
@@ -157,7 +192,95 @@ export function Sheet({
   )
 }
 
-/** Dropdown für Lehrer/Räume/Fächer mit Eintrag "Neu …" zum schnellen Anlegen */
+/** "Auf Standard zurücksetzen" mit Nachfrage */
+export function ResetButton({ what, onReset }: { what: string; onReset: () => void | Promise<void> }) {
+  return (
+    <div className="list" style={{ marginTop: 24 }}>
+      <button
+        type="button"
+        className="row action reset-row"
+        onClick={async () => {
+          if (await confirmDialog(`${what} auf die Standardwerte zurücksetzen?`, { title: 'Zurücksetzen?', confirm: 'Zurücksetzen' })) await onReset()
+        }}
+      >
+        Auf Standard zurücksetzen
+      </button>
+    </div>
+  )
+}
+
+export interface SelectOption {
+  value: string
+  label: string
+  color?: string
+}
+
+/**
+ * Eigene Auswahl statt Browser-Dropdown: zeigt den gewählten Wert,
+ * beim Antippen öffnet sich eine Liste von unten (wie bei Android).
+ */
+export function Select({
+  value,
+  options,
+  onChange,
+  title,
+  placeholder = 'Bitte wählen …',
+  extra,
+}: {
+  value: string | undefined
+  options: SelectOption[]
+  onChange: (v: string) => void
+  title: string
+  placeholder?: string
+  /** zusätzlicher Eintrag am Ende, z. B. "Neuer Raum …" */
+  extra?: { label: string; onSelect: () => void }
+}) {
+  const [open, setOpen] = useState(false)
+  const current = options.find((o) => o.value === (value ?? ''))
+  return (
+    <>
+      <button type="button" className="row-input select-btn" onClick={() => setOpen(true)}>
+        {current?.color && <ColorDot color={current.color} size={10} />}
+        <span className={current ? '' : 'muted'}>{current?.label ?? placeholder}</span>
+      </button>
+      {open && (
+        <Sheet title={title} onClose={() => setOpen(false)}>
+          <div className="list">
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                className="row"
+                onClick={() => {
+                  onChange(o.value)
+                  setOpen(false)
+                }}
+              >
+                {o.color && <ColorDot color={o.color} size={14} />}
+                <span className="label">{o.label}</span>
+                {o.value === (value ?? '') && <span className="check">✓</span>}
+              </button>
+            ))}
+            {extra && (
+              <button
+                type="button"
+                className="row action"
+                onClick={() => {
+                  setOpen(false)
+                  extra.onSelect()
+                }}
+              >
+                {extra.label}
+              </button>
+            )}
+          </div>
+        </Sheet>
+      )}
+    </>
+  )
+}
+
+/** Auswahl für Lehrer/Räume/Fächer mit Eintrag "Neu …" zum schnellen Anlegen */
 export function EntitySelect({
   value,
   items,
@@ -165,35 +288,33 @@ export function EntitySelect({
   emptyLabel = 'Keine Angabe',
   onCreate,
   createLabel = 'Neu …',
+  title = 'Auswählen',
 }: {
   value: string | undefined
-  items: { id: string; name: string }[]
+  items: { id: string; name: string; color?: string }[]
   onChange: (id: string | undefined) => void
   emptyLabel?: string
   onCreate?: () => Promise<string | undefined>
   createLabel?: string
+  title?: string
 }) {
   return (
-    <select
-      className="row-input"
+    <Select
+      title={title}
       value={value ?? ''}
-      onChange={async (e) => {
-        const v = e.target.value
-        if (v === '__new') {
-          const id = await onCreate?.()
-          if (id) onChange(id)
-          return
-        }
-        onChange(v || undefined)
-      }}
-    >
-      <option value="">{emptyLabel}</option>
-      {items.map((i) => (
-        <option key={i.id} value={i.id}>
-          {i.name}
-        </option>
-      ))}
-      {onCreate && <option value="__new">{createLabel}</option>}
-    </select>
+      options={[{ value: '', label: emptyLabel }, ...items.map((i) => ({ value: i.id, label: i.name, color: i.color }))]}
+      onChange={(v) => onChange(v || undefined)}
+      extra={
+        onCreate
+          ? {
+              label: createLabel,
+              onSelect: async () => {
+                const id = await onCreate()
+                if (id) onChange(id)
+              },
+            }
+          : undefined
+      }
+    />
   )
 }

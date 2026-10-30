@@ -1,3 +1,5 @@
+import { argbFromHex, hexFromArgb, TonalPalette } from '@material/material-color-utilities'
+
 /** Einfache Symbole im Stil von Material Symbols (gefüllt, 24 px) */
 const paths = {
   calendar: 'M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 16H5V10h14v10ZM7 12h5v5H7z',
@@ -15,6 +17,11 @@ const paths = {
   absence: 'M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Zm-2 10H7v-2h10v2Z',
   swap: 'M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3ZM21 9l-3.99-4v3H10v2h7.01v3L21 9Z',
   list: 'M3 13h2v-2H3v2Zm0 4h2v-2H3v2Zm0-8h2V7H3v2Zm4 4h14v-2H7v2Zm0 4h14v-2H7v2ZM7 7v2h14V7H7Z',
+  translate: 'm12.9 15-2.6-2.5A17.6 17.6 0 0 0 14 6h3V4h-7V2H8v2H1v2h11.2A15.8 15.8 0 0 1 9 11.4 15.6 15.6 0 0 1 6.7 8H4.7a17.6 17.6 0 0 0 3 4.6l-5.1 5L4 19l5-5 3.1 3.1.8-2.1ZM18.5 10h-2L12 22h2l1.1-3h4.8l1.1 3h2l-4.5-12Zm-2.6 7 1.6-4.3 1.6 4.3h-3.2Z',
+  note: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm2 16H8v-2h8v2Zm0-4H8v-2h8v2Zm-3-5V3.5L18.5 9H13Z',
+  backpack: 'M20 8v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a4 4 0 0 1 3-3.9V2h3v2h4V2h3v2.1A4 4 0 0 1 20 8ZM6 12v2h10v2h2v-4H6Z',
+  search: 'M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 9.5 16a6.5 6.5 0 0 0 4.2-1.6l.3.3v.8l5 5 1.5-1.5-5-5Zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z',
+  chart: 'M5 9.2h3V19H5V9.2ZM10.6 5h2.8v14h-2.8V5Zm5.6 8H19v6h-2.8v-6Z',
 } as const
 
 export type IconName = keyof typeof paths
@@ -27,11 +34,17 @@ export function Icon({ name, size = 24 }: { name: IconName; size?: number }) {
   )
 }
 
-/** Farbtöne für die runden Symbol-Hintergründe (wie in den Android-Einstellungen) */
+/**
+ * Farbtöne für die runden Symbol-Hintergründe – in Reihenfolge eines Farbkreises,
+ * damit Listen wie bei Android einen ruhigen Verlauf von Blau über Grün, Gelb, Orange bis Rosa zeigen.
+ */
 export const TONES = {
   blue: '#1a73e8',
-  cyan: '#12b5cb',
+  indigo: '#4c5fd5',
+  cyan: '#0097a7',
+  teal: '#00897b',
   green: '#1e8e3e',
+  lime: '#7cb342',
   yellow: '#f9ab00',
   orange: '#e8710a',
   red: '#d93025',
@@ -42,9 +55,26 @@ export const TONES = {
 
 export type Tone = keyof typeof TONES
 
+// Tonwerte wie bei Material You: heller Pastell-Hintergrund + kräftiges, dunkles Symbol (bzw. umgekehrt im Dunkelmodus)
+const bubbleCache = new Map<Tone, Record<string, string>>()
+function bubbleVars(tone: Tone) {
+  let vars = bubbleCache.get(tone)
+  if (!vars) {
+    const p = TonalPalette.fromInt(argbFromHex(TONES[tone]))
+    vars = {
+      '--bubble-bg': hexFromArgb(p.tone(90)),
+      '--bubble-fg': hexFromArgb(p.tone(30)),
+      '--bubble-bg-dark': hexFromArgb(p.tone(30)),
+      '--bubble-fg-dark': hexFromArgb(p.tone(90)),
+    }
+    bubbleCache.set(tone, vars)
+  }
+  return vars
+}
+
 export function IconBubble({ name, tone }: { name: IconName; tone: Tone }) {
   return (
-    <span className="icon-bubble" style={{ ['--tone' as string]: TONES[tone] }}>
+    <span className="icon-bubble" style={bubbleVars(tone)}>
       <Icon name={name} />
     </span>
   )

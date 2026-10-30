@@ -1,3 +1,4 @@
+import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
 import { Field, Segmented, Sheet, Switch } from '../../components/ui'
@@ -132,7 +133,7 @@ function PeriodSheet({
       lessons.length > 0
         ? `Diesen Eintrag löschen? ${lessons.length} eingetragene Stunde(n) werden ebenfalls entfernt.`
         : 'Diesen Eintrag löschen?'
-    if (!confirm(msg)) return
+    if (!(await confirmDialog(msg, { confirm: 'Löschen', danger: true }))) return
     for (const l of lessons) await remove(l.id)
     await savePeriods(
       timetable,

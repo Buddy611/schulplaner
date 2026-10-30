@@ -103,16 +103,16 @@ export function ChangeSheet({
         {kind === 'vertretung' && (
           <>
             <Field label="Vertretungslehrer">
-              <EntitySelect value={teacherId} items={teachers} onChange={setTeacherId} emptyLabel="Unbekannt" onCreate={() => quickCreate(C.teachers)} createLabel="Neuer Lehrer …" />
+              <EntitySelect title="Lehrer" value={teacherId} items={teachers} onChange={setTeacherId} emptyLabel="Unbekannt" onCreate={() => quickCreate(C.teachers)} createLabel="Neuer Lehrer …" />
             </Field>
             <Field label="Fach">
-              <EntitySelect value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel={plannedSubject ? `Wie geplant (${plannedSubject.name})` : 'Wie geplant'} />
+              <EntitySelect title="Fach" value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel={plannedSubject ? `Wie geplant (${plannedSubject.name})` : 'Wie geplant'} />
             </Field>
           </>
         )}
         {kind !== 'ausfall' && (
           <Field label={kind === 'raum' ? 'Neuer Raum' : 'Raum (falls anders)'}>
-            <EntitySelect value={roomId} items={rooms} onChange={setRoomId} emptyLabel={kind === 'raum' ? 'Raum wählen …' : 'Wie geplant'} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
+            <EntitySelect title="Raum" value={roomId} items={rooms} onChange={setRoomId} emptyLabel={kind === 'raum' ? 'Raum wählen …' : 'Wie geplant'} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
           </Field>
         )}
         <Field label="Notiz">

@@ -1,5 +1,7 @@
+import { confirmDialog, promptDialog } from '../../components/dialogs'
 import { PageHeader } from '../../components/PageHeader'
-import { updateSettings, useSettings } from '../../lib/settings'
+import { DEFAULT_SETTINGS, updateSettings, useSettings } from '../../lib/settings'
+import { ResetButton } from '../../components/ui'
 
 /** Arten von Leistungsüberprüfungen verwalten (Klausur, Test, Sprechprüfung, …) */
 export function ExamTypesPage() {
@@ -7,18 +9,18 @@ export function ExamTypesPage() {
   const types = settings.examTypes
   const save = (examTypes: string[]) => updateSettings(settings, { examTypes })
 
-  function add() {
-    const name = prompt('Neuer Typ, z. B. „Referat“ oder „Vokabeltest“')?.trim()
+  async function add() {
+    const name = (await promptDialog('Neuer Typ', { placeholder: 'z. B. Referat oder Vokabeltest', confirm: 'Hinzufügen' }))?.trim()
     if (name && !types.includes(name)) void save([...types, name])
   }
 
-  function rename(old: string) {
-    const name = prompt('Typ umbenennen', old)?.trim()
+  async function rename(old: string) {
+    const name = (await promptDialog('Typ umbenennen', { initial: old }))?.trim()
     if (name && name !== old && !types.includes(name)) void save(types.map((t) => (t === old ? name : t)))
   }
 
-  function del(t: string) {
-    if (types.length > 1 && confirm(`„${t}“ entfernen? Bestehende Einträge behalten ihren Typ.`)) void save(types.filter((x) => x !== t))
+  async function del(t: string) {
+    if (types.length > 1 && (await confirmDialog(`„${t}“ entfernen? Bestehende Einträge behalten ihren Typ.`, { confirm: 'Entfernen', danger: true }))) void save(types.filter((x) => x !== t))
   }
 
   return (
@@ -42,7 +44,8 @@ export function ExamTypesPage() {
           </div>
         ))}
       </div>
-      <p className="section-footer">Tippe auf einen Typ, um ihn umzubenennen. Wie stark jeder Typ in die Note zählt, stellst du später bei den Noten ein.</p>
+      <p className="section-footer">Tippe auf einen Typ, um ihn umzubenennen. Wie stark jeder Typ in die Note zählt, stellst du bei „Gewichtung & Halbjahre“ ein.</p>
+      <ResetButton what="Die Klausurtypen" onReset={() => save(DEFAULT_SETTINGS.examTypes)} />
     </div>
   )
 }

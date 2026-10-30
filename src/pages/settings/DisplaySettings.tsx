@@ -1,6 +1,6 @@
 import { PageHeader } from '../../components/PageHeader'
-import { ColorPicker, Segmented } from '../../components/ui'
-import { ACCENT_PRESETS, updateSettings, useSettings, type Corners, type TextSize, type ThemeMode } from '../../lib/settings'
+import { ColorPicker, ResetButton, Segmented } from '../../components/ui'
+import { ACCENT_PRESETS, DEFAULT_SETTINGS, updateSettings, useSettings, type Corners, type TextSize, type ThemeMode } from '../../lib/settings'
 
 /** Darstellung: Hell/Dunkel, Farbschema, Schriftgröße, Ecken */
 export function DisplaySettingsPage() {
@@ -57,6 +57,17 @@ export function DisplaySettingsPage() {
       <p className="section-footer">
         Wie bei Android wird aus der gewählten Farbe ein ganzes Farbschema berechnet. Die Darstellung gilt auf all deinen Geräten.
       </p>
+      <ResetButton
+        what="Die Darstellung"
+        onReset={() =>
+          set({
+            theme: DEFAULT_SETTINGS.theme,
+            accent: DEFAULT_SETTINGS.accent,
+            textSize: DEFAULT_SETTINGS.textSize,
+            corners: DEFAULT_SETTINGS.corners,
+          })
+        }
+      />
     </div>
   )
 }

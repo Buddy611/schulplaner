@@ -1,3 +1,4 @@
+import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { Field, Segmented, Sheet } from '../../components/ui'
 import { ABSENCES, unitsFor, type Absence } from '../../lib/changes'
@@ -69,7 +70,7 @@ export function AbsenceSheet({ absence, onClose }: { absence?: Item<Absence>; on
   }
 
   async function del() {
-    if (absence && confirm('Fehlstunden-Eintrag löschen?')) {
+    if (absence && await confirmDialog('Fehlstunden-Eintrag löschen?', { confirm: 'Löschen', danger: true })) {
       await remove(absence.id)
       onClose()
     }

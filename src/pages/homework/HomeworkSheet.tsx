@@ -1,3 +1,4 @@
+import { confirmDialog } from '../../components/dialogs'
 import { useMemo, useState } from 'react'
 import { AttachmentEditor } from '../../components/Attachments'
 import { EntitySelect, Field, Sheet } from '../../components/ui'
@@ -81,7 +82,7 @@ export function HomeworkSheet({
   }
 
   async function del() {
-    if (homework && confirm('Hausaufgabe löschen?')) {
+    if (homework && await confirmDialog('Hausaufgabe löschen?', { confirm: 'Löschen', danger: true })) {
       await deleteHomework(homework)
       onClose()
     }
@@ -94,7 +95,7 @@ export function HomeworkSheet({
     <Sheet title={homework ? 'Hausaufgabe' : 'Neue Hausaufgabe'} onClose={cancel} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
       <div className="list">
         <Field label="Fach">
-          <EntitySelect value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel="Fach wählen …" />
+          <EntitySelect title="Fach" value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel="Fach wählen …" />
         </Field>
         <Field label="Aufgabe">
           <textarea className="row-input" rows={2} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. S. 42 Nr. 3a–c" autoFocus={!homework} />

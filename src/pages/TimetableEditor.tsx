@@ -264,6 +264,7 @@ function LessonSheet({
         <div className="list">
           <Field label="Fach">
             <EntitySelect
+              title="Fach"
               value={subjectId}
               items={subjects}
               onChange={chooseSubject}
@@ -276,10 +277,10 @@ function LessonSheet({
             />
           </Field>
           <Field label="Raum">
-            <EntitySelect value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
+            <EntitySelect title="Raum" value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
           </Field>
           <Field label="Lehrer">
-            <EntitySelect value={teacherId} items={teachers} onChange={setTeacherId} onCreate={() => quickCreate(C.teachers)} createLabel="Neuer Lehrer …" />
+            <EntitySelect title="Lehrer" value={teacherId} items={teachers} onChange={setTeacherId} onCreate={() => quickCreate(C.teachers)} createLabel="Neuer Lehrer …" />
           </Field>
         </div>
         {subject && <p className="section-footer">Raum und Lehrer sind vom Fach vorausgefüllt und hier nur für diese Stunde änderbar.</p>}

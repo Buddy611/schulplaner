@@ -1,3 +1,4 @@
+import { confirmDialog, alertDialog } from '../../components/dialogs'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
@@ -24,7 +25,7 @@ export function AccountSettingsPage() {
       pending > 0
         ? `Achtung: ${pending} Änderung(en) sind noch nicht synchronisiert und gehen beim Abmelden verloren. Trotzdem abmelden?`
         : 'Wirklich abmelden? Die Daten auf diesem Gerät werden entfernt (in der Cloud bleiben sie erhalten).'
-    if (confirm(warn)) await signOut()
+    if (await confirmDialog(warn, { title: 'Abmelden?', confirm: 'Abmelden', danger: true })) await signOut()
   }
 
   return (
@@ -84,7 +85,7 @@ export function AccountSettingsPage() {
 
       <h2 className="section-title">Backup</h2>
       <div className="list">
-        <button type="button" className="row action" onClick={() => exportBackup().catch((e) => alert(String(e)))}>
+        <button type="button" className="row action" onClick={() => exportBackup().catch((e) => alertDialog(String(e), 'Export fehlgeschlagen'))}>
           Alle Daten exportieren
         </button>
         <label className="row action" style={{ cursor: 'pointer' }}>
@@ -97,12 +98,12 @@ export function AccountSettingsPage() {
               const file = e.target.files?.[0]
               e.target.value = ''
               if (!file) return
-              if (!confirm('Backup importieren? Einträge aus dem Backup überschreiben gleiche Einträge in der App. Andere Einträge bleiben erhalten.')) return
+              if (!(await confirmDialog('Einträge aus dem Backup überschreiben gleiche Einträge in der App. Andere Einträge bleiben erhalten.', { title: 'Backup importieren?', confirm: 'Importieren' }))) return
               try {
                 const r = await importBackup(file)
-                alert(`Import fertig: ${r.records} Einträge, ${r.files} Dateien.`)
+                await alertDialog(`${r.records} Einträge und ${r.files} Dateien wurden übernommen.`, 'Import fertig')
               } catch (err) {
-                alert(err instanceof Error ? err.message : String(err))
+                await alertDialog(err instanceof Error ? err.message : String(err), 'Import fehlgeschlagen')
               }
             }}
           />

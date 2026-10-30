@@ -27,7 +27,8 @@ export default defineConfig({
         scope: base,
         display: 'standalone',
         orientation: 'any',
-        background_color: '#d3e3fd',
+        // Gleiche Farbe wie die App selbst – sonst zeigt Android z. B. unter den Navigationstasten einen farbigen Balken
+        background_color: '#ededf4',
         theme_color: '#ededf4',
         icons: [
           { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },

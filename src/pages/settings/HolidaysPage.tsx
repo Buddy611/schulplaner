@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
-import { Field, Sheet } from '../../components/ui'
+import { Field, Select, Sheet } from '../../components/ui'
 import { toISODate } from '../../lib/dates'
 import { ensureHolidays, formatRange, FREE_DAYS, useHolidayCache, useHolidays, type FreeDay } from '../../lib/holidays'
 import { newId, put, remove, useCollection } from '../../lib/repo'
@@ -36,14 +36,12 @@ export function HolidaysPage() {
 
       <div className="list">
         <Field label="Bundesland">
-          <select className="row-input" value={settings.state} onChange={(e) => updateSettings(settings, { state: e.target.value })}>
-            {!settings.state && <option value="">Bitte wählen …</option>}
-            {STATES.map((s) => (
-              <option key={s.code} value={s.code}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+          <Select
+            title="Bundesland"
+            value={settings.state || undefined}
+            options={STATES.map((s) => ({ value: s.code, label: s.name }))}
+            onChange={(state) => updateSettings(settings, { state })}
+          />
         </Field>
         {settings.state && (
           <button type="button" className="row action" onClick={reload} disabled={!navigator.onLine}>

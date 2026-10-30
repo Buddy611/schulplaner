@@ -31,7 +31,7 @@ function base64ToBlob(base64: string, type: string): Blob {
 }
 
 export async function exportBackup() {
-  const records = (await db.records.where('deleted').equals(0).toArray()).map(({ id, collection, data, updatedAt }) => ({
+  const records = (await db.records.filter((r) => r.deleted === 0).toArray()).map(({ id, collection, data, updatedAt }) => ({
     id,
     collection,
     data,

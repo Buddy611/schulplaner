@@ -1,3 +1,4 @@
+import { alertDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { Field, Sheet } from '../../components/ui'
 import { supabase } from '../../lib/supabase'
@@ -32,7 +33,7 @@ export function PasswordSheet({ email, onClose }: { email: string; onClose: () =
       if (check.error) throw new Error('Das aktuelle Passwort ist falsch.')
       const { error: updateError } = await supabase.auth.updateUser({ password: next })
       if (updateError) throw updateError
-      alert('Passwort wurde geändert.')
+      await alertDialog('Dein neues Passwort gilt ab sofort.', 'Passwort geändert')
       onClose()
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))

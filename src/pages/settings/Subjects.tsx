@@ -1,3 +1,4 @@
+import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { db } from '../../lib/db'
 import { PageHeader } from '../../components/PageHeader'
@@ -142,7 +143,7 @@ export function SubjectSheet({
       lessons.length > 0
         ? `„${subject.name}“ löschen? Es wird auch aus ${lessons.length} Stunde(n) im Stundenplan entfernt.`
         : `„${subject.name}“ löschen?`
-    if (!confirm(msg)) return
+    if (!(await confirmDialog(msg, { confirm: 'Löschen', danger: true }))) return
     for (const l of lessons) await remove(l.id)
     await remove(subject.id)
     onClose()
@@ -169,10 +170,10 @@ export function SubjectSheet({
       <h3 className="section-title">Standard für den Stundenplan</h3>
       <div className="list">
         <Field label="Lehrer">
-          <EntitySelect value={teacherId} items={teachers} onChange={setTeacherId} onCreate={() => quickCreate(C.teachers)} createLabel="Neuer Lehrer …" />
+          <EntitySelect title="Lehrer" value={teacherId} items={teachers} onChange={setTeacherId} onCreate={() => quickCreate(C.teachers)} createLabel="Neuer Lehrer …" />
         </Field>
         <Field label="Raum">
-          <EntitySelect value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
+          <EntitySelect title="Raum" value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
         </Field>
       </div>
 

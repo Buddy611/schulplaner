@@ -1,3 +1,4 @@
+import { confirmDialog, promptDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
 import { Field, Sheet } from '../../components/ui'
@@ -8,7 +9,7 @@ const BACK = { to: '/einstellungen', label: 'Einstellungen' }
 
 /** Schnell anlegen per Eingabedialog (z. B. direkt aus einem Dropdown heraus) */
 export async function quickCreate(collection: typeof C.teachers | typeof C.rooms): Promise<string | undefined> {
-  const name = prompt(collection === C.teachers ? 'Name des Lehrers / der Lehrerin' : 'Name des Raums')?.trim()
+  const name = (await promptDialog(collection === C.teachers ? 'Neuer Lehrer' : 'Neuer Raum', { placeholder: collection === C.teachers ? 'z. B. Frau Meyer' : 'z. B. A204', confirm: 'Anlegen' }))?.trim()
   if (!name) return undefined
   const id = newId()
   await put(collection, id, { name })
@@ -52,7 +53,7 @@ function TeacherSheet({ teacher, onClose }: { teacher?: Item<Teacher>; onClose: 
   }
 
   async function del() {
-    if (teacher && confirm(`„${teacher.name}“ löschen?`)) {
+    if (teacher && await confirmDialog(`„${teacher.name}“ löschen?`, { confirm: 'Löschen', danger: true })) {
       await remove(teacher.id)
       onClose()
     }
@@ -114,7 +115,7 @@ function RoomSheet({ room, onClose }: { room?: Item<Room>; onClose: () => void }
   }
 
   async function del() {
-    if (room && confirm(`Raum „${room.name}“ löschen?`)) {
+    if (room && await confirmDialog(`Raum „${room.name}“ löschen?`, { confirm: 'Löschen', danger: true })) {
       await remove(room.id)
       onClose()
     }

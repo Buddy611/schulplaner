@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { HashRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { SideNav, TabBar } from './components/TabBar'
+import { DialogHost } from './components/dialogs'
 import { AuthProvider, useAuth } from './lib/auth'
 import { requestPersistentStorage } from './lib/db'
 import { useSettings } from './lib/settings'
@@ -89,6 +90,7 @@ function Shell() {
       </Routes>
       </main>
       <TabBar />
+      <DialogHost />
     </div>
   )
 }

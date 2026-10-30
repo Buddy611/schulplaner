@@ -2002,20 +2002,19 @@ textarea.row-input {
 
 /* ---------- Farbige Symbole wie in den Android-Einstellungen ---------- */
 .icon-bubble {
-  --tone: #1a73e8;
   flex: none;
   width: 44px;
   height: 44px;
   border-radius: 50%;
   display: grid;
   place-content: center;
-  background: color-mix(in srgb, var(--tone) 20%, #ffffff);
-  color: color-mix(in srgb, var(--tone) 75%, #000000);
+  background: var(--bubble-bg);
+  color: var(--bubble-fg);
 }
 
 :root[data-theme='dark'] .icon-bubble {
-  background: color-mix(in srgb, var(--tone) 32%, #1e1f22);
-  color: color-mix(in srgb, var(--tone) 45%, #ffffff);
+  background: var(--bubble-bg-dark);
+  color: var(--bubble-fg-dark);
 }
 
 .row.with-icon {
@@ -2247,5 +2246,186 @@ textarea.row-input {
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--text-2);
+  }
+}
+
+/* ---------- Eigene Dialoge (Material 3) ---------- */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #00000066;
+  animation: fade-in 0.15s ease-out;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 400px;
+  background: var(--card);
+  border-radius: 28px;
+  padding: 24px 24px 12px;
+  box-shadow: 0 12px 32px #00000040;
+  animation: dialog-in 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.dialog h2 {
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+  font-weight: 400;
+}
+
+.dialog p {
+  margin: 0 0 16px;
+  color: var(--text-2);
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.dialog .input {
+  margin-bottom: 8px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.link-btn.danger {
+  color: var(--red);
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+/* ---------- Eigene Auswahl ---------- */
+.select-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+  padding-right: 24px;
+}
+
+.row.field:has(.select-btn) {
+  cursor: pointer;
+}
+
+.row.field:has(.select-btn)::after {
+  content: '';
+  position: absolute;
+  right: 22px;
+  bottom: 20px;
+  border: 5px solid transparent;
+  border-top-color: var(--text-2);
+  pointer-events: none;
+}
+
+/* ---------- Farbwähler ---------- */
+.palette {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 4px 16px;
+}
+
+.palette-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  justify-items: center;
+}
+
+.palette .swatch {
+  width: 100%;
+  max-width: 64px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.palette .swatch.active::after {
+  border-radius: 18px;
+}
+
+/* ---------- Feinschliff: fühlt sich an wie eine App, nicht wie eine Webseite ---------- */
+html {
+  touch-action: manipulation; /* kein Doppeltipp-Zoom */
+  -webkit-touch-callout: none;
+  background: var(--bg);
+}
+
+button,
+a,
+.row,
+.chip,
+.tabbar,
+.sidenav,
+.tt-cell,
+.month-cell,
+.segmented,
+.section-title,
+.large-title,
+.top-bar h1 {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* iPhone zoomt in Eingabefelder unter 16 px hinein – daher mindestens 16 px */
+input,
+textarea,
+.row-input,
+.input {
+  font-size: max(16px, 1rem);
+}
+
+.page {
+  animation: page-in 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+button:not(:disabled):active,
+a.row:active {
+  transition: transform 0.08s;
+}
+
+.btn:active,
+.icon-btn:active,
+.chip:active,
+.swatch:active,
+.grade-opt:active {
+  transform: scale(0.96);
+}
+
+.reset-row {
+  justify-content: center;
+}
+
+/* Scrollbalken auf dem iPad/Desktop dezent */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--outline) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

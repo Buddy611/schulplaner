@@ -1,3 +1,4 @@
+import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { AttachmentEditor } from '../../components/Attachments'
 import { EntitySelect, Field, Sheet } from '../../components/ui'
@@ -84,7 +85,7 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
   }
 
   async function del() {
-    if (exam && confirm(`${exam.type} löschen?`)) {
+    if (exam && await confirmDialog(`${exam.type} löschen?`, { confirm: 'Löschen', danger: true })) {
       await deleteExam(exam)
       onClose()
     }
@@ -114,6 +115,7 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
         </div>
         <Field label="Fach">
           <EntitySelect
+            title="Fach"
             value={subjectId}
             items={subjects}
             emptyLabel="Fach wählen …"
@@ -162,7 +164,7 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
           )}
         </div>
         <Field label="Raum">
-          <EntitySelect value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
+          <EntitySelect title="Raum" value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
         </Field>
       </div>
 

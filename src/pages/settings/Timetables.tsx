@@ -1,3 +1,4 @@
+import { confirmDialog, promptDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
 import { Field, Segmented, Sheet, Switch } from '../../components/ui'
@@ -42,9 +43,15 @@ export function TimetablesPage() {
   const [editing, setEditing] = useState<Item<Timetable> | null>(null)
 
   async function add() {
-    const name = prompt('Name des neuen Stundenplans', `Schuljahr ${new Date().getFullYear()}/${String(new Date().getFullYear() + 1).slice(2)}`)?.trim()
+    const name = (await promptDialog('Neuer Stundenplan', { initial: `Schuljahr ${new Date().getFullYear()}/${String(new Date().getFullYear() + 1).slice(2)}`, confirm: 'Anlegen' }))?.trim()
     if (!name) return
-    const copy = active ? confirm(`Auch die Stunden aus „${active.name}“ übernehmen?\n(Das Zeitraster wird immer übernommen.)`) : false
+    const copy = active
+      ? await confirmDialog(`Das Zeitraster wird übernommen. Sollen auch die Stunden aus „${active.name}“ kopiert werden?`, {
+          title: 'Stunden übernehmen?',
+          confirm: 'Kopieren',
+          cancel: 'Leer starten',
+        })
+      : false
     await createTimetable(settings, name, active, copy)
   }
 
@@ -104,7 +111,7 @@ function TimetableSheet({ timetable, onClose }: { timetable: Item<Timetable>; on
   }
 
   async function del() {
-    if (!confirm(`Stundenplan „${timetable.name}“ mit allen Stunden löschen?`)) return
+    if (!(await confirmDialog(`Stundenplan „${timetable.name}“ mit allen Stunden löschen?`, { confirm: 'Löschen', danger: true }))) return
     const lessons = await db.records.where({ collection: C.lessons, deleted: 0 }).toArray()
     for (const l of lessons) if ((l.data as Lesson).timetableId === timetable.id) await remove(l.id)
     await remove(timetable.id)

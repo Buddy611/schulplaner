@@ -1,3 +1,4 @@
+import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { EntitySelect, Field, Segmented, Sheet } from '../../components/ui'
 import { toISODate } from '../../lib/dates'
@@ -70,7 +71,7 @@ export function GradeSheet({ grade, defaults, onClose }: { grade?: Item<Grade>; 
   }
 
   async function del() {
-    if (grade && confirm('Note löschen?')) {
+    if (grade && await confirmDialog('Note löschen?', { confirm: 'Löschen', danger: true })) {
       await remove(grade.id)
       onClose()
     }
@@ -80,7 +81,7 @@ export function GradeSheet({ grade, defaults, onClose }: { grade?: Item<Grade>; 
     <Sheet title={grade ? 'Note bearbeiten' : 'Neue Note'} onClose={onClose} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
       <div className="list">
         <Field label="Fach">
-          <EntitySelect value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel="Fach wählen …" />
+          <EntitySelect title="Fach" value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel="Fach wählen …" />
         </Field>
         <div className="row stack">
           <Segmented<GradeKind>

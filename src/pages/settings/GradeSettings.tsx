@@ -1,6 +1,6 @@
 import { PageHeader } from '../../components/PageHeader'
-import { Field, Segmented } from '../../components/ui'
-import { updateSettings, useSettings, type Settings } from '../../lib/settings'
+import { Field, ResetButton, Segmented } from '../../components/ui'
+import { DEFAULT_SETTINGS, updateSettings, useSettings, type Settings } from '../../lib/settings'
 
 /** Notensystem, Gewichtungen und Halbjahre */
 export function GradeSettingsPage() {
@@ -69,6 +69,19 @@ export function GradeSettingsPage() {
         </Field>
       </div>
       <p className="section-footer">Noten werden nach Datum dem passenden Halbjahr zugeordnet.</p>
+      <ResetButton
+        what="Gewichtung und Halbjahre"
+        onReset={() =>
+          set({
+            tendency: DEFAULT_SETTINGS.tendency,
+            writtenWeight: DEFAULT_SETTINGS.writtenWeight,
+            besprechungWeight: DEFAULT_SETTINGS.besprechungWeight,
+            typeWeights: DEFAULT_SETTINGS.typeWeights,
+            schoolYearStart: DEFAULT_SETTINGS.schoolYearStart,
+            secondHalfStart: DEFAULT_SETTINGS.secondHalfStart,
+          })
+        }
+      />
     </div>
   )
 }

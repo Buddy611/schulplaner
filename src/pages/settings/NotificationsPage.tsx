@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
-import { Field, Switch } from '../../components/ui'
+import { Field, ResetButton, Switch } from '../../components/ui'
 import { currentSubscription, disablePush, enablePush, pushSupport, sendTestPush } from '../../lib/push'
-import { updateSettings, useSettings } from '../../lib/settings'
+import { DEFAULT_SETTINGS, updateSettings, useSettings } from '../../lib/settings'
 
 const EXAM_DAY_OPTIONS = [14, 7, 3, 2, 1]
 
@@ -128,6 +128,11 @@ export function NotificationsPage() {
         </div>
       )}
       {message && <p className="section-footer">{message}</p>}
+
+      <ResetButton
+        what="Zeit und Erinnerungstage"
+        onReset={() => set({ time: DEFAULT_SETTINGS.notifications.time, homework: true, examDays: DEFAULT_SETTINGS.notifications.examDays })}
+      />
 
       <h2 className="section-title">Gut zu wissen</h2>
       <div className="card explain">

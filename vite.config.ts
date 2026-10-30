@@ -27,9 +27,10 @@ export default defineConfig({
         scope: base,
         display: 'standalone',
         orientation: 'any',
-        // Gleiche Farbe wie die App selbst – sonst zeigt Android z. B. unter den Navigationstasten einen farbigen Balken
-        background_color: '#ededf4',
-        theme_color: '#ededf4',
+        // Android färbt damit den Streifen unter den Navigationstasten (beim Installieren festgelegt,
+        // nicht live umschaltbar) – dunkel wie die untere Leiste der App im Dunkelmodus
+        background_color: '#1d2024',
+        theme_color: '#1d2024',
         icons: [
           { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },

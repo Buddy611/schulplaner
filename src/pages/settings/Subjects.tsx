@@ -118,6 +118,14 @@ export function SubjectSheet({
   const [color, setColor] = useState(subject?.color ?? defaultColor)
   const [teacherId, setTeacherId] = useState(subject?.teacherId)
   const [roomId, setRoomId] = useState(subject?.roomId)
+  const [materials, setMaterials] = useState<string[]>(subject?.materials ?? [])
+  const [newMaterial, setNewMaterial] = useState('')
+
+  function addMaterial() {
+    const m = newMaterial.trim()
+    if (m && !materials.includes(m)) setMaterials([...materials, m])
+    setNewMaterial('')
+  }
 
   async function save() {
     const id = subject?.id ?? newId()
@@ -128,6 +136,7 @@ export function SubjectSheet({
       teacherId,
       roomId,
       writtenWeight: subject?.writtenWeight,
+      materials: newMaterial.trim() && !materials.includes(newMaterial.trim()) ? [...materials, newMaterial.trim()] : materials,
     }
     await put<Subject>(C.subjects, id, data)
     onSaved?.(id, data)
@@ -176,6 +185,39 @@ export function SubjectSheet({
           <EntitySelect title="Raum" value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
         </Field>
       </div>
+
+      <h3 className="section-title">Material für die Packliste</h3>
+      <div className="list">
+        <div className="row stack">
+          {materials.length > 0 && (
+            <div className="chips" style={{ marginBottom: 12 }}>
+              {materials.map((m) => (
+                <button key={m} type="button" className="chip removable" onClick={() => setMaterials(materials.filter((x) => x !== m))}>
+                  {m} ×
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="inline-add">
+            <input
+              className="input"
+              value={newMaterial}
+              onChange={(e) => setNewMaterial(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addMaterial()
+                }
+              }}
+              placeholder="z. B. Buch, Atlas, Sportzeug"
+            />
+            <button type="button" className="icon-btn" aria-label="Material hinzufügen" onClick={addMaterial} disabled={!newMaterial.trim()}>
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+      <p className="section-footer">Erscheint auf „Heute“ in der Packliste für den nächsten Schultag.</p>
 
       {subject && (
         <div className="list" style={{ marginTop: 24 }}>

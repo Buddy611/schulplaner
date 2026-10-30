@@ -80,6 +80,10 @@ export function SideNav() {
       </nav>
       <div className="sidenav-sub">Mehr</div>
       <nav>
+        <NavLink to="/notizen">
+          <Icon name="note" />
+          Notizen
+        </NavLink>
         <NavLink to="/fehlstunden">
           <Icon name="absence" />
           Fehlstunden

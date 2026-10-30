@@ -26,6 +26,7 @@ import { DisplaySettingsPage } from './pages/settings/DisplaySettings'
 import { AccountSettingsPage } from './pages/settings/AccountSettings'
 import { AbsencesPage } from './pages/absences/AbsencesPage'
 import { ChangesPage } from './pages/changes/ChangesPage'
+import { NotesPage } from './pages/notes/NotesPage'
 import { RoomsPage, TeachersPage } from './pages/settings/MasterData'
 import { SubjectsPage } from './pages/settings/Subjects'
 import { TimeGridPage } from './pages/settings/TimeGrid'
@@ -78,6 +79,7 @@ function Shell() {
         <Route path="/einstellungen/darstellung" element={<DisplaySettingsPage />} />
         <Route path="/einstellungen/konto" element={<AccountSettingsPage />} />
         <Route path="/fehlstunden" element={<AbsencesPage />} />
+        <Route path="/notizen" element={<NotesPage />} />
         <Route path="/vertretungen" element={<ChangesPage />} />
         <Route path="/einstellungen" element={<Settings />} />
         <Route path="/einstellungen/stundenplaene" element={<TimetablesPage />} />

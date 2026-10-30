@@ -9,6 +9,8 @@ import { CHANGE_LABEL, type LessonChange } from '../lib/changes'
 import { ChangeSheet } from './changes/ChangeSheet'
 import { Icon } from '../components/Icons'
 import { WeekGrid, type GridBlock } from '../components/WeekGrid'
+import { useNotes, type LessonNote } from '../lib/notes'
+import { NoteSheet, type NoteDefaults } from './notes/NoteSheet'
 import { PageHeader } from '../components/PageHeader'
 import { Segmented } from '../components/ui'
 import { addDays, DAY_SHORT, formatDate, isoWeek, mondayOf, parseISODate, SCHOOL_DAYS, toISODate } from '../lib/dates'
@@ -233,6 +235,8 @@ function DayView({
   const now = useNow()
   const [editing, setEditing] = useState<{ hw?: Item<Homework>; defaults?: HomeworkDefaults } | null>(null)
   const [changing, setChanging] = useState<{ change?: Item<LessonChange>; periodId: string } | null>(null)
+  const [noting, setNoting] = useState<{ note?: Item<LessonNote>; defaults?: NoteDefaults } | null>(null)
+  const notes = useNotes()
   const tt = schedule.timetable!
   const periods = sortPeriods(tt.periods)
   const lessons = schedule.lessonsOn(date)
@@ -337,6 +341,14 @@ function DayView({
                     </button>
                   </div>
                 ))}
+                {(notes ?? [])
+                  .filter((n) => n.date === l.date && n.subjectId === l.subject.id && (!n.periodId || n.periodId === l.period.id))
+                  .map((n) => (
+                    <button key={n.id} type="button" className="day-note" onClick={() => setNoting({ note: n })}>
+                      <Icon name="note" size={16} />
+                      <span>{n.text || `${n.attachments.length} Anhang`}</span>
+                    </button>
+                  ))}
                 <div className="day-actions">
                   <button
                     type="button"
@@ -344,6 +356,13 @@ function DayView({
                     onClick={() => setEditing({ defaults: { subjectId: l.subject.id, dueDate: l.date, duePeriodId: l.period.id } })}
                   >
                     + Hausaufgabe
+                  </button>
+                  <button
+                    type="button"
+                    className="day-hw-add"
+                    onClick={() => setNoting({ defaults: { subjectId: l.subject.id, date: l.date, periodId: l.period.id } })}
+                  >
+                    + Notiz
                   </button>
                   {!l.change && (
                     <button type="button" className="day-hw-add" onClick={() => setChanging({ periodId: p.id })}>
@@ -363,6 +382,7 @@ function DayView({
       {changing && (
         <ChangeSheet change={changing.change} date={toISODate(date)} periodId={changing.periodId} onClose={() => setChanging(null)} />
       )}
+      {noting && <NoteSheet note={noting.note} defaults={noting.defaults} onClose={() => setNoting(null)} />}
     </div>
   )
 }

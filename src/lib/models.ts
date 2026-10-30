@@ -27,6 +27,8 @@ export interface Subject {
   roomId?: string
   /** Anteil schriftlich in Prozent – leer = Standard aus den Noten-Einstellungen */
   writtenWeight?: number
+  /** Was man für dieses Fach einpacken muss (Packliste) */
+  materials?: string[]
 }
 
 /** Ein Abschnitt im Zeitraster: Unterrichtsstunde oder Pause */

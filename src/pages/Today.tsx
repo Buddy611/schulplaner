@@ -11,6 +11,7 @@ import { ExamSheet } from './exams/ExamSheet'
 import { CHANGE_LABEL, useAbsences } from '../lib/changes'
 import { formatRange, holidayCountdown } from '../lib/holidays'
 import { LinkRow } from '../components/ui'
+import { PackingList } from './PackingList'
 import { PageHeader } from '../components/PageHeader'
 import { addDays, formatDate, toISODate } from '../lib/dates'
 import { periodTitle, sortPeriods } from '../lib/models'
@@ -159,6 +160,13 @@ export function Today() {
         </>
       )}
 
+      {day && (
+        <>
+          <h2 className="section-title">Einpacken für {isToday(day) ? 'heute' : heading === 'Morgen' ? 'morgen' : formatDate(day, { weekday: 'long' })}</h2>
+          <PackingList key={toISODate(day)} schedule={schedule} day={day} />
+        </>
+      )}
+
       <h2 className="section-title">
         Offene Hausaufgaben
         <Link to="/hausaufgaben" className="section-link">
@@ -211,6 +219,9 @@ export function Today() {
 
       <h2 className="section-title">Mehr</h2>
       <div className="list">
+        <LinkRow to="/notizen" icon="note" tone="blue" sub="Notizen und Tafelbilder zu den Stunden">
+          Notizen
+        </LinkRow>
         <LinkRow to="/fehlstunden" icon="absence" tone="pink" sub={openAbsences ? `${openAbsences} Entschuldigung${openAbsences > 1 ? 'en' : ''} offen` : 'Alles entschuldigt'}>
           Fehlstunden
         </LinkRow>

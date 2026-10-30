@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#ffffff"/>
-  <g transform="translate(256 256) scale(1.18) translate(-256 -256)">
-    <rect x="136" y="132" width="240" height="264" rx="44" fill="#4285f4"/>
-    <path d="M180 132h152a44 44 0 0 1 44 44v28H136v-28a44 44 0 0 1 44-44z" fill="#1a5fd0"/>
-    <rect x="186" y="104" width="26" height="62" rx="13" fill="#fbbc04"/>
-    <rect x="300" y="104" width="26" height="62" rx="13" fill="#fbbc04"/>
-    <circle cx="190" cy="252" r="18" fill="#34a853"/>
-    <path d="M181 252l7 7 12-13" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="222" y="244" width="116" height="16" rx="8" fill="#ffffff"/>
-    <circle cx="190" cy="302" r="15" fill="none" stroke="#ffffff" stroke-width="6" opacity="0.85"/>
-    <rect x="222" y="294" width="92" height="16" rx="8" fill="#ffffff" opacity="0.85"/>
-    <circle cx="190" cy="352" r="15" fill="none" stroke="#ffffff" stroke-width="6" opacity="0.85"/>
-    <rect x="222" y="344" width="104" height="16" rx="8" fill="#ffffff" opacity="0.85"/>
+  <rect width="512" height="512" fill="#4285f4"/>
+  <g transform="translate(256 262) scale(1.12) translate(-256 -262)">
+    <rect x="146" y="140" width="220" height="244" rx="40" fill="#ffffff"/>
+    <path d="M186 140h140a40 40 0 0 1 40 40v26H146v-26a40 40 0 0 1 40-40z" fill="#d2e3fc"/>
+    <rect x="192" y="112" width="24" height="58" rx="12" fill="#fbbc04"/>
+    <rect x="296" y="112" width="24" height="58" rx="12" fill="#fbbc04"/>
+    <circle cx="194" cy="254" r="17" fill="#34a853"/>
+    <path d="M186 254l6 6 11-12" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="224" y="246" width="108" height="16" rx="8" fill="#4285f4"/>
+    <circle cx="194" cy="302" r="14" fill="none" stroke="#a8c7fa" stroke-width="6"/>
+    <rect x="224" y="294" width="86" height="16" rx="8" fill="#a8c7fa"/>
+    <circle cx="194" cy="350" r="14" fill="none" stroke="#a8c7fa" stroke-width="6"/>
+    <rect x="224" y="342" width="98" height="16" rx="8" fill="#a8c7fa"/>
   </g>
 </svg>

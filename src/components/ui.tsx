@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Hct, hexFromArgb } from '@material/material-color-utilities'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
@@ -142,6 +142,16 @@ export function ColorPicker({ value, colors, onChange }: { value: string; colors
   )
 }
 
+let scrollLocks = 0
+function lockScroll() {
+  scrollLocks++
+  document.documentElement.classList.add('scroll-locked')
+}
+function unlockScroll() {
+  scrollLocks = Math.max(0, scrollLocks - 1)
+  if (scrollLocks === 0) document.documentElement.classList.remove('scroll-locked')
+}
+
 /** Fenster, das von unten hereinfährt (wie bei iOS) */
 export function Sheet({
   title,
@@ -158,16 +168,19 @@ export function Sheet({
   saveDisabled?: boolean
   children: ReactNode
 }) {
+  // Hintergrund nicht scrollen, solange mindestens ein Fenster offen ist (Zähler, damit
+  // verschachtelte Fenster die Seite beim Schließen nicht gesperrt zurücklassen)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
   useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    lockScroll()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current()
     window.addEventListener('keydown', onKey)
     return () => {
-      document.body.style.overflow = prev
+      unlockScroll()
       window.removeEventListener('keydown', onKey)
     }
-  }, [onClose])
+  }, [])
 
   return createPortal(
     <div className="sheet-backdrop" onClick={onClose}>

@@ -92,6 +92,7 @@ export function ExamRow({ exam, onOpen, compact }: { exam: Item<Exam>; onOpen: (
         <span className="sub">
           {formatDate(parseISODate(exam.date), { weekday: compact ? 'short' : 'long', day: 'numeric', month: 'long', year: compact ? undefined : 'numeric' })}
           {period && timetable && ` · ${periodTitle(sortPeriods(timetable.periods), period)}`}
+          {exam.startTime && ` · ${exam.startTime}–${exam.endTime ?? ''} Uhr`}
         </span>
         {total > 0 && (
           <span className="study">

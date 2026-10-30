@@ -10,6 +10,19 @@ import './styles.css'
 
 applyCachedTheme()
 
+// Tastatur offen (Fokus in einem Eingabefeld)? Dann die untere Leiste ausblenden –
+// sonst schiebt sie sich auf dem Handy über die Tastatur bzw. mitten ins Bild.
+const isTextField = (el: EventTarget | null) =>
+  el instanceof HTMLElement && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'file', 'color'].includes((el as HTMLInputElement).type)))
+document.addEventListener('focusin', (e) => {
+  if (isTextField(e.target)) document.documentElement.classList.add('keyboard-open')
+})
+document.addEventListener('focusout', () => {
+  setTimeout(() => {
+    if (!isTextField(document.activeElement)) document.documentElement.classList.remove('keyboard-open')
+  }, 50)
+})
+
 // Service Worker: speichert die App für den Offline-Start und holt Updates automatisch,
 // sobald Internet da ist (beim Start, beim Wiederverbinden und stündlich).
 registerSW({

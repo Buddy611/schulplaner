@@ -74,7 +74,7 @@ export function ChangeSheet({
             <div className="chips">
               {dayLessons.map((l) => (
                 <button
-                  key={l.period.id}
+                  key={l.period.id + l.startSlot}
                   type="button"
                   className={`chip ${periodId === l.period.id ? 'active' : ''}`}
                   onClick={() => setPeriodId(l.period.id)}

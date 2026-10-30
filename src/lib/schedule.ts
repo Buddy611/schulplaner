@@ -8,6 +8,7 @@ import {
   lessonSlots,
   slotTime,
   sortPeriods,
+  timetableForDate,
   useActiveTimetable,
   useLookups,
   weekTypeFor,
@@ -52,7 +53,7 @@ function at(date: Date, time: string) {
 /** Alles, was zur Berechnung des Plans nötig ist – an einer Stelle gebündelt */
 export function useSchedule() {
   const settings = useSettings()
-  const { timetable } = useActiveTimetable()
+  const { timetable, all: allTimetables } = useActiveTimetable()
   const lessons = useCollection<Lesson>(C.lessons)
   const changes = useChanges()
   const holidays = useHolidays(settings.state)
@@ -63,21 +64,28 @@ export function useSchedule() {
     return holidayOn(holidays, toISODate(date))
   }
 
+  /** Stundenplan, der an diesem Datum gilt (siehe "gilt ab") */
+  function timetableFor(date: Date): Item<Timetable> | null {
+    if (!timetable) return null
+    return timetableForDate(allTimetables ?? [], timetable, toISODate(date))
+  }
+
   /**
    * Stunden an einem Datum – am Wochenende und in Ferien/an Feiertagen leer.
    * Ausfälle bleiben in der Liste (markiert), damit man sie sieht.
    */
   function lessonsOn(date: Date): ScheduledLesson[] {
-    if (!timetable || !lessons) return []
+    const tt = timetableFor(date)
+    if (!tt || !lessons) return []
     const weekday = date.getDay()
     if (weekday === 0 || weekday === 6) return []
     if (holiday(date)) return []
-    const week = weekTypeFor(timetable, date)
+    const week = weekTypeFor(tt, date)
     const iso = toISODate(date)
-    const lessonPeriods = sortPeriods(timetable.periods).filter((p) => p.kind === 'lesson')
+    const lessonPeriods = sortPeriods(tt.periods).filter((p) => p.kind === 'lesson')
     // Stunden dieses Tages; Wochen-spezifische (A/B) haben Vorrang vor "jede Woche", Überschneidungen fallen weg
     const candidates = lessons
-      .filter((l) => l.timetableId === timetable.id && l.day === weekday && lessonAppliesToWeek(l, week))
+      .filter((l) => l.timetableId === tt.id && l.day === weekday && lessonAppliesToWeek(l, week))
       .map((l) => ({ l, slots: lessonSlots(l, lessonPeriods) }))
       .filter((x): x is { l: Item<Lesson>; slots: { start: number; end: number } } => x.slots !== null)
       .sort((a, b) => Number(Boolean(b.l.week)) - Number(Boolean(a.l.week)))
@@ -144,6 +152,7 @@ export function useSchedule() {
   return {
     ready,
     timetable: timetable as Item<Timetable> | null | undefined,
+    timetableFor,
     lessonsOn,
     activeLessonsOn,
     nextSchoolDay,

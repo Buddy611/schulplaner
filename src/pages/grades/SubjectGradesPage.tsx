@@ -1,9 +1,10 @@
+import { halfYearName } from '../../components/HalfYearPicker'
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
 import { Segmented } from '../../components/ui'
 import { formatDate, parseISODate } from '../../lib/dates'
-import { better, formatAverage, history, KIND_LABEL, requiredWrittenGrade, type Grade, type GradeKind, type Part } from '../../lib/grades'
+import { formatAverage, history, KIND_LABEL, requiredGrade, type Grade, type Part } from '../../lib/grades'
 import { C, type Subject } from '../../lib/models'
 import { patch, type Item } from '../../lib/repo'
 import { useGradeData } from '../../lib/useGradeData'
@@ -33,8 +34,7 @@ export function SubjectGradesPage() {
   const { subject, result, writtenPercent } = row
   const sys = data.settings.gradeSystem
   const usesDefault = subject.writtenWeight == null
-  const add = (kind: GradeKind) => setEditing({ defaults: { subjectId: subject.id, kind } })
-
+  
   function setWeight(v: string) {
     void patch<Subject>(C.subjects, subject.id, { writtenWeight: v === 'standard' ? undefined : Number(v) })
   }
@@ -42,7 +42,7 @@ export function SubjectGradesPage() {
   return (
     <div className="page">
       <PageHeader title={subject.name} back={{ to: `/noten${q}`, label: 'Noten' }} />
-      <p className="subtitle">{half.label}</p>
+      <p className="subtitle">{halfYearName(half)}</p>
 
       <div className="grade-hero" style={{ borderLeft: `6px solid ${subject.color}` }}>
         <div>
@@ -59,22 +59,42 @@ export function SubjectGradesPage() {
         </div>
       </div>
 
-      <div className="btn-row" style={{ flexWrap: 'wrap' }}>
-        <button type="button" className="btn secondary" style={{ flex: 1 }} onClick={() => add('schriftlich')}>
-          + Schriftlich
-        </button>
-        <button type="button" className="btn secondary" style={{ flex: 1 }} onClick={() => add('muendlich')}>
-          + Mündlich
-        </button>
-        <button type="button" className="btn secondary" style={{ flex: '1 1 100%' }} onClick={() => add('besprechung')}>
-          + Notenbesprechung
-        </button>
-      </div>
+      <button type="button" className="btn" style={{ marginTop: 8 }} onClick={() => setEditing({ defaults: { subjectId: subject.id } })}>
+        + Note eintragen
+      </button>
 
-      <h2 className="section-title">Schriftlich</h2>
+      {result.besprechung && (
+        <>
+          <h2 className="section-title">Zwischenstand</h2>
+          <div className="list">
+            {row.grades
+              .filter((g) => g.kind === 'besprechung')
+              .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
+              .map((b) => {
+                const current = b.id === result.besprechung!.id
+                return (
+                  <button key={b.id} type="button" className="row" style={current ? undefined : { opacity: 0.5 }} onClick={() => setEditing({ grade: b })}>
+                    <span className="label">
+                      Notenbesprechung
+                      <span className="sub">
+                        {formatDate(parseISODate(b.date), { day: 'numeric', month: 'long' })} ·{' '}
+                        {current
+                          ? `ersetzt alle Noten davor · zählt wie ${data.settings.besprechungWeight.toLocaleString('de-DE')} Noten`
+                          : 'durch neuere Besprechung ersetzt'}
+                      </span>
+                    </span>
+                    <span className="grade-chip accent">{b.label}</span>
+                  </button>
+                )
+              })}
+          </div>
+        </>
+      )}
+
+      <h2 className="section-title">{result.besprechung ? 'Schriftlich seit der Besprechung' : 'Schriftlich'}</h2>
       <PartList parts={result.writtenParts} sys={sys} empty="Noch keine schriftlichen Noten." onOpen={(g) => setEditing({ grade: g })} />
 
-      <h2 className="section-title">Mündlich</h2>
+      <h2 className="section-title">{result.besprechung ? 'Mündlich seit der Besprechung' : 'Mündlich'}</h2>
       <PartList parts={result.oralParts} sys={sys} empty="Noch keine mündlichen Noten." onOpen={(g) => setEditing({ grade: g })} />
 
       <h2 className="section-title">Gewichtung schriftlich / mündlich</h2>
@@ -151,16 +171,13 @@ function TargetCalculator({ row, settings }: { row: ReturnType<typeof useGradeDa
   const [type, setType] = useState(settings.examTypes[0])
   const t = Number(target.replace(',', '.'))
   const valid = !Number.isNaN(t) && (sys === 'punkte' ? t >= 0 && t <= 15 : t >= 1 && t <= 6)
-  const typeWeight = settings.typeWeights[type] ?? 1
-  const needed = valid ? requiredWrittenGrade(row.result, t, typeWeight, row.writtenPercent) : null
-  const [best, worst] = sys === 'punkte' ? [15, 0] : [1, 6]
+  const needed = valid ? requiredGrade(row.grades, settings, row.writtenPercent, type === '__muendlich' ? null : type, t) : null
+  const label = type === '__muendlich' ? 'mündlichen Note' : `nächsten Arbeit (${type})`
 
   let message = ''
-  if (needed != null) {
-    if (better(needed, best, sys) && needed !== best) message = `Leider nicht mehr erreichbar – selbst mit ${sys === 'punkte' ? '15 Punkten' : 'einer 1'} reicht es nicht.`
-    else if (!better(needed, worst, sys)) message = `Schon sicher – selbst mit ${sys === 'punkte' ? '0 Punkten' : 'einer 6'} bleibst du bei ${formatAverage(t, sys)} oder besser.`
-    else message = `Du brauchst mindestens ${formatAverage(needed, sys)}${sys === 'punkte' ? ' Punkte' : ''} in der nächsten Arbeit (${type}).`
-  }
+  if (needed === 'unreachable') message = `Leider nicht mehr erreichbar – selbst mit ${sys === 'punkte' ? '15 Punkten' : 'einer 1'} reicht es nicht.`
+  else if (needed === 'safe') message = `Schon sicher – selbst mit ${sys === 'punkte' ? '0 Punkten' : 'einer 6'} bleibst du bei ${formatAverage(t, sys)} oder besser.`
+  else if (needed != null) message = `Du brauchst mindestens ${formatAverage(needed, sys)}${sys === 'punkte' ? ' Punkte' : ''} in der ${label}.`
 
   return (
     <>
@@ -170,7 +187,7 @@ function TargetCalculator({ row, settings }: { row: ReturnType<typeof useGradeDa
           <span className="field-label">Ich möchte im Fach auf …</span>
           <input className="input" inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} placeholder={sys === 'punkte' ? 'z. B. 11' : 'z. B. 2,0'} />
           <span className="field-label" style={{ marginTop: 12 }}>
-            … kommen. Nächste Arbeit:
+            … kommen. Nächste Note:
           </span>
           <div className="chips">
             {settings.examTypes.map((x) => (
@@ -178,12 +195,15 @@ function TargetCalculator({ row, settings }: { row: ReturnType<typeof useGradeDa
                 {x}
               </button>
             ))}
+            <button type="button" className={`chip ${type === '__muendlich' ? 'active' : ''}`} onClick={() => setType('__muendlich')}>
+              Mündlich
+            </button>
           </div>
           {message && <p className="target-result">{message}</p>}
           {!valid && <p className="error-text">Bitte eine Zahl {sys === 'punkte' ? 'von 0 bis 15' : 'von 1 bis 6'} eingeben.</p>}
         </div>
       </div>
-      <p className="section-footer">Rechnet mit deinen bisherigen Noten in diesem Halbjahr; mündliche Noten bleiben wie sie sind.</p>
+      <p className="section-footer">Rechnet mit allen bisherigen Noten in diesem Halbjahr inklusive Zwischenstand und Gewichtung.</p>
     </>
   )
 }

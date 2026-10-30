@@ -3,17 +3,20 @@ import { PageHeader } from '../../components/PageHeader'
 import { ColorDot } from '../../components/ui'
 import { absenceUnits, ABSENCES, useAbsences, type Absence } from '../../lib/changes'
 import { formatDate, parseISODate, toISODate } from '../../lib/dates'
-import { halfYearOf, shiftHalfYear } from '../../lib/grades'
+import { halfYearOf, type HalfYear } from '../../lib/grades'
+import { HalfYearPicker } from '../../components/HalfYearPicker'
 import { useLookups } from '../../lib/models'
 import { put, type Item } from '../../lib/repo'
-import { useSettings } from '../../lib/settings'
+import { useHalfYearSettings } from '../../lib/useHalfYears'
 import { AbsenceSheet } from './AbsenceSheet'
 
 export function AbsencesPage() {
-  const settings = useSettings()
+  const settings = useHalfYearSettings()
   const all = useAbsences()
   const { subjectMap } = useLookups()
-  const [half, setHalf] = useState(() => halfYearOf(toISODate(new Date()), settings))
+  const [selected, setHalf] = useState<HalfYear | null>(null)
+  // Ohne Auswahl immer das aktuelle Halbjahr (neu berechnet, sobald die Ferien geladen sind)
+  const half = selected ?? halfYearOf(toISODate(new Date()), settings)
   const [editing, setEditing] = useState<Item<Absence> | 'new' | null>(null)
   if (!all) return null
 
@@ -39,19 +42,7 @@ export function AbsencesPage() {
         </button>
       </PageHeader>
 
-      <div className="date-nav">
-        <button type="button" className="nav-btn" aria-label="Vorheriges Halbjahr" onClick={() => setHalf(shiftHalfYear(half, -1, settings))}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M15 5l-7 7 7 7" />
-          </svg>
-        </button>
-        <div className="date-label">{half.label}</div>
-        <button type="button" className="nav-btn" aria-label="Nächstes Halbjahr" onClick={() => setHalf(shiftHalfYear(half, 1, settings))}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
+      <HalfYearPicker value={half} settings={settings} onChange={setHalf} />
 
       <div className="stat-row">
         <div className="stat">

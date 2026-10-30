@@ -162,7 +162,7 @@ function WeekView({
   exams: Item<Exam>[]
   onDay: (d: Date) => void
 }) {
-  const tt = schedule.timetable!
+  const tt = schedule.timetableFor(mondayOf(date)) ?? schedule.timetable!
   const periods = sortPeriods(tt.periods)
   const monday = mondayOf(date)
   const days = SCHOOL_DAYS.map((wd) => addDays(monday, wd - 1))
@@ -237,7 +237,7 @@ function DayView({
   const [changing, setChanging] = useState<{ change?: Item<LessonChange>; periodId: string } | null>(null)
   const [noting, setNoting] = useState<{ note?: Item<LessonNote>; defaults?: NoteDefaults } | null>(null)
   const notes = useNotes()
-  const tt = schedule.timetable!
+  const tt = schedule.timetableFor(date) ?? schedule.timetable!
   const periods = sortPeriods(tt.periods)
   const lessons = schedule.lessonsOn(date)
   const lessonPeriods = periods.filter((p) => p.kind === 'lesson')

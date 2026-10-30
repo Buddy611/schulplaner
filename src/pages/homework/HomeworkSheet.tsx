@@ -131,7 +131,7 @@ export function HomeworkSheet({
                 <div className="chips" style={{ marginTop: 10 }}>
                   {lessonsThatDay.map((l) => (
                     <button
-                      key={l.period.id}
+                      key={l.period.id + l.startSlot}
                       type="button"
                       className={`chip ${datePeriodId === l.period.id ? 'active' : ''}`}
                       onClick={() => setDatePeriodId(datePeriodId === l.period.id ? undefined : l.period.id)}

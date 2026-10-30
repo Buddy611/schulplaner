@@ -124,6 +124,29 @@ export function formatRange(h: { start: string; end: string }) {
   return h.start === h.end ? fmt(s, true) : `${fmt(s, false)} – ${fmt(e, true)}`
 }
 
+/**
+ * Halbjahre aus den Ferien ableiten (als "MM-TT"):
+ * - Schuljahr beginnt am Tag nach den letzten Sommerferien
+ * - 2. Halbjahr beginnt nach Ferien, die zwischen Mitte Januar und Ende Februar beginnen
+ *   (Halbjahres-/Winterferien); gibt es keine, gilt der 1. Februar.
+ * Gibt null zurück, wenn (noch) keine Ferien geladen sind.
+ */
+export function deriveHalfYears(holidays: Holiday[], ref = new Date()) {
+  const ferien = holidays.filter((h) => h.kind === 'ferien')
+  if (!ferien.length) return null
+  const iso = toISODate(ref)
+  const dayAfter = (d: string) => toISODate(addDays(parseISODate(d), 1))
+  const summers = ferien.filter((h) => /sommer/i.test(h.name)).sort((a, b) => a.start.localeCompare(b.start))
+  const lastSummer = [...summers].reverse().find((h) => h.end < iso) ?? summers[0]
+  const schoolYearStart = lastSummer ? dayAfter(lastSummer.end).slice(5) : '08-01'
+  const winter = ferien.find((h) => {
+    const md = h.start.slice(5)
+    return md >= '01-15' && md <= '02-28' && !/sommer/i.test(h.name)
+  })
+  const secondHalfStart = winter ? dayAfter(winter.end).slice(5) : '02-01'
+  return { schoolYearStart, secondHalfStart }
+}
+
 export async function clearHolidayCache() {
   await db.meta.delete(META_KEY)
 }

@@ -25,6 +25,10 @@ export interface Settings {
   writtenWeight: number
   /** Gewicht je Klausurtyp, z. B. Test zählt halb */
   typeWeights: Record<string, number>
+  /** Zählt der Typ schriftlich oder mündlich? (z. B. Test → mündlich) */
+  typeCategory: Record<string, 'schriftlich' | 'muendlich'>
+  /** Halbjahre automatisch aus den Ferien ermitteln (sonst die beiden Daten unten) */
+  halfYearAuto: boolean
   /** Beginn des Schuljahres und des 2. Halbjahres (MM-TT) */
   schoolYearStart: string
   secondHalfStart: string
@@ -51,7 +55,9 @@ export const DEFAULT_SETTINGS: Settings = {
   tendency: 'third',
   besprechungWeight: 3,
   writtenWeight: 50,
-  typeWeights: { Klausur: 1, Test: 0.5, Sprechprüfung: 1 },
+  typeWeights: { Klausur: 1, Test: 1, Sprechprüfung: 1 },
+  typeCategory: { Klausur: 'schriftlich', Test: 'muendlich', Sprechprüfung: 'schriftlich' },
+  halfYearAuto: true,
   schoolYearStart: '08-01',
   secondHalfStart: '02-01',
   notifications: { enabled: false, time: '18:00', homework: true, examDays: [7, 3, 1] },

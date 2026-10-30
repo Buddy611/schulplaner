@@ -28,6 +28,8 @@ import { AbsencesPage } from './pages/absences/AbsencesPage'
 import { ChangesPage } from './pages/changes/ChangesPage'
 import { NotesPage } from './pages/notes/NotesPage'
 import { StudyPage } from './pages/study/StudyPage'
+import { SearchPage } from './pages/SearchPage'
+import { WeeklyReview } from './pages/WeeklyReview'
 import { VocabSetPage } from './pages/study/VocabSetPage'
 import { VocabLearnPage } from './pages/study/VocabLearnPage'
 import { StudySheetPage } from './pages/study/StudySheetPage'
@@ -85,6 +87,8 @@ function Shell() {
         <Route path="/fehlstunden" element={<AbsencesPage />} />
         <Route path="/notizen" element={<NotesPage />} />
         <Route path="/lernen" element={<StudyPage />} />
+        <Route path="/suche" element={<SearchPage />} />
+        <Route path="/rueckblick" element={<WeeklyReview />} />
         <Route path="/lernen/vokabeln/:id" element={<VocabSetPage />} />
         <Route path="/lernen/vokabeln/:id/lernen" element={<VocabLearnPage />} />
         <Route path="/lernen/zettel/:id" element={<StudySheetPage />} />

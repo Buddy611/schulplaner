@@ -41,7 +41,14 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
   const examGrade = exam ? grades?.find((g) => g.examId === exam.id) : undefined
 
   const periods = schedule.timetable ? sortPeriods(schedule.timetable.periods) : []
-  const lessonsThatDay = subjectId && date ? schedule.lessonsOn(parseISODate(date)).filter((l) => l.subject.id === subjectId) : []
+  const allThatDay = date ? schedule.lessonsOn(parseISODate(date)) : []
+  const lessonsThatDay = subjectId ? allThatDay.filter((l) => l.subject.id === subjectId) : []
+  // Alle Unterrichtsstunden des Tages zur Auswahl (auch wenn dort ein anderes Fach ist)
+  const otherPeriods = periods.filter((p) => p.kind === 'lesson' && !lessonsThatDay.some((l) => l.period.id === p.id))
+  const [timeMode, setTimeMode] = useState<'stunde' | 'zeit' | 'tag'>(exam?.startTime ? 'zeit' : (exam?.periodId ?? defaults?.periodId) ? 'stunde' : 'tag')
+  const [startTime, setStartTime] = useState(exam?.startTime ?? '08:00')
+  const [endTime, setEndTime] = useState(exam?.endTime ?? '09:30')
+  const [pickingPeriod, setPickingPeriod] = useState(false)
   const types = settings.examTypes.includes(type) ? settings.examTypes : [...settings.examTypes, type]
   const canSave = Boolean(subjectId && date)
 
@@ -49,6 +56,8 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
   function pickLesson(nextSubject: string | undefined, nextDate: string) {
     const lessons = nextSubject && nextDate ? schedule.lessonsOn(parseISODate(nextDate)).filter((l) => l.subject.id === nextSubject) : []
     setPeriodId(lessons[0]?.period.id)
+    if (lessons[0]) setTimeMode('stunde')
+    else if (timeMode === 'stunde') setTimeMode('tag')
     if (!exam && lessons[0]?.room) setRoomId(lessons[0].room.id)
   }
 
@@ -65,7 +74,9 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
       subjectId: subjectId!,
       type,
       date,
-      periodId,
+      periodId: timeMode === 'stunde' ? periodId : undefined,
+      startTime: timeMode === 'zeit' ? startTime : undefined,
+      endTime: timeMode === 'zeit' ? endTime : undefined,
       roomId,
       topic: topic.trim() || undefined,
       notes: notes.trim() || undefined,
@@ -145,18 +156,86 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
           <div className="chips" style={{ marginTop: 10 }}>
             {lessonsThatDay.map((l) => (
               <button
-                key={l.period.id}
+                key={l.period.id + l.startSlot}
                 type="button"
-                className={`chip ${periodId === l.period.id ? 'active' : ''}`}
-                onClick={() => setPeriodId(l.period.id)}
+                className={`chip ${timeMode === 'stunde' && periodId === l.period.id ? 'active' : ''}`}
+                onClick={() => {
+                  setTimeMode('stunde')
+                  setPeriodId(l.period.id)
+                }}
               >
                 {periodTitle(periods, l.period)} · {l.period.start}
               </button>
             ))}
-            <button type="button" className={`chip ${!periodId ? 'active' : ''}`} onClick={() => setPeriodId(undefined)}>
-              Ganzer Tag / andere Zeit
+            {otherPeriods.length > 0 && (
+              <button
+                type="button"
+                className={`chip ${timeMode === 'stunde' && periodId && !lessonsThatDay.some((l) => l.period.id === periodId) ? 'active' : ''}`}
+                onClick={() => setPickingPeriod(true)}
+              >
+                {timeMode === 'stunde' && periodId && !lessonsThatDay.some((l) => l.period.id === periodId)
+                  ? `${periodTitle(periods, periods.find((p) => p.id === periodId)!)} · ${periods.find((p) => p.id === periodId)!.start}`
+                  : lessonsThatDay.length
+                    ? 'Andere Stunde …'
+                    : 'Stunde wählen …'}
+              </button>
+            )}
+            <button type="button" className={`chip ${timeMode === 'zeit' ? 'active' : ''}`} onClick={() => setTimeMode('zeit')}>
+              Eigene Uhrzeit
+            </button>
+            <button
+              type="button"
+              className={`chip ${timeMode === 'tag' ? 'active' : ''}`}
+              onClick={() => {
+                setTimeMode('tag')
+                setPeriodId(undefined)
+              }}
+            >
+              Ganzer Tag
             </button>
           </div>
+          {pickingPeriod && (
+            <Sheet title="Stunde wählen" onClose={() => setPickingPeriod(false)}>
+              <div className="list">
+                {otherPeriods.map((p) => {
+                  const l = allThatDay.find((x) => x.period.id === p.id)
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="row"
+                      onClick={() => {
+                        setTimeMode('stunde')
+                        setPeriodId(p.id)
+                        setPickingPeriod(false)
+                      }}
+                    >
+                      <span className="label">
+                        {periodTitle(periods, p)}
+                        <span className="sub">
+                          {p.start}–{p.end}
+                          {l ? ` · sonst ${l.subject.name}` : ' · frei'}
+                        </span>
+                      </span>
+                      {periodId === p.id && <span className="check">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </Sheet>
+          )}
+          {timeMode === 'zeit' && (
+            <div className="time-range">
+              <label>
+                <span className="field-label">Beginn</span>
+                <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              </label>
+              <label>
+                <span className="field-label">Ende</span>
+                <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              </label>
+            </div>
+          )}
           {date && (
             <p className="section-footer" style={{ margin: '10px 0 0' }}>
               {formatDate(parseISODate(date), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}

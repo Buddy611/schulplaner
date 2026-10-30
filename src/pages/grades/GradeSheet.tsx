@@ -1,6 +1,6 @@
 import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
-import { EntitySelect, Field, Segmented, Sheet } from '../../components/ui'
+import { EntitySelect, Field, Sheet } from '../../components/ui'
 import { toISODate } from '../../lib/dates'
 import { GRADES, gradeOptions, type Grade, type GradeKind, type GradeSystem } from '../../lib/grades'
 import { useLookups } from '../../lib/models'
@@ -84,32 +84,36 @@ export function GradeSheet({ grade, defaults, onClose }: { grade?: Item<Grade>; 
           <EntitySelect title="Fach" value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel="Fach wählen …" />
         </Field>
         <div className="row stack">
-          <Segmented<GradeKind>
-            value={kind}
-            onChange={setKind}
-            options={[
-              { value: 'schriftlich', label: 'Schriftlich' },
-              { value: 'muendlich', label: 'Mündlich' },
-              { value: 'besprechung', label: 'Besprechung' },
-            ]}
-          />
-          {kind === 'besprechung' && (
-            <p className="section-footer" style={{ margin: '10px 0 0' }}>
-              Die mündliche Gesamtnote aus der Notenbesprechung. Sie ersetzt alle älteren mündlichen Noten.
-            </p>
-          )}
-        </div>
-        {kind === 'schriftlich' && (
-          <div className="row stack">
-            <div className="chips">
-              {settings.examTypes.map((t) => (
-                <button key={t} type="button" className={`chip ${t === type ? 'active' : ''}`} onClick={() => setType(t)}>
-                  {t}
-                </button>
-              ))}
-            </div>
+          <span className="field-label">Art</span>
+          <div className="chips">
+            {settings.examTypes.map((t) => (
+              <button
+                key={t}
+                type="button"
+                className={`chip ${kind === 'schriftlich' && t === type ? 'active' : ''}`}
+                onClick={() => {
+                  setKind('schriftlich')
+                  setType(t)
+                }}
+              >
+                {t}
+              </button>
+            ))}
+            <button type="button" className={`chip ${kind === 'muendlich' ? 'active' : ''}`} onClick={() => setKind('muendlich')}>
+              Mündlich
+            </button>
+            <button type="button" className={`chip ${kind === 'besprechung' ? 'active' : ''}`} onClick={() => setKind('besprechung')}>
+              Notenbesprechung
+            </button>
           </div>
-        )}
+          <p className="section-footer" style={{ margin: '10px 0 0' }}>
+            {kind === 'besprechung'
+              ? 'Zwischenstand wie eine Zwischenzeugnisnote: ersetzt alle Noten davor in diesem Fach.'
+              : kind === 'muendlich'
+                ? 'Einzelne mündliche Note (Mitarbeit, Referat …).'
+                : `${type} zählt ${settings.typeCategory?.[type] === 'muendlich' ? 'mündlich' : 'schriftlich'} – änderbar unter Einstellungen → Gewichtung.`}
+          </p>
+        </div>
       </div>
 
       <h3 className="section-title">{system === 'punkte' ? 'Punkte' : 'Note'}</h3>

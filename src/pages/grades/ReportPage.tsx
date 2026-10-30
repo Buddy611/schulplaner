@@ -4,10 +4,11 @@ import { ColorDot } from '../../components/ui'
 import { formatAverage, reportGrade } from '../../lib/grades'
 import { useGradeData } from '../../lib/useGradeData'
 import { useHalfYearParam } from './GradesPage'
+import { HalfYearPicker } from '../../components/HalfYearPicker'
 
 /** Alle Fächer mit voraussichtlicher Zeugnisnote auf einen Blick */
 export function ReportPage() {
-  const { half, set } = useHalfYearParam()
+  const { half, select, settings: halfSettings } = useHalfYearParam()
   const data = useGradeData(half)
   const [params] = useSearchParams()
   if (!data.loaded) return null
@@ -17,19 +18,7 @@ export function ReportPage() {
   return (
     <div className="page">
       <PageHeader title="Zeugnis-Vorschau" back={{ to: `/noten${q}`, label: 'Noten' }} />
-      <div className="date-nav">
-        <button type="button" className="nav-btn" aria-label="Vorheriges Halbjahr" onClick={() => set(-1)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M15 5l-7 7 7 7" />
-          </svg>
-        </button>
-        <div className="date-label">{half.label}</div>
-        <button type="button" className="nav-btn" aria-label="Nächstes Halbjahr" onClick={() => set(1)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
+      <HalfYearPicker value={half} settings={halfSettings} onChange={select} />
 
       <div className="report">
         <div className="report-head">

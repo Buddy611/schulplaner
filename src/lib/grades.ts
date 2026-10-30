@@ -125,7 +125,7 @@ export interface Part {
   value: number
   weight: number
   grade: Item<Grade>
-  /** ältere mündliche Note, die durch eine Notenbesprechung ersetzt wurde */
+  /** Note vor der letzten Notenbesprechung – durch den Zwischenstand ersetzt */
   replaced?: boolean
 }
 
@@ -135,9 +135,18 @@ export interface SubjectResult {
   total: number | null
   writtenParts: Part[]
   oralParts: Part[]
+  /** letzte Notenbesprechung (Zwischenstand), falls vorhanden */
+  besprechung?: Item<Grade>
   /** Anteil schriftlich (0–1), der tatsächlich verwendet wurde */
   writtenShare: number
   explanation: string[]
+}
+
+/** Zählt eine Note schriftlich oder mündlich? (pro Klausurtyp einstellbar) */
+export function bucketOf(g: Grade, settings: Settings): 'schriftlich' | 'muendlich' | 'besprechung' {
+  if (g.kind === 'besprechung') return 'besprechung'
+  if (g.kind === 'muendlich') return 'muendlich'
+  return settings.typeCategory?.[g.type ?? ''] ?? 'schriftlich'
 }
 
 function weighted(parts: Part[]) {
@@ -154,50 +163,46 @@ function fmtW(w: number) {
   return w.toLocaleString('de-DE', { maximumFractionDigits: 2 })
 }
 
+const before = (a: Grade, b: Grade) => a.date < b.date || (a.date === b.date && a.createdAt < b.createdAt)
+
 /**
  * Note eines Fachs in einem Halbjahr:
- * - Schriftlich: gewichteter Schnitt nach Klausurtyp.
- * - Mündlich: Die neueste Notenbesprechung ersetzt alle älteren mündlichen Noten.
- *   Spätere Einzelnoten zählen zusätzlich; die Besprechung zählt wie N Einzelnoten.
- * - Gesamt: Anteil schriftlich/mündlich laut Fach bzw. Standard.
+ * - Schriftlich/mündlich: gewichteter Schnitt; welcher Klausurtyp wohin zählt, ist einstellbar.
+ * - Notenbesprechung = Zwischenstand: Sie ersetzt ALLE Noten davor (schriftlich und mündlich).
+ *   Spätere Noten werden normal berechnet und mit der Besprechung verrechnet,
+ *   wobei die Besprechung so viel zählt wie N Noten.
  */
 export function computeSubject(grades: Item<Grade>[], settings: Settings, writtenPercent: number): SubjectResult {
   const sys = settings.gradeSystem
   const sorted = [...grades].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt)
+  const besprechung = [...sorted].reverse().find((g) => g.kind === 'besprechung')
+  const replaced = (g: Grade) => Boolean(besprechung && g !== besprechung && before(g, besprechung))
 
-  const writtenParts: Part[] = sorted
-    .filter((g) => g.kind === 'schriftlich')
-    .map((g) => ({
-      label: `${g.type ?? 'Schriftlich'} ${g.label}`,
-      value: valueIn(g, sys),
-      weight: settings.typeWeights[g.type ?? ''] ?? 1,
-      grade: g,
-    }))
-
-  const oralAll = sorted.filter((g) => g.kind !== 'schriftlich')
-  const lastBesprechung = [...oralAll].reverse().find((g) => g.kind === 'besprechung')
-  const oralParts: Part[] = oralAll.map((g) => {
-    const replaced = Boolean(
-      lastBesprechung &&
-        g.id !== lastBesprechung.id &&
-        (g.date < lastBesprechung.date || (g.date === lastBesprechung.date && g.createdAt < lastBesprechung.createdAt)),
-    )
-    return {
-      label: `${g.kind === 'besprechung' ? 'Besprechung' : 'Mündlich'} ${g.label}`,
-      value: valueIn(g, sys),
-      weight: g.id === lastBesprechung?.id ? settings.besprechungWeight : 1,
-      grade: g,
-      replaced,
-    }
+  const toPart = (g: Item<Grade>): Part => ({
+    label: `${g.kind === 'muendlich' ? 'Mündlich' : g.type ?? 'Schriftlich'} ${g.label}`,
+    value: valueIn(g, sys),
+    weight: g.kind === 'muendlich' ? 1 : settings.typeWeights[g.type ?? ''] ?? 1,
+    grade: g,
+    replaced: replaced(g),
   })
+  const writtenParts = sorted.filter((g) => bucketOf(g, settings) === 'schriftlich').map(toPart)
+  const oralParts = sorted.filter((g) => bucketOf(g, settings) === 'muendlich').map(toPart)
 
   const written = weighted(writtenParts)
   const oral = weighted(oralParts)
   let share = writtenPercent / 100
-  let total: number | null = null
-  if (written != null && oral != null) total = share * written + (1 - share) * oral
-  else if (written != null) (total = written), (share = 1)
-  else if (oral != null) (total = oral), (share = 0)
+  let since: number | null = null
+  if (written != null && oral != null) since = share * written + (1 - share) * oral
+  else if (written != null) (since = written), (share = 1)
+  else if (oral != null) (since = oral), (share = 0)
+
+  // Mit Zwischenstand verrechnen
+  let total = since
+  const n = settings.besprechungWeight
+  const later = [...writtenParts, ...oralParts].filter((p) => !p.replaced)
+  const m = later.reduce((s, p) => s + p.weight, 0)
+  const bValue = besprechung ? valueIn(besprechung, sys) : null
+  if (bValue != null) total = since == null ? bValue : (n * bValue + m * since) / (n + m)
 
   // Erklärung in Worten
   const explanation: string[] = []
@@ -207,37 +212,69 @@ export function computeSubject(grades: Item<Grade>[], settings: Settings, writte
       .map((p) => (p.weight === 1 ? fmt(p.value, sys) : `${fmt(p.value, sys)} × ${fmtW(p.weight)}`))
       .join(' + ')
   const sumW = (parts: Part[]) => parts.filter((p) => !p.replaced).reduce((s, p) => s + p.weight, 0)
-  if (written != null) explanation.push(`Schriftlich: (${formula(writtenParts)}) ÷ ${fmtW(sumW(writtenParts))} = ${fmt(written, sys)}`)
-  if (lastBesprechung) {
-    const replacedCount = oralParts.filter((p) => p.replaced).length
+  if (besprechung) {
+    const count = sorted.filter((g) => replaced(g)).length
     explanation.push(
-      `Die Notenbesprechung vom ${parseISODate(lastBesprechung.date).toLocaleDateString('de-DE')} ist der aktuelle mündliche Stand` +
-        (replacedCount ? ` und ersetzt ${replacedCount} ältere mündliche Note${replacedCount > 1 ? 'n' : ''}` : '') +
-        `. Sie zählt wie ${fmtW(settings.besprechungWeight)} Einzelnoten.`,
+      `Zwischenstand aus der Notenbesprechung vom ${parseISODate(besprechung.date).toLocaleDateString('de-DE')}: ${fmt(bValue!, sys)}` +
+        (count ? ` – ersetzt ${count} frühere Note${count > 1 ? 'n' : ''}.` : '.'),
     )
   }
-  if (oral != null) explanation.push(`Mündlich: (${formula(oralParts)}) ÷ ${fmtW(sumW(oralParts))} = ${fmt(oral, sys)}`)
+  const prefix = besprechung ? 'Seitdem ' : ''
+  if (written != null) explanation.push(`${prefix}schriftlich: (${formula(writtenParts)}) ÷ ${fmtW(sumW(writtenParts))} = ${fmt(written, sys)}`.replace(/^s/, (c) => (prefix ? c : c.toUpperCase())))
+  if (oral != null) explanation.push(`${prefix}mündlich: (${formula(oralParts)}) ÷ ${fmtW(sumW(oralParts))} = ${fmt(oral, sys)}`.replace(/^m/, (c) => (prefix ? c : c.toUpperCase())))
   if (written != null && oral != null) {
-    explanation.push(
-      `Gesamt: ${Math.round(share * 100)} % × ${fmt(written, sys)} + ${Math.round((1 - share) * 100)} % × ${fmt(oral, sys)} = ${fmt(total!, sys)}`,
-    )
-  } else if (total != null) {
+    explanation.push(`${besprechung ? 'Seitdem zusammen' : 'Gesamt'}: ${Math.round(share * 100)} % × ${fmt(written, sys)} + ${Math.round((1 - share) * 100)} % × ${fmt(oral, sys)} = ${fmt(since!, sys)}`)
+  } else if (since != null && !besprechung) {
     explanation.push(`Gesamt: Es gibt bisher nur ${written != null ? 'schriftliche' : 'mündliche'} Noten, daher zählen nur diese.`)
   }
+  if (besprechung && since != null) {
+    explanation.push(`Gesamt: (${fmt(bValue!, sys)} × ${fmtW(n)} + ${fmt(since, sys)} × ${fmtW(m)}) ÷ ${fmtW(n + m)} = ${fmt(total!, sys)} – der Zwischenstand zählt wie ${fmtW(n)} Noten.`)
+  } else if (besprechung) {
+    explanation.push(`Seit der Besprechung gibt es noch keine neuen Noten, daher gilt der Zwischenstand.`)
+  }
 
-  return { written, oral, total, writtenParts, oralParts, writtenShare: share, explanation }
+  return { written, oral, total, writtenParts, oralParts, besprechung, writtenShare: share, explanation }
 }
 
 /**
- * Zielnoten-Rechner: Welche Note braucht man in der nächsten schriftlichen Arbeit
- * (Typ mit Gewicht `typeWeight`), damit das Fach auf `target` kommt?
+ * Zielnoten-Rechner: Welche Note braucht man in der nächsten Arbeit vom Typ `type`
+ * (oder mündlich), damit das Fach auf `target` kommt? Wird schrittweise ausprobiert,
+ * damit alle Regeln (Zwischenstand, Gewichte, schriftlich/mündlich) genau stimmen.
+ * Ergebnis: benötigter Wert, oder 'unreachable' / 'safe'.
  */
-export function requiredWrittenGrade(r: SubjectResult, target: number, typeWeight: number, writtenPercent: number) {
-  const W = r.writtenParts.reduce((s, p) => s + p.weight, 0)
-  const S = r.writtenParts.reduce((s, p) => s + p.value * p.weight, 0)
-  const share = r.oral != null ? writtenPercent / 100 : 1
-  const neededWritten = r.oral != null ? (target - (1 - share) * r.oral) / share : target
-  return (neededWritten * (W + typeWeight) - S) / typeWeight
+export function requiredGrade(
+  grades: Item<Grade>[],
+  settings: Settings,
+  writtenPercent: number,
+  type: string | null,
+  target: number,
+): number | 'unreachable' | 'safe' {
+  const sys = settings.gradeSystem
+  const [best, worst] = sys === 'punkte' ? [15, 0] : [1, 6]
+  const fake = (value: number): Item<Grade> => ({
+    id: '__ziel',
+    subjectId: '',
+    kind: type ? 'schriftlich' : 'muendlich',
+    type: type ?? undefined,
+    value,
+    label: '',
+    system: sys,
+    date: '9999-12-31',
+    createdAt: Number.MAX_SAFE_INTEGER,
+  })
+  const totalWith = (v: number) => computeSubject([...grades, fake(v)], settings, writtenPercent).total!
+  const reaches = (v: number) => (sys === 'punkte' ? totalWith(v) >= target - 1e-9 : totalWith(v) <= target + 1e-9)
+  if (!reaches(best)) return 'unreachable'
+  if (reaches(worst)) return 'safe'
+  // Binäre Suche zwischen bester und schlechtester Note
+  let lo = best
+  let hi = worst
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2
+    if (reaches(mid)) lo = mid
+    else hi = mid
+  }
+  return lo
 }
 
 /** Laufender Gesamtschnitt nach jeder neuen Note (für das Verlaufsdiagramm) */

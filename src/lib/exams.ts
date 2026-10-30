@@ -22,6 +22,9 @@ export interface Exam {
   date: string
   /** Stunde an diesem Tag – leer = allgemein für den Tag */
   periodId?: string
+  /** eigene Uhrzeit statt Stunde (HH:MM) */
+  startTime?: string
+  endTime?: string
   roomId?: string
   topic?: string
   notes?: string

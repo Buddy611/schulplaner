@@ -47,7 +47,27 @@ export interface Timetable {
   abWeeks: boolean
   /** Montag einer A-Woche (YYYY-MM-DD) – daraus wird jede weitere Woche berechnet */
   abRefMonday?: string
+  /** Ab diesem Tag (YYYY-MM-DD) gilt der Plan automatisch – z. B. ab dem 2. Halbjahr */
+  validFrom?: string
   createdAt: number
+}
+
+/**
+ * Welcher Stundenplan gilt an einem Datum? Der mit dem spätesten "gilt ab", das schon erreicht ist.
+ * Pläne ohne Datum gelten nur, wenn keiner mit Datum passt (dann der aktive).
+ */
+export function timetableForDate<T extends Timetable & { id: string }>(all: T[], active: T | null, iso: string): T | null {
+  const dated = all.filter((t) => t.validFrom && t.validFrom <= iso).sort((a, b) => b.validFrom!.localeCompare(a.validFrom!))
+  if (dated[0]) {
+    // Ein aktiver Plan ohne Datum, der neuer angelegt ist, hat Vorrang vor älteren datierten Plänen
+    if (active && !active.validFrom && active.createdAt > dated[0].createdAt) return active
+    return dated[0]
+  }
+  if (active && active.validFrom && active.validFrom > iso) {
+    // Aktiver Plan gilt erst später → bis dahin der neueste Plan ohne Datum
+    return [...all].filter((t) => !t.validFrom).sort((a, b) => b.createdAt - a.createdAt)[0] ?? active
+  }
+  return active
 }
 
 export type WeekType = 'A' | 'B'

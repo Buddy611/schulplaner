@@ -2,7 +2,8 @@ import { toISODate } from './dates'
 import { computeSubject, halfYearOf, useGrades, type Grade, type GradeSystem, type HalfYear, type SubjectResult } from './grades'
 import { useLookups, type Subject } from './models'
 import type { Item } from './repo'
-import { useSettings, type Settings } from './settings'
+import { type Settings } from './settings'
+import { useHalfYearSettings } from './useHalfYears'
 
 export interface SubjectRow {
   subject: Item<Subject>
@@ -23,7 +24,7 @@ function systemFor(grades: Grade[], fallback: GradeSystem): GradeSystem {
 
 /** Noten eines Halbjahres, je Fach berechnet, plus Gesamtschnitt */
 export function useGradeData(half: HalfYear | null) {
-  const baseSettings = useSettings()
+  const baseSettings = useHalfYearSettings()
   const all = useGrades()
   const { subjects, subjectMap } = useLookups()
   const current = half ?? halfYearOf(toISODate(new Date()), baseSettings)

@@ -12,6 +12,7 @@ import { CHANGE_LABEL, useAbsences } from '../lib/changes'
 import { formatRange, holidayCountdown } from '../lib/holidays'
 import { LinkRow } from '../components/ui'
 import { PackingList } from './PackingList'
+import { Icon, IconBubble } from '../components/Icons'
 import { isDue, useVocabSets } from '../lib/study'
 import { PageHeader } from '../components/PageHeader'
 import { addDays, formatDate, toISODate } from '../lib/dates'
@@ -80,7 +81,12 @@ export function Today() {
 
   return (
     <div className="page">
-      <PageHeader title="Heute">{quickAdd}</PageHeader>
+      <PageHeader title="Heute">
+        <Link to="/suche" className="nav-btn" aria-label="Suchen">
+          <Icon name="search" />
+        </Link>
+        {quickAdd}
+      </PageHeader>
       <p className="subtitle">{formatDate(now, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
 
       {next && (
@@ -103,6 +109,16 @@ export function Today() {
                 : formatDate(next.start, { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
         </div>
+      )}
+
+      {(now.getDay() === 5 || now.getDay() === 6 || now.getDay() === 0) && (
+        <Link to="/rueckblick" className="review-card">
+          <IconBubble name="chart" tone="purple" />
+          <span>
+            <strong>Dein Wochenrückblick</strong>
+            <span className="sub">Was du geschafft hast und was nächste Woche ansteht</span>
+          </span>
+        </Link>
       )}
 
       {countdown && (
@@ -143,7 +159,7 @@ export function Today() {
               const done = l.end <= now
               return (
                 <Link
-                  key={l.period.id}
+                  key={l.period.id + l.startSlot}
                   to={`/stundenplan?ansicht=tag&datum=${l.date}`}
                   className="row"
                   style={done || l.cancelled ? { opacity: 0.5 } : undefined}
@@ -224,6 +240,9 @@ export function Today() {
       <div className="list">
         <LinkRow to="/lernen" icon="translate" tone="indigo" sub={dueVocab ? `${dueVocab} Vokabeln fällig · Lernzettel` : 'Vokabeltrainer und Lernzettel'}>
           Lernen
+        </LinkRow>
+        <LinkRow to="/rueckblick" icon="chart" tone="purple" sub="Diese Woche und was als Nächstes kommt">
+          Wochenrückblick
         </LinkRow>
         <LinkRow to="/notizen" icon="note" tone="blue" sub="Notizen und Tafelbilder zu den Stunden">
           Notizen

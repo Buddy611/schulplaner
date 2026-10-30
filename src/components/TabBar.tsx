@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { useActiveTimetable } from '../lib/models'
+import { timetableForDate, useActiveTimetable } from '../lib/models'
+import { toISODate } from '../lib/dates'
 import { Icon } from './Icons'
 
 const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
@@ -66,10 +67,12 @@ export function TabBar() {
 
 /** iPad / großer Bildschirm: Seitenleiste links */
 export function SideNav() {
-  const { timetable } = useActiveTimetable()
+  const { timetable, all } = useActiveTimetable()
+  // Name des Plans, der heute gilt (nicht unbedingt der, den man gerade bearbeitet)
+  const today = timetable ? timetableForDate(all ?? [], timetable, toISODate(new Date())) : null
   return (
     <aside className="sidenav">
-      <div className="sidenav-title">{timetable?.name ?? 'Schulplaner'}</div>
+      <div className="sidenav-title">{today?.name ?? 'Schulplaner'}</div>
       <nav>
         {[...sections, { to: '/einstellungen', label: 'Einstellungen', icon: icons.settings }].map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}>
@@ -80,6 +83,14 @@ export function SideNav() {
       </nav>
       <div className="sidenav-sub">Mehr</div>
       <nav>
+        <NavLink to="/suche">
+          <Icon name="search" />
+          Suche
+        </NavLink>
+        <NavLink to="/rueckblick">
+          <Icon name="chart" />
+          Wochenrückblick
+        </NavLink>
         <NavLink to="/lernen">
           <Icon name="translate" />
           Lernen

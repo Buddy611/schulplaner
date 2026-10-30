@@ -2,15 +2,16 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
 import { ColorDot } from '../../components/ui'
-import { formatAverage, halfYearOf, reportGrade, shiftHalfYear } from '../../lib/grades'
+import { formatAverage, halfYearOf, reportGrade, shiftHalfYear, type HalfYear } from '../../lib/grades'
+import { HalfYearPicker } from '../../components/HalfYearPicker'
 import { toISODate } from '../../lib/dates'
-import { useSettings } from '../../lib/settings'
+import { useHalfYearSettings } from '../../lib/useHalfYears'
 import { useGradeData } from '../../lib/useGradeData'
 import { GradeSheet } from './GradeSheet'
 
 /** Halbjahr aus der Adresse (?hj=2026-1) oder das aktuelle */
 export function useHalfYearParam() {
-  const settings = useSettings()
+  const settings = useHalfYearSettings()
   const [params, setParams] = useSearchParams()
   const today = halfYearOf(toISODate(new Date()), settings)
   const key = params.get('hj')
@@ -19,15 +20,13 @@ export function useHalfYearParam() {
     const [y, h] = key.split('-').map(Number)
     half = halfYearOf(h === 1 ? `${y}-${settings.schoolYearStart}` : `${y + 1}-${settings.secondHalfStart}`, settings)
   }
-  const set = (dir: 1 | -1) => {
-    const next = shiftHalfYear(half, dir, settings)
-    setParams(next.key === today.key ? {} : { hj: next.key }, { replace: true })
-  }
-  return { half, set, isCurrent: half.key === today.key }
+  const set = (dir: 1 | -1) => select(shiftHalfYear(half, dir, settings))
+  const select = (next: HalfYear) => setParams(next.key === today.key ? {} : { hj: next.key }, { replace: true })
+  return { half, set, select, settings, isCurrent: half.key === today.key }
 }
 
 export function GradesPage() {
-  const { half, set } = useHalfYearParam()
+  const { half, select, settings: halfSettings } = useHalfYearParam()
   const data = useGradeData(half)
   const [adding, setAdding] = useState(false)
   if (!data.loaded) return null
@@ -42,22 +41,8 @@ export function GradesPage() {
         </button>
       </PageHeader>
 
-      <div className="date-nav">
-        <button type="button" className="nav-btn" aria-label="Vorheriges Halbjahr" onClick={() => set(-1)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M15 5l-7 7 7 7" />
-          </svg>
-        </button>
-        <div className="date-label">
-          {half.label}
-          <span className="badge">{sys === 'punkte' ? 'Punkte' : 'Noten'}</span>
-        </div>
-        <button type="button" className="nav-btn" aria-label="Nächstes Halbjahr" onClick={() => set(1)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <path d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
+      <HalfYearPicker value={half} settings={halfSettings} onChange={select} />
+      {sys === 'punkte' && <p className="section-footer">Dieses Halbjahr wird in Punkten angezeigt.</p>}
 
       <div className="grade-hero">
         <div>

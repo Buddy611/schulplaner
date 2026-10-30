@@ -12,6 +12,7 @@ import { CHANGE_LABEL, useAbsences } from '../lib/changes'
 import { formatRange, holidayCountdown } from '../lib/holidays'
 import { LinkRow } from '../components/ui'
 import { PackingList } from './PackingList'
+import { isDue, useVocabSets } from '../lib/study'
 import { PageHeader } from '../components/PageHeader'
 import { addDays, formatDate, toISODate } from '../lib/dates'
 import { periodTitle, sortPeriods } from '../lib/models'
@@ -25,6 +26,8 @@ export function Today() {
   const snackbar = useSnackbar()
   const exams = useExams()
   const absences = useAbsences()
+  const vocab = useVocabSets()
+  const dueVocab = (vocab ?? []).reduce((s, v) => s + v.cards.filter((c) => isDue(c)).length, 0)
   const [examOpen, setExamOpen] = useState<Item<Exam> | null>(null)
   if (!schedule.ready) return null
   const nextExams = upcomingExams(exams).filter((e) => daysUntil(e.date) <= 28).slice(0, 5)
@@ -219,6 +222,9 @@ export function Today() {
 
       <h2 className="section-title">Mehr</h2>
       <div className="list">
+        <LinkRow to="/lernen" icon="translate" tone="indigo" sub={dueVocab ? `${dueVocab} Vokabeln fällig · Lernzettel` : 'Vokabeltrainer und Lernzettel'}>
+          Lernen
+        </LinkRow>
         <LinkRow to="/notizen" icon="note" tone="blue" sub="Notizen und Tafelbilder zu den Stunden">
           Notizen
         </LinkRow>

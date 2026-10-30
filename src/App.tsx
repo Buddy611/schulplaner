@@ -27,6 +27,10 @@ import { AccountSettingsPage } from './pages/settings/AccountSettings'
 import { AbsencesPage } from './pages/absences/AbsencesPage'
 import { ChangesPage } from './pages/changes/ChangesPage'
 import { NotesPage } from './pages/notes/NotesPage'
+import { StudyPage } from './pages/study/StudyPage'
+import { VocabSetPage } from './pages/study/VocabSetPage'
+import { VocabLearnPage } from './pages/study/VocabLearnPage'
+import { StudySheetPage } from './pages/study/StudySheetPage'
 import { RoomsPage, TeachersPage } from './pages/settings/MasterData'
 import { SubjectsPage } from './pages/settings/Subjects'
 import { TimeGridPage } from './pages/settings/TimeGrid'
@@ -80,6 +84,10 @@ function Shell() {
         <Route path="/einstellungen/konto" element={<AccountSettingsPage />} />
         <Route path="/fehlstunden" element={<AbsencesPage />} />
         <Route path="/notizen" element={<NotesPage />} />
+        <Route path="/lernen" element={<StudyPage />} />
+        <Route path="/lernen/vokabeln/:id" element={<VocabSetPage />} />
+        <Route path="/lernen/vokabeln/:id/lernen" element={<VocabLearnPage />} />
+        <Route path="/lernen/zettel/:id" element={<StudySheetPage />} />
         <Route path="/vertretungen" element={<ChangesPage />} />
         <Route path="/einstellungen" element={<Settings />} />
         <Route path="/einstellungen/stundenplaene" element={<TimetablesPage />} />

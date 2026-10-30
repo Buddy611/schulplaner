@@ -80,6 +80,10 @@ export function SideNav() {
       </nav>
       <div className="sidenav-sub">Mehr</div>
       <nav>
+        <NavLink to="/lernen">
+          <Icon name="translate" />
+          Lernen
+        </NavLink>
         <NavLink to="/notizen">
           <Icon name="note" />
           Notizen

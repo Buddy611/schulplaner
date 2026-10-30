@@ -1,0 +1,268 @@
+import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { confirmDialog, promptDialog } from '../../components/dialogs'
+import { PageHeader } from '../../components/PageHeader'
+import { EntitySelect, Field, Sheet } from '../../components/ui'
+import { useLookups } from '../../lib/models'
+import { put, remove, useRecord } from '../../lib/repo'
+import { isDue, newCard, parseVocabList, VOCAB, type VocabCard, type VocabSet } from '../../lib/study'
+
+/** Ein Vokabelset: Wörter verwalten und Lernen starten */
+export function VocabSetPage() {
+  const { id } = useParams()
+  const set = useRecord<VocabSet>(id)
+  const { subjects } = useLookups()
+  const navigate = useNavigate()
+  const [front, setFront] = useState('')
+  const [back, setBack] = useState('')
+  const [editing, setEditing] = useState<VocabCard | null>(null)
+  const [importing, setImporting] = useState(false)
+
+  if (set === undefined) return null
+  if (set === null) {
+    return (
+      <div className="page">
+        <PageHeader title="Vokabeln" back={{ to: '/lernen', label: 'Lernen' }} />
+        <p className="hint">Dieses Set gibt es nicht mehr.</p>
+      </div>
+    )
+  }
+
+  const save = (changes: Partial<VocabSet>) => {
+    const { id: setId, ...data } = set
+    return put<VocabSet>(VOCAB, setId, { ...data, ...changes })
+  }
+  const due = set.cards.filter((c) => isDue(c)).length
+  const boxes = [1, 2, 3, 4, 5].map((b) => set.cards.filter((c) => c.box === b).length)
+
+  async function addCard() {
+    if (!front.trim() || !back.trim()) return
+    await save({ cards: [...set!.cards, newCard(front.trim(), back.trim())] })
+    setFront('')
+    setBack('')
+    document.getElementById('vocab-front')?.focus()
+  }
+
+  async function rename() {
+    const name = await promptDialog('Set umbenennen', { initial: set!.name })
+    if (name) await save({ name })
+  }
+
+  async function del() {
+    if (await confirmDialog(`„${set!.name}“ mit allen Vokabeln löschen?`, { confirm: 'Löschen', danger: true })) {
+      await remove(set!.id)
+      navigate('/lernen')
+    }
+  }
+
+  return (
+    <div className="page">
+      <PageHeader title={set.name} back={{ to: '/lernen', label: 'Lernen' }}>
+        <button type="button" className="link-btn" onClick={rename}>
+          Umbenennen
+        </button>
+      </PageHeader>
+
+      <div className="grade-hero">
+        <div>
+          <div className="hero-label">Heute fällig</div>
+          <div className="grade-big">{due}</div>
+          <div className="muted" style={{ fontSize: '0.875rem' }}>
+            von {set.cards.length} Vokabeln
+          </div>
+        </div>
+        <div className="boxes" aria-label="Karteikasten">
+          {boxes.map((n, i) => (
+            <div key={i} className="box-col" title={`Box ${i + 1}`}>
+              <div className="box-bar" style={{ height: `${set.cards.length ? Math.max(4, (n / set.cards.length) * 64) : 4}px` }} />
+              <span>{i + 1}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="btn-row">
+        <button type="button" className="btn" style={{ flex: 1 }} disabled={!due} onClick={() => navigate(`/lernen/vokabeln/${set.id}/lernen`)}>
+          Lernen{due ? ` (${due})` : ''}
+        </button>
+        <button type="button" className="btn secondary" style={{ flex: 1 }} disabled={!set.cards.length} onClick={() => navigate(`/lernen/vokabeln/${set.id}/lernen?alle=1`)}>
+          Alle üben
+        </button>
+      </div>
+
+      <h2 className="section-title">Neue Vokabel</h2>
+      <div className="list">
+        <Field label="Fremdsprache">
+          <input id="vocab-front" className="row-input" value={front} onChange={(e) => setFront(e.target.value)} placeholder="z. B. marriage" />
+        </Field>
+        <Field label="Deutsch">
+          <input
+            className="row-input"
+            value={back}
+            onChange={(e) => setBack(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && void addCard()}
+            placeholder="z. B. Ehe, Heirat"
+          />
+        </Field>
+        <button type="button" className="row action" onClick={addCard} disabled={!front.trim() || !back.trim()}>
+          Hinzufügen
+        </button>
+        <button type="button" className="row action" onClick={() => setImporting(true)}>
+          Liste einfügen …
+        </button>
+      </div>
+
+      <h2 className="section-title">Einstellungen</h2>
+      <div className="list">
+        <Field label="Fach">
+          <EntitySelect title="Fach" value={set.subjectId} items={subjects} onChange={(subjectId) => save({ subjectId })} emptyLabel="Kein Fach" />
+        </Field>
+      </div>
+
+      {set.cards.length > 0 && (
+        <>
+          <h2 className="section-title">{set.cards.length} Vokabeln</h2>
+          <div className="list">
+            {[...set.cards].reverse().map((c) => (
+              <button key={c.id} type="button" className="row" onClick={() => setEditing(c)}>
+                <span className="label">
+                  {c.front}
+                  <span className="sub">{c.back}</span>
+                </span>
+                <span className="badge">Box {c.box}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div className="list" style={{ marginTop: 24 }}>
+        <button type="button" className="row danger" onClick={del}>
+          Set löschen
+        </button>
+      </div>
+
+      {editing && (
+        <CardSheet
+          card={editing}
+          onClose={() => setEditing(null)}
+          onSave={(c) => save({ cards: set.cards.map((x) => (x.id === c.id ? c : x)) })}
+          onDelete={() => save({ cards: set.cards.filter((x) => x.id !== editing.id) })}
+        />
+      )}
+      {importing && (
+        <ImportSheet
+          onClose={() => setImporting(false)}
+          onImport={(list) => save({ cards: [...set.cards, ...list.map((v) => newCard(v.front, v.back))] })}
+        />
+      )}
+    </div>
+  )
+}
+
+function CardSheet({
+  card,
+  onClose,
+  onSave,
+  onDelete,
+}: {
+  card: VocabCard
+  onClose: () => void
+  onSave: (c: VocabCard) => Promise<void>
+  onDelete: () => Promise<void>
+}) {
+  const [front, setFront] = useState(card.front)
+  const [back, setBack] = useState(card.back)
+  return (
+    <Sheet
+      title="Vokabel"
+      onClose={onClose}
+      saveLabel="Sichern"
+      saveDisabled={!front.trim() || !back.trim()}
+      onSave={async () => {
+        await onSave({ ...card, front: front.trim(), back: back.trim() })
+        onClose()
+      }}
+    >
+      <div className="list">
+        <Field label="Fremdsprache">
+          <input className="row-input" value={front} onChange={(e) => setFront(e.target.value)} />
+        </Field>
+        <Field label="Deutsch">
+          <input className="row-input" value={back} onChange={(e) => setBack(e.target.value)} />
+        </Field>
+      </div>
+      <p className="section-footer">
+        Box {card.box} · {card.correct}× gewusst · {card.wrong}× nicht gewusst
+      </p>
+      <div className="list" style={{ marginTop: 16 }}>
+        <button
+          type="button"
+          className="row action"
+          onClick={async () => {
+            await onSave({ ...card, box: 1, due: new Date().toISOString().slice(0, 10) })
+            onClose()
+          }}
+        >
+          Wieder ganz von vorn lernen
+        </button>
+        <button
+          type="button"
+          className="row danger"
+          onClick={async () => {
+            await onDelete()
+            onClose()
+          }}
+        >
+          Vokabel löschen
+        </button>
+      </div>
+    </Sheet>
+  )
+}
+
+function ImportSheet({ onClose, onImport }: { onClose: () => void; onImport: (list: { front: string; back: string }[]) => Promise<void> }) {
+  const [text, setText] = useState('')
+  const parsed = parseVocabList(text)
+  return (
+    <Sheet
+      title="Liste einfügen"
+      onClose={onClose}
+      saveLabel={parsed.length ? `${parsed.length} übernehmen` : 'Übernehmen'}
+      saveDisabled={!parsed.length}
+      onSave={async () => {
+        await onImport(parsed)
+        onClose()
+      }}
+    >
+      <div className="list">
+        <div className="row stack">
+          <textarea
+            className="row-input"
+            rows={10}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={'marriage - Ehe, Heirat\ngender - Geschlecht\nto get married - heiraten'}
+            autoFocus
+          />
+        </div>
+      </div>
+      <p className="section-footer">
+        Eine Vokabel pro Zeile: Fremdsprache, dann „ - “, „ = “, „;“ oder ein Tab, dann Deutsch. Du kannst z. B. eine Tabelle aus Word oder Excel einfügen.
+      </p>
+      {parsed.length > 0 && (
+        <div className="list" style={{ marginTop: 12 }}>
+          {parsed.slice(0, 5).map((v, i) => (
+            <div key={i} className="row">
+              <span className="label">
+                {v.front}
+                <span className="sub">{v.back}</span>
+              </span>
+            </div>
+          ))}
+          {parsed.length > 5 && <div className="row muted">… und {parsed.length - 5} weitere</div>}
+        </div>
+      )}
+    </Sheet>
+  )
+}

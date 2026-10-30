@@ -2555,3 +2555,149 @@ a.row:active {
   flex: 1;
   min-height: 48px;
 }
+
+/* ---------- Lernen: Karteikasten & Karten ---------- */
+.boxes {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 84px;
+}
+
+.box-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+
+.box-bar {
+  width: 18px;
+  border-radius: 6px 6px 2px 2px;
+  background: var(--accent);
+  opacity: 0.85;
+}
+
+.learn-progress {
+  margin: 0 4px 6px;
+}
+
+.flashcard {
+  width: 100%;
+  min-height: 240px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--card);
+  box-shadow: 0 2px 10px #0000001a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 32px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.flashcard:active {
+  transform: scale(0.99);
+}
+
+.flashcard.revealed {
+  background: var(--accent-container);
+  color: var(--on-accent-container);
+}
+
+.flashcard.right {
+  background: color-mix(in srgb, var(--green) 20%, var(--card));
+}
+
+.flashcard.wrong {
+  background: color-mix(in srgb, var(--red) 16%, var(--card));
+}
+
+.flash-question {
+  font-size: 1.75rem;
+  font-weight: 400;
+}
+
+.flash-answer {
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+/* ---------- Lernzettel ---------- */
+.format-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 16px 4px 8px;
+}
+
+.sheet-text {
+  font-family: inherit;
+  line-height: 1.6;
+}
+
+.study-sheet {
+  padding: 24px;
+}
+
+.rich h2 {
+  font-size: 1.35rem;
+  font-weight: 500;
+  margin: 16px 0 6px;
+}
+
+.rich h3 {
+  font-size: 1.15rem;
+  font-weight: 500;
+  margin: 14px 0 4px;
+}
+
+.rich h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 12px 0 4px;
+}
+
+.rich > :first-child {
+  margin-top: 0;
+}
+
+.rich p {
+  margin: 4px 0;
+  line-height: 1.6;
+}
+
+.rich-li {
+  position: relative;
+  padding-left: 20px;
+}
+
+.rich-li::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 0.7em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.rich-todo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  cursor: pointer;
+}
+
+.rich-gap {
+  height: 10px;
+}

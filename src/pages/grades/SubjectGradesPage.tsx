@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
 import { Segmented } from '../../components/ui'
 import { formatDate, parseISODate } from '../../lib/dates'
-import { formatAverage, history, KIND_LABEL, requiredGrade, type Grade, type Part } from '../../lib/grades'
+import { formatAverage, goalIn, history, KIND_LABEL, requiredGrade, type Grade, type Part } from '../../lib/grades'
 import { C, type Subject } from '../../lib/models'
 import { patch, type Item } from '../../lib/repo'
 import { useGradeData } from '../../lib/useGradeData'
@@ -167,7 +167,8 @@ function PartList({ parts, sys, empty, onOpen }: { parts: Part[]; sys: 'noten' |
 /** Welche Note brauche ich in der nächsten schriftlichen Arbeit für mein Ziel? */
 function TargetCalculator({ row, settings }: { row: ReturnType<typeof useGradeData>['rows'][number]; settings: Settings }) {
   const sys = settings.gradeSystem
-  const [target, setTarget] = useState(sys === 'punkte' ? '11' : '2,0')
+  const goal = row.subject.goal
+  const [target, setTarget] = useState(goal ? String(Math.round(goalIn(goal, sys) * 100) / 100).replace('.', ',') : sys === 'punkte' ? '11' : '2,0')
   const [type, setType] = useState(settings.examTypes[0])
   const t = Number(target.replace(',', '.'))
   const valid = !Number.isNaN(t) && (sys === 'punkte' ? t >= 0 && t <= 15 : t >= 1 && t <= 6)
@@ -200,6 +201,21 @@ function TargetCalculator({ row, settings }: { row: ReturnType<typeof useGradeDa
             </button>
           </div>
           {message && <p className="target-result">{message}</p>}
+          {valid && (
+            <div className="goal-row">
+              <span className="muted">
+                {goal ? `Gespeichertes Ziel: ${formatAverage(goalIn(goal, sys), sys)}` : 'Kein Ziel gespeichert'}
+              </span>
+              <button type="button" className="link-btn strong" onClick={() => patch<Subject>(C.subjects, row.subject.id, { goal: { value: t, system: sys } })}>
+                Als Ziel speichern
+              </button>
+              {goal && (
+                <button type="button" className="link-btn" onClick={() => patch<Subject>(C.subjects, row.subject.id, { goal: undefined })}>
+                  Entfernen
+                </button>
+              )}
+            </div>
+          )}
           {!valid && <p className="error-text">Bitte eine Zahl {sys === 'punkte' ? 'von 0 bis 15' : 'von 1 bis 6'} eingeben.</p>}
         </div>
       </div>

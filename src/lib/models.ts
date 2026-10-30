@@ -29,6 +29,8 @@ export interface Subject {
   writtenWeight?: number
   /** Was man für dieses Fach einpacken muss (Packliste) */
   materials?: string[]
+  /** Notenziel – rutscht der Schnitt darunter, warnt die App */
+  goal?: { value: number; system: 'noten' | 'punkte' }
 }
 
 /** Ein Abschnitt im Zeitraster: Unterrichtsstunde oder Pause */

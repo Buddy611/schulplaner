@@ -1,7 +1,8 @@
 import { addDays, formatDate, parseISODate, toISODate } from './dates'
 import type { Attachment } from './files'
 import { removeFiles } from './files'
-import { useCollection, type Item, put, remove } from './repo'
+import { newId, useCollection, type Item, put, remove } from './repo'
+import { db } from './db'
 import type { ScheduledLesson, useSchedule } from './schedule'
 
 export const HOMEWORK = 'homework'
@@ -19,6 +20,10 @@ export interface Homework {
   doneAt?: number
   attachments: Attachment[]
   createdAt: number
+  /** Jede Woche wiederholen: beim Abhaken wird die nächste automatisch angelegt */
+  repeatWeekly?: boolean
+  /** Die automatisch angelegte Folge-Aufgabe (zum Rückgängigmachen) */
+  nextId?: string
 }
 
 export function useHomework() {
@@ -90,7 +95,28 @@ export function dayHeading(dueDate: string) {
 
 export async function setDone(h: Item<Homework>, done: boolean) {
   const { id, ...data } = h
-  await put<Homework>(HOMEWORK, id, { ...data, done, doneAt: done ? Date.now() : undefined })
+  let nextId = data.nextId
+  if (done && data.repeatWeekly && !nextId) {
+    // Wiederkehrend: gleiche Aufgabe eine Woche später
+    nextId = newId()
+    await put<Homework>(HOMEWORK, nextId, {
+      subjectId: data.subjectId,
+      title: data.title,
+      notes: data.notes,
+      dueDate: toISODate(addDays(parseISODate(data.dueDate), 7)),
+      duePeriodId: data.duePeriodId,
+      done: false,
+      attachments: [],
+      createdAt: Date.now(),
+      repeatWeekly: true,
+    })
+  } else if (!done && nextId) {
+    // Rückgängig: noch nicht erledigte Folge-Aufgabe wieder entfernen
+    const next = await db.records.get(nextId)
+    if (next && !next.deleted && !(next.data as Homework).done) await remove(nextId)
+    nextId = undefined
+  }
+  await put<Homework>(HOMEWORK, id, { ...data, done, doneAt: done ? Date.now() : undefined, nextId })
 }
 
 export async function deleteHomework(h: Item<Homework>) {

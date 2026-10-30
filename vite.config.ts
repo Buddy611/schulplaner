@@ -1,11 +1,42 @@
-﻿import { defineConfig } from 'vite'
+﻿import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+
+// Node-Umgebung beim Build (ohne extra @types/node)
+declare const process: { env: Record<string, string | undefined>; cwd(): string }
 
 // Die App liegt auf GitHub Pages unter https://<name>.github.io/schulplaner/
 const base = '/schulplaner/'
 
-export default defineConfig({
+/**
+ * Inhaltsschutz (Content Security Policy) für die veröffentlichte App: Code nur von der
+ * eigenen Seite, Verbindungen nur zu Supabase und zur Ferien-Schnittstelle. Eingeschleuster
+ * fremder Code wird vom Browser blockiert. (Nur beim Build – der Entwicklungsserver braucht Inline-Code.)
+ */
+function contentSecurityPolicy(supabaseUrl: string | undefined): Plugin {
+  const supabase = supabaseUrl ? new URL(supabaseUrl).host : '*.supabase.co'
+  const policy = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' blob: data:",
+    "font-src 'self' data:",
+    `connect-src 'self' https://${supabase} wss://${supabase} https://openholidaysapi.org`,
+    "frame-src 'self' blob:",
+    "worker-src 'self'",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ')
+  return {
+    name: 'content-security-policy',
+    apply: 'build',
+    transformIndexHtml: (html) => html.replace('<head>', `<head>\n    <meta http-equiv="Content-Security-Policy" content="${policy}" />`),
+  }
+}
+
+export default defineConfig(({ mode }) => ({
   base,
   build: { chunkSizeWarningLimit: 1500 },
   define: {
@@ -14,6 +45,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    contentSecurityPolicy(process.env.VITE_SUPABASE_URL ?? loadEnv(mode, process.cwd(), 'VITE_').VITE_SUPABASE_URL),
     VitePWA({
       // Neue Versionen werden automatisch geladen und aktiviert.
       registerType: 'autoUpdate',
@@ -31,6 +63,13 @@ export default defineConfig({
         // nicht live umschaltbar) – dunkel wie die untere Leiste der App im Dunkelmodus
         background_color: '#1d2024',
         theme_color: '#1d2024',
+        // "Teilen mit Schulplaner" im Android-Teilen-Menü (Fotos, PDFs, Text)
+        share_target: {
+          action: `${base}share-target`,
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: { title: 'title', text: 'text', url: 'url', files: [{ name: 'files', accept: ['image/*', 'application/pdf'] }] },
+        },
         icons: [
           { src: 'pwa-64x64.png', sizes: '64x64', type: 'image/png' },
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
@@ -49,4 +88,4 @@ export default defineConfig({
       },
     }),
   ],
-})
+}))

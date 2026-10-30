@@ -25,6 +25,7 @@ interface NotifySettings {
   time?: string
   homework?: boolean
   examDays?: number[]
+  excuses?: boolean
 }
 
 interface Sub {
@@ -84,7 +85,7 @@ async function remindUser(userId: string, subs: Sub[], now: { date: string; minu
     .select('id, collection, data')
     .eq('user_id', userId)
     .eq('deleted', false)
-    .in('collection', ['settings', 'homework', 'exams', 'subjects'])
+    .in('collection', ['settings', 'homework', 'exams', 'subjects', 'absences'])
   if (!rows) return 0
 
   const settings = rows.find((r) => r.collection === 'settings')?.data as { notifications?: NotifySettings } | undefined
@@ -127,6 +128,19 @@ async function remindUser(userId: string, subs: Sub[], now: { date: string; minu
       const when = d === 1 ? 'morgen' : `in ${d} Tagen`
       lines.push(`${subjects.get(e.subjectId) ?? 'Fach'}-${e.type} ${when}${e.topic ? ` (${e.topic})` : ''}${progress}`)
       title = title ? 'Hausaufgaben & Klausuren' : 'Klausur-Erinnerung'
+    }
+  }
+
+  // Offene Entschuldigungen (seit mindestens 3 Tagen nicht abgegeben)
+  if (cfg.excuses !== false) {
+    const limit = addDays(now.date, -3)
+    const open = rows
+      .filter((r) => r.collection === 'absences')
+      .map((r) => r.data as { date: string; excused: boolean })
+      .filter((a) => !a.excused && a.date <= limit).length
+    if (open) {
+      lines.push(`${open} Entschuldigung${open > 1 ? 'en' : ''} noch nicht abgegeben`)
+      if (!title) title = 'Entschuldigung abgeben'
     }
   }
 

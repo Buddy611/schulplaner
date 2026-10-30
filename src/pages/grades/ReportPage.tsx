@@ -17,7 +17,11 @@ export function ReportPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Zeugnis-Vorschau" back={{ to: `/noten${q}`, label: 'Noten' }} />
+      <PageHeader title="Zeugnis-Vorschau" back={{ to: `/noten${q}`, label: 'Noten' }}>
+        <button type="button" className="link-btn no-print" onClick={() => window.print()}>
+          PDF
+        </button>
+      </PageHeader>
       <HalfYearPicker value={half} settings={halfSettings} onChange={select} />
 
       <div className="report">

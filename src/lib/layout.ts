@@ -13,6 +13,8 @@ export const TODAY_SECTIONS: { id: string; label: string; sub: string }[] = [
   { id: 'holidays', label: 'Feriencountdown', sub: 'Schultage bis zu den nächsten Ferien' },
   { id: 'day', label: 'Tagesplan', sub: 'Alle Stunden von heute bzw. dem nächsten Schultag' },
   { id: 'packing', label: 'Packliste', sub: 'Was in die Tasche muss' },
+  { id: 'excuses', label: 'Offene Entschuldigungen', sub: 'Erinnerung, solange welche fehlen' },
+  { id: 'goals', label: 'Noten-Warnungen', sub: 'Fächer, die unter dein Ziel gerutscht sind' },
   { id: 'homework', label: 'Offene Hausaufgaben', sub: 'Die nächsten 7 Tage' },
   { id: 'exams', label: 'Kommende Klausuren', sub: 'Die nächsten 4 Wochen' },
   { id: 'more', label: 'Mehr', sub: 'Lernen, Notizen, Fehlstunden, Vertretungen …' },

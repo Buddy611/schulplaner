@@ -44,6 +44,8 @@ export interface Settings {
     homework: boolean
     /** Tage vor einer Klausur, an denen erinnert wird */
     examDays: number[]
+    /** an offene Entschuldigungen erinnern */
+    excuses?: boolean
   }
 }
 
@@ -64,7 +66,7 @@ export const DEFAULT_SETTINGS: Settings = {
   halfYearAuto: true,
   schoolYearStart: '08-01',
   secondHalfStart: '02-01',
-  notifications: { enabled: false, time: '18:00', homework: true, examDays: [7, 3, 1] },
+  notifications: { enabled: false, time: '18:00', homework: true, examDays: [7, 3, 1], excuses: true },
 }
 
 /** Grundfarben für das Material-You-Farbschema – zusätzlich ist jede beliebige Farbe wählbar. */

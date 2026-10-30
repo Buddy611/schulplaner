@@ -28,6 +28,8 @@ import { CHANGE_LABEL, useAbsences } from '../lib/changes'
 import { formatRange, holidayCountdown } from '../lib/holidays'
 import { LinkRow } from '../components/ui'
 import { PackingList } from './PackingList'
+import { useGradeData } from '../lib/useGradeData'
+import { belowGoal, formatAverage, goalIn } from '../lib/grades'
 import { Icon, IconBubble } from '../components/Icons'
 import { isDue, useVocabSets } from '../lib/study'
 import { PageHeader } from '../components/PageHeader'
@@ -38,6 +40,8 @@ import { formatCountdown, isToday, useNow, useSchedule } from '../lib/schedule'
 export function Today() {
   const now = useNow()
   const settings = useSettings()
+  const gradeData = useGradeData(null)
+  const warnings = gradeData.rows.filter((r) => belowGoal(r.result.total, r.subject.goal, gradeData.settings.gradeSystem))
   const schedule = useSchedule()
   const open = openHomework(useHomework())
   const [editing, setEditing] = useState<{ hw?: Item<Homework>; defaults?: HomeworkDefaults } | null>(null)
@@ -115,6 +119,34 @@ export function Today() {
 
   // Abschnitte der Startseite – Reihenfolge und Sichtbarkeit unter Einstellungen → Startseite & Navigation
   const sections: Record<string, ReactNode> = {
+    excuses: openAbsences > 0 && (
+      <Link to="/fehlstunden" className="review-card excuse-card">
+        <IconBubble name="absence" tone="red" />
+        <span>
+          <strong>
+            {openAbsences} Entschuldigung{openAbsences > 1 ? 'en' : ''} noch nicht abgegeben
+          </strong>
+          <span className="sub">Antippen, um sie abzuhaken, sobald du sie abgegeben hast</span>
+        </span>
+      </Link>
+    ),
+    goals: warnings.length > 0 && (
+      <>
+        <h2 className="section-title overdue">Unter deinem Ziel</h2>
+        <div className="list">
+          {warnings.map(({ subject, result }) => (
+            <Link key={subject.id} to={`/noten/${subject.id}`} className="row">
+              <span className="color-bar" style={{ background: subject.color }} />
+              <span className="label">
+                {subject.name}
+                <span className="sub">Ziel {formatAverage(goalIn(subject.goal!, gradeData.settings.gradeSystem), gradeData.settings.gradeSystem)} · im Zielnoten-Rechner siehst du, was du brauchst</span>
+              </span>
+              <span className="grade-chip warn">{formatAverage(result.total, gradeData.settings.gradeSystem)}</span>
+            </Link>
+          ))}
+        </div>
+      </>
+    ),
     next: <>
 {next && (
         <div className="hero" style={{ borderColor: next.subject.color }}>

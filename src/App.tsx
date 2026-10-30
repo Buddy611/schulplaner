@@ -30,10 +30,12 @@ import { ChangesPage } from './pages/changes/ChangesPage'
 import { NotesPage } from './pages/notes/NotesPage'
 import { StudyPage } from './pages/study/StudyPage'
 import { SearchPage } from './pages/SearchPage'
+import { SharePage } from './pages/SharePage'
 import { WeeklyReview } from './pages/WeeklyReview'
 import { VocabSetPage } from './pages/study/VocabSetPage'
 import { VocabLearnPage } from './pages/study/VocabLearnPage'
 import { StudySheetPage } from './pages/study/StudySheetPage'
+import { StudyTimerPage } from './pages/study/StudyTimerPage'
 import { RoomsPage, TeachersPage } from './pages/settings/MasterData'
 import { SubjectsPage } from './pages/settings/Subjects'
 import { TimeGridPage } from './pages/settings/TimeGrid'
@@ -90,7 +92,9 @@ function Shell() {
         <Route path="/notizen" element={<NotesPage />} />
         <Route path="/lernen" element={<StudyPage />} />
         <Route path="/suche" element={<SearchPage />} />
+        <Route path="/teilen" element={<SharePage />} />
         <Route path="/rueckblick" element={<WeeklyReview />} />
+        <Route path="/lernen/timer" element={<StudyTimerPage />} />
         <Route path="/lernen/vokabeln/:id" element={<VocabSetPage />} />
         <Route path="/lernen/vokabeln/:id/lernen" element={<VocabLearnPage />} />
         <Route path="/lernen/zettel/:id" element={<StudySheetPage />} />

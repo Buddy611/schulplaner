@@ -12,6 +12,8 @@ export interface NoteDefaults {
   subjectId?: string
   date?: string
   periodId?: string
+  attachments?: Attachment[]
+  text?: string
 }
 
 /** Notiz zu einer Stunde: Text und Fotos/Dokumente */
@@ -19,8 +21,8 @@ export function NoteSheet({ note, defaults, onClose }: { note?: Item<LessonNote>
   const { subjects } = useLookups()
   const [subjectId, setSubjectId] = useState(note?.subjectId ?? defaults?.subjectId)
   const [date, setDate] = useState(note?.date ?? defaults?.date ?? toISODate(new Date()))
-  const [text, setText] = useState(note?.text ?? '')
-  const [attachments, setAttachments] = useState<Attachment[]>(note?.attachments ?? [])
+  const [text, setText] = useState(note?.text ?? defaults?.text ?? '')
+  const [attachments, setAttachments] = useState<Attachment[]>(note?.attachments ?? defaults?.attachments ?? [])
   const [removed, setRemoved] = useState<Attachment[]>([])
   const canSave = Boolean(subjectId && (text.trim() || attachments.length))
 

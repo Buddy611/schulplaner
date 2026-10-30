@@ -73,6 +73,17 @@ export function reportGrade(v: number | null, system: GradeSystem) {
   return String(Math.min(6, Math.max(1, Math.round(v))))
 }
 
+/** Liegt der Schnitt unter dem Ziel des Fachs? (in beiden Notensystemen) */
+export function belowGoal(total: number | null, goal: { value: number; system: GradeSystem } | undefined, system: GradeSystem) {
+  if (total == null || !goal) return false
+  const g = convert(goal.value, goal.system, system)
+  return system === 'punkte' ? total < g - 1e-9 : total > g + 1e-9
+}
+
+export function goalIn(goal: { value: number; system: GradeSystem }, system: GradeSystem) {
+  return convert(goal.value, goal.system, system)
+}
+
 /** Ist ein Wert besser als ein anderer? (bei Noten kleiner, bei Punkten größer) */
 export function better(a: number, b: number, system: GradeSystem) {
   return system === 'punkte' ? a > b : a < b

@@ -80,6 +80,9 @@ export function SchedulePage() {
   return (
     <div className="page">
       <PageHeader title="Stundenplan">
+        <button type="button" className="link-btn no-print" onClick={() => window.print()}>
+          PDF
+        </button>
         <Link to="/vertretungen" className="nav-btn" aria-label="Vertretungen und Ausfälle" title="Vertretungen">
           <Icon name="swap" />
         </Link>

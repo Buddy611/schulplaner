@@ -1,7 +1,7 @@
 import { confirmDialog } from '../../components/dialogs'
 import { useMemo, useState } from 'react'
 import { AttachmentEditor } from '../../components/Attachments'
-import { EntitySelect, Field, Sheet } from '../../components/ui'
+import { EntitySelect, Field, Sheet, Switch } from '../../components/ui'
 import { formatDate, parseISODate, toISODate } from '../../lib/dates'
 import { removeFiles, type Attachment } from '../../lib/files'
 import { deleteHomework, HOMEWORK, nextLessonsOfSubject, type Homework } from '../../lib/homework'
@@ -16,6 +16,9 @@ export interface HomeworkDefaults {
   /** z. B. aus der Tagesansicht: fällig genau in dieser Stunde */
   dueDate?: string
   duePeriodId?: string
+  /** z. B. aus „Teilen“: schon angehängte Dateien und Text */
+  attachments?: Attachment[]
+  title?: string
 }
 
 export function HomeworkSheet({
@@ -30,9 +33,10 @@ export function HomeworkSheet({
   const schedule = useSchedule()
   const { subjects } = schedule.lookups
   const [subjectId, setSubjectId] = useState(homework?.subjectId ?? defaults?.subjectId)
-  const [title, setTitle] = useState(homework?.title ?? '')
+  const [title, setTitle] = useState(homework?.title ?? defaults?.title ?? '')
   const [notes, setNotes] = useState(homework?.notes ?? '')
-  const [attachments, setAttachments] = useState<Attachment[]>(homework?.attachments ?? [])
+  const [repeatWeekly, setRepeatWeekly] = useState(homework?.repeatWeekly ?? false)
+  const [attachments, setAttachments] = useState<Attachment[]>(homework?.attachments ?? defaults?.attachments ?? [])
   const [removed, setRemoved] = useState<Attachment[]>([])
   const [mode, setMode] = useState<DueMode>(homework || defaults?.dueDate ? 'date' : 'next')
   const [date, setDate] = useState(homework?.dueDate ?? defaults?.dueDate ?? toISODate(new Date()))
@@ -68,6 +72,8 @@ export function HomeworkSheet({
       doneAt: homework?.doneAt,
       attachments,
       createdAt: homework?.createdAt ?? Date.now(),
+      repeatWeekly: repeatWeekly || undefined,
+      nextId: homework?.nextId,
     })
     if (removed.length) await removeFiles(removed)
     onClose()
@@ -161,6 +167,16 @@ export function HomeworkSheet({
       <div className="list">
         <div className="row stack">
           <textarea className="row-input" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="optional" />
+        </div>
+      </div>
+
+      <div className="list" style={{ marginTop: 16 }}>
+        <div className="row">
+          <span className="label">
+            Jede Woche wiederholen
+            <span className="sub">Beim Abhaken kommt automatisch die nächste für eine Woche später</span>
+          </span>
+          <Switch checked={repeatWeekly} onChange={setRepeatWeekly} />
         </div>
       </div>
 

@@ -46,6 +46,7 @@ export function HomeworkRow({
         <span className="hw-meta">
           {showDue && <span className={overdue ? 'overdue' : ''}>{hw.done ? 'Erledigt' : dueLabel(hw.dueDate)}</span>}
           {hw.attachments?.length > 0 && <span>· {hw.attachments.length} Anhang{hw.attachments.length > 1 ? 'e' : ''}</span>}
+          {hw.repeatWeekly && <span>· jede Woche</span>}
         </span>
       </button>
     </div>

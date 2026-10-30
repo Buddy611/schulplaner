@@ -97,6 +97,13 @@ export function NotificationsPage() {
           </span>
           <Switch checked={cfg.homework} onChange={(homework) => set({ homework })} />
         </div>
+        <div className="row">
+          <span className="label">
+            Offene Entschuldigungen
+            <span className="sub">Wenn eine Entschuldigung seit 3 Tagen fehlt</span>
+          </span>
+          <Switch checked={cfg.excuses !== false} onChange={(excuses) => set({ excuses })} />
+        </div>
         <div className="row stack">
           <span className="field-label">Klausuren – erinnern … Tage vorher</span>
           <div className="chips">

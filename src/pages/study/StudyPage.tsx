@@ -1,7 +1,7 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { promptDialog } from '../../components/dialogs'
 import { PageHeader } from '../../components/PageHeader'
-import { ColorDot, Segmented } from '../../components/ui'
+import { ColorDot, LinkRow, Segmented } from '../../components/ui'
 import { useLookups } from '../../lib/models'
 import { newId, put } from '../../lib/repo'
 import { isDue, STUDY_SHEETS, useStudySheets, useVocabSets, VOCAB, type StudySheet, type VocabSet } from '../../lib/study'
@@ -38,6 +38,12 @@ export function StudyPage() {
           +
         </button>
       </PageHeader>
+
+      <div className="list" style={{ marginBottom: 16 }}>
+        <LinkRow to="/lernen/timer" icon="clock" tone="red" sub="25 Minuten lernen, 5 Minuten Pause – mit Statistik pro Fach">
+          Lern-Timer
+        </LinkRow>
+      </div>
 
       <div className="toolbar">
         <Segmented<Tab>

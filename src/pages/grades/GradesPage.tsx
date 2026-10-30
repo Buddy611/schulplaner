@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
 import { ColorDot } from '../../components/ui'
-import { formatAverage, halfYearOf, reportGrade, shiftHalfYear, type HalfYear } from '../../lib/grades'
+import { belowGoal, formatAverage, goalIn, halfYearOf, reportGrade, shiftHalfYear, type HalfYear } from '../../lib/grades'
 import { HalfYearPicker } from '../../components/HalfYearPicker'
 import { toISODate } from '../../lib/dates'
 import { useHalfYearSettings } from '../../lib/useHalfYears'
@@ -36,6 +36,9 @@ export function GradesPage() {
   return (
     <div className="page">
       <PageHeader title="Noten">
+        <button type="button" className="link-btn no-print" onClick={() => window.print()}>
+          PDF
+        </button>
         <button type="button" className="icon-btn" aria-label="Note eintragen" onClick={() => setAdding(true)}>
           +
         </button>
@@ -71,7 +74,9 @@ export function GradesPage() {
                   : `schriftlich ${formatAverage(result.written, sys)} · mündlich ${formatAverage(result.oral, sys)}`}
               </span>
             </span>
-            <span className="grade-chip">{formatAverage(result.total, sys)}</span>
+            <span className={`grade-chip ${belowGoal(result.total, subject.goal, sys) ? 'warn' : ''}`} title={subject.goal ? 'Ziel: ' + formatAverage(goalIn(subject.goal, sys), sys) : undefined}>
+              {formatAverage(result.total, sys)}
+            </span>
           </Link>
         ))}
       </div>

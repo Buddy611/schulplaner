@@ -206,6 +206,7 @@ export function SubjectSheet({
           <EntitySelect title="Raum" value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
         </Field>
       </div>
+      <p className="section-footer">Wird beim Eintragen vorgeschlagen. Hat das Fach an manchen Tagen einen anderen Raum oder Lehrer, tippe im Stundenplan-Editor auf die Stunde und wähle ihn dort.</p>
 
       <h3 className="section-title">Material für die Packliste</h3>
       <div className="list">

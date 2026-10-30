@@ -2847,3 +2847,127 @@ html.scroll-locked body {
   font-weight: 500;
   font-size: 0.875rem;
 }
+
+/* ---------- Layout bearbeiten ---------- */
+.layout-row {
+  gap: 12px;
+}
+
+.layout-icon {
+  display: grid;
+  place-content: center;
+  color: var(--text-2);
+}
+
+.layout-arrows {
+  display: flex;
+  gap: 4px;
+}
+
+.arrow-btn {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--fill);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.arrow-btn:disabled {
+  opacity: 0.3;
+}
+
+/* ---------- Farbrad ---------- */
+.color-wheel-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 12px;
+}
+
+.color-wheel {
+  position: relative;
+  width: min(260px, 72vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle closest-side, #fff 0%, #ffffff00 100%),
+    conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.color-wheel-dark {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #000;
+  pointer-events: none;
+}
+
+.color-wheel-marker {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 6px #0006;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.brightness {
+  width: 100%;
+}
+
+.brightness input[type='range'] {
+  width: 100%;
+  height: 28px;
+  border-radius: 14px;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+.brightness input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--outline);
+  box-shadow: 0 1px 4px #0005;
+}
+
+.brightness input[type='range']::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--outline);
+}
+
+.color-code-row {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.color-code-row .input {
+  flex: 1;
+  min-height: 48px;
+  font-family: ui-monospace, 'Roboto Mono', monospace;
+  text-transform: uppercase;
+}
+
+.color-preview {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  flex: none;
+  box-shadow: inset 0 0 0 1px #0002;
+}

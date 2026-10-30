@@ -65,6 +65,27 @@ export async function exportBackup() {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+/**
+ * Alle Einträge löschen (auf allen Geräten, da die Löschung synchronisiert wird).
+ * Fotos/Dokumente werden ebenfalls vom Server entfernt.
+ */
+export async function deleteAllData() {
+  const now = Date.now()
+  await db.transaction('rw', db.records, db.files, async () => {
+    await db.records.toCollection().modify((r) => {
+      r.deleted = 1
+      r.dirty = 1
+      r.updatedAt = now
+    })
+    await db.files.toCollection().modify((f) => {
+      f.pendingUpload = 0
+      f.pendingDelete = 1
+      delete f.blob
+    })
+  })
+  scheduleSync(300)
+}
+
 /** Liest eine Backup-Datei und übernimmt alle Einträge. Gibt die Anzahl zurück. */
 export async function importBackup(file: File): Promise<{ records: number; files: number }> {
   let backup: BackupFile

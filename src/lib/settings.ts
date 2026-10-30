@@ -1,3 +1,4 @@
+import type { LayoutItem } from './layout'
 import { put, useRecord } from './repo'
 
 export type ThemeMode = 'system' | 'light' | 'dark'
@@ -32,6 +33,9 @@ export interface Settings {
   /** Beginn des Schuljahres und des 2. Halbjahres (MM-TT) */
   schoolYearStart: string
   secondHalfStart: string
+  /** Anpassbares Layout: Abschnitte auf "Heute" und Einträge der Navigation */
+  todayLayout?: LayoutItem[]
+  navLayout?: LayoutItem[]
   /** Erinnerungen per Push (werden von der Edge Function gelesen) */
   notifications: {
     enabled: boolean

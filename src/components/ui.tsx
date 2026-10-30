@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { IconBubble, type IconName, type Tone } from './Icons'
 import { confirmDialog } from './dialogs'
+import { ColorWheel } from './ColorWheel'
 
 export function Segmented<T extends string>({
   value,
@@ -94,6 +95,7 @@ const PALETTE: string[][] = (() => {
 export function ColorPicker({ value, colors, onChange }: { value: string; colors: string[]; onChange: (c: string) => void }) {
   const isPreset = colors.includes(value)
   const [open, setOpen] = useState(false)
+  const [mode, setMode] = useState<'palette' | 'wheel'>('palette')
   return (
     <div className="swatches">
       {colors.map((c) => (
@@ -117,7 +119,26 @@ export function ColorPicker({ value, colors, onChange }: { value: string; colors
       </button>
       {open && (
         <Sheet title="Farbe wählen" onClose={() => setOpen(false)}>
-          <div className="palette">
+          <div style={{ margin: '4px 0 16px' }}>
+            <Segmented<'palette' | 'wheel'>
+              value={mode}
+              onChange={setMode}
+              options={[
+                { value: 'palette', label: 'Palette' },
+                { value: 'wheel', label: 'Farbrad & Code' },
+              ]}
+            />
+          </div>
+          {mode === 'wheel' && (
+            <ColorWheel
+              value={value}
+              onPick={(c) => {
+                onChange(c)
+                setOpen(false)
+              }}
+            />
+          )}
+          {mode === 'palette' && <div className="palette">
             {PALETTE.map((row, i) => (
               <div key={i} className="palette-row">
                 {row.map((c) => (
@@ -135,7 +156,7 @@ export function ColorPicker({ value, colors, onChange }: { value: string; colors
                 ))}
               </div>
             ))}
-          </div>
+          </div>}
         </Sheet>
       )}
     </div>

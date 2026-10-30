@@ -1,4 +1,20 @@
-import { useState } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
+import { DEFAULT_NAV_LAYOUT, DEFAULT_TODAY_LAYOUT, NAV_ITEMS, resolveLayout } from '../lib/layout'
+import type { Tone } from '../components/Icons'
+
+const MORE_TONES: Record<string, Tone> = {
+  stundenplan: 'blue',
+  hausaufgaben: 'cyan',
+  klausuren: 'teal',
+  noten: 'green',
+  lernen: 'indigo',
+  notizen: 'blue',
+  suche: 'cyan',
+  rueckblick: 'purple',
+  fehlstunden: 'pink',
+  vertretungen: 'orange',
+}
+import { useSettings } from '../lib/settings'
 import { Link } from 'react-router-dom'
 import { useSnackbar } from '../components/Snackbar'
 import { currentSubjectId, daysUntil, openHomework, setDone, useHomework, type Homework } from '../lib/homework'
@@ -21,6 +37,7 @@ import { formatCountdown, isToday, useNow, useSchedule } from '../lib/schedule'
 
 export function Today() {
   const now = useNow()
+  const settings = useSettings()
   const schedule = useSchedule()
   const open = openHomework(useHomework())
   const [editing, setEditing] = useState<{ hw?: Item<Homework>; defaults?: HomeworkDefaults } | null>(null)
@@ -79,17 +96,27 @@ export function Today() {
         ? 'Morgen'
         : formatDate(day, { weekday: 'long' })
 
-  return (
-    <div className="page">
-      <PageHeader title="Heute">
-        <Link to="/suche" className="nav-btn" aria-label="Suchen">
-          <Icon name="search" />
-        </Link>
-        {quickAdd}
-      </PageHeader>
-      <p className="subtitle">{formatDate(now, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+  const visibleNav = resolveLayout(settings.navLayout, DEFAULT_NAV_LAYOUT)
+    .filter((x) => x.visible)
+    .map((x) => NAV_ITEMS.find((n) => n.id === x.id)!)
+  const moreItems = visibleNav.slice(5).filter((n) => n.id !== 'heute')
+  const moreSub: Record<string, string> = {
+    stundenplan: 'Tag, Woche, Monat',
+    hausaufgaben: `${open.length} offen`,
+    klausuren: 'Kommende und vergangene Klausuren',
+    noten: 'Durchschnitt, Zielnoten, Zeugnis-Vorschau',
+    lernen: dueVocab ? `${dueVocab} Vokabeln fällig · Lernzettel` : 'Vokabeltrainer und Lernzettel',
+    notizen: 'Notizen und Tafelbilder zu den Stunden',
+    suche: 'Alles durchsuchen',
+    rueckblick: 'Diese Woche und was als Nächstes kommt',
+    fehlstunden: openAbsences ? `${openAbsences} Entschuldigung${openAbsences > 1 ? 'en' : ''} offen` : 'Alles entschuldigt',
+    vertretungen: 'Ausfälle, Vertretungen, Raumänderungen',
+  }
 
-      {next && (
+  // Abschnitte der Startseite – Reihenfolge und Sichtbarkeit unter Einstellungen → Startseite & Navigation
+  const sections: Record<string, ReactNode> = {
+    next: <>
+{next && (
         <div className="hero" style={{ borderColor: next.subject.color }}>
           <div className="hero-label">{running ? 'Jetzt' : 'Als Nächstes'}</div>
           <div className="hero-title">
@@ -110,8 +137,9 @@ export function Today() {
           </div>
         </div>
       )}
-
-      {(now.getDay() === 5 || now.getDay() === 6 || now.getDay() === 0) && (
+</>,
+    review: <>
+{(now.getDay() === 5 || now.getDay() === 6 || now.getDay() === 0) && (
         <Link to="/rueckblick" className="review-card">
           <IconBubble name="chart" tone="purple" />
           <span>
@@ -120,8 +148,9 @@ export function Today() {
           </span>
         </Link>
       )}
-
-      {countdown && (
+</>,
+    holidays: <>
+{countdown && (
         <Link to="/einstellungen/ferien" className="countdown-card">
           {'current' in countdown && countdown.current ? (
             <>
@@ -147,8 +176,9 @@ export function Today() {
           )}
         </Link>
       )}
-
-      {day && (
+</>,
+    day: <>
+{day && (
         <>
           <h2 className="section-title">
             {heading}
@@ -178,15 +208,17 @@ export function Today() {
           </div>
         </>
       )}
-
-      {day && (
+</>,
+    packing: <>
+{day && (
         <>
           <h2 className="section-title">Einpacken für {isToday(day) ? 'heute' : heading === 'Morgen' ? 'morgen' : formatDate(day, { weekday: 'long' })}</h2>
           <PackingList key={toISODate(day)} schedule={schedule} day={day} />
         </>
       )}
-
-      <h2 className="section-title">
+</>,
+    homework: <>
+<h2 className="section-title">
         Offene Hausaufgaben
         <Link to="/hausaufgaben" className="section-link">
           Alle
@@ -216,8 +248,9 @@ export function Today() {
           + {open.length - soon.length} weitere später fällig
         </p>
       )}
-
-      <h2 className="section-title">
+</>,
+    exams: <>
+<h2 className="section-title">
         Kommende Klausuren
         <Link to="/klausuren" className="section-link">
           Alle
@@ -235,28 +268,37 @@ export function Today() {
         </div>
       )}
       {examOpen && <ExamSheet exam={examOpen} onClose={() => setExamOpen(null)} />}
-
-      <h2 className="section-title">Mehr</h2>
+</>,
+    more: <>
+<h2 className="section-title">Mehr</h2>
       <div className="list">
-        <LinkRow to="/lernen" icon="translate" tone="indigo" sub={dueVocab ? `${dueVocab} Vokabeln fällig · Lernzettel` : 'Vokabeltrainer und Lernzettel'}>
-          Lernen
-        </LinkRow>
-        <LinkRow to="/rueckblick" icon="chart" tone="purple" sub="Diese Woche und was als Nächstes kommt">
-          Wochenrückblick
-        </LinkRow>
-        <LinkRow to="/notizen" icon="note" tone="blue" sub="Notizen und Tafelbilder zu den Stunden">
-          Notizen
-        </LinkRow>
-        <LinkRow to="/fehlstunden" icon="absence" tone="pink" sub={openAbsences ? `${openAbsences} Entschuldigung${openAbsences > 1 ? 'en' : ''} offen` : 'Alles entschuldigt'}>
-          Fehlstunden
-        </LinkRow>
-        <LinkRow to="/vertretungen" icon="swap" tone="orange" sub="Ausfälle, Vertretungen, Raumänderungen">
-          Vertretungen
-        </LinkRow>
+        {/* Alles, was nicht in der Leiste unten steht – damit es auf dem Handy erreichbar bleibt */}
+        {moreItems.map((n) => (
+          <LinkRow key={n.id} to={n.to} icon={n.icon} tone={MORE_TONES[n.id] ?? 'blue'} sub={moreSub[n.id] ?? ''}>
+            {n.label}
+          </LinkRow>
+        ))}
         <LinkRow to="/einstellungen/ferien" icon="sun" tone="yellow" sub="Ferien, Feiertage, eigene freie Tage">
           Ferien
         </LinkRow>
       </div>
+</>,
+  }
+  const layout = resolveLayout(settings.todayLayout, DEFAULT_TODAY_LAYOUT).filter((x) => x.visible)
+
+  return (
+    <div className="page">
+      <PageHeader title="Heute">
+        <Link to="/suche" className="nav-btn" aria-label="Suchen">
+          <Icon name="search" />
+        </Link>
+        {quickAdd}
+      </PageHeader>
+      <p className="subtitle">{formatDate(now, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+
+      {layout.map((x) => (
+        <Fragment key={x.id}>{sections[x.id]}</Fragment>
+      ))}
 
       {editing && <HomeworkSheet homework={editing.hw} defaults={editing.defaults} onClose={() => setEditing(null)} />}
       {snackbar.element}

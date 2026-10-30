@@ -2,6 +2,7 @@ import { argbFromHex, hexFromArgb, TonalPalette } from '@material/material-color
 
 /** Einfache Symbole im Stil von Material Symbols (gefüllt, 24 px) */
 const paths = {
+  home: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
   calendar: 'M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 16H5V10h14v10ZM7 12h5v5H7z',
   clock: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 10.6 3.5 2.1-.8 1.3L11 13V7h2v5.6Z',
   book: 'M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2ZM6 4h5v8l-2.5-1.5L6 12V4Z',

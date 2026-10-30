@@ -2,6 +2,9 @@ import { NavLink } from 'react-router-dom'
 import { timetableForDate, useActiveTimetable } from '../lib/models'
 import { toISODate } from '../lib/dates'
 import { Icon } from './Icons'
+import { DEFAULT_NAV_LAYOUT, NAV_ITEMS, resolveLayout } from '../lib/layout'
+import { useSettings } from '../lib/settings'
+import type { JSX } from 'react'
 
 const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
 
@@ -43,21 +46,35 @@ export const icons = {
   ),
 }
 
-const sections = [
-  { to: '/', label: 'Heute', icon: icons.today },
-  { to: '/stundenplan', label: 'Stundenplan', short: 'Plan', icon: icons.timetable },
-  { to: '/hausaufgaben', label: 'Hausaufgaben', short: 'Aufgaben', icon: icons.homework },
-  { to: '/klausuren', label: 'Klausuren', icon: icons.exams },
-  { to: '/noten', label: 'Noten', icon: icons.grades },
-]
+// Eigene, schlanke Umriss-Symbole für die Hauptbereiche; die übrigen kommen aus Icons.tsx
+const outline: Record<string, JSX.Element> = {
+  heute: icons.today,
+  stundenplan: icons.timetable,
+  hausaufgaben: icons.homework,
+  klausuren: icons.exams,
+  noten: icons.grades,
+}
 
-/** Handy: Navigationsleiste unten (Einstellungen über das Zahnrad oben rechts) */
+function iconFor(item: (typeof NAV_ITEMS)[number]) {
+  return outline[item.id] ?? <Icon name={item.icon} />
+}
+
+/** Sichtbare Navigationseinträge in der gewählten Reihenfolge */
+function useNavItems() {
+  const settings = useSettings()
+  return resolveLayout(settings.navLayout, DEFAULT_NAV_LAYOUT)
+    .filter((x) => x.visible)
+    .map((x) => NAV_ITEMS.find((n) => n.id === x.id)!)
+}
+
+/** Handy: Navigationsleiste unten mit den ersten 5 sichtbaren Einträgen (Einstellungen über das Zahnrad) */
 export function TabBar() {
+  const items = useNavItems().slice(0, 5)
   return (
     <nav className="tabbar">
-      {sections.map((t) => (
+      {items.map((t) => (
         <NavLink key={t.to} to={t.to} end={t.to === '/'}>
-          <span className="indicator">{t.icon}</span>
+          <span className="indicator">{iconFor(t)}</span>
           {t.short ?? t.label}
         </NavLink>
       ))}
@@ -65,47 +82,25 @@ export function TabBar() {
   )
 }
 
-/** iPad / großer Bildschirm: Seitenleiste links */
+/** iPad / großer Bildschirm: Seitenleiste links mit allen sichtbaren Einträgen */
 export function SideNav() {
   const { timetable, all } = useActiveTimetable()
+  const items = useNavItems()
   // Name des Plans, der heute gilt (nicht unbedingt der, den man gerade bearbeitet)
   const today = timetable ? timetableForDate(all ?? [], timetable, toISODate(new Date())) : null
   return (
     <aside className="sidenav">
       <div className="sidenav-title">{today?.name ?? 'Schulplaner'}</div>
       <nav>
-        {[...sections, { to: '/einstellungen', label: 'Einstellungen', icon: icons.settings }].map((t) => (
+        {items.map((t) => (
           <NavLink key={t.to} to={t.to} end={t.to === '/'}>
-            {t.icon}
+            {iconFor(t)}
             {t.label}
           </NavLink>
         ))}
-      </nav>
-      <div className="sidenav-sub">Mehr</div>
-      <nav>
-        <NavLink to="/suche">
-          <Icon name="search" />
-          Suche
-        </NavLink>
-        <NavLink to="/rueckblick">
-          <Icon name="chart" />
-          Wochenrückblick
-        </NavLink>
-        <NavLink to="/lernen">
-          <Icon name="translate" />
-          Lernen
-        </NavLink>
-        <NavLink to="/notizen">
-          <Icon name="note" />
-          Notizen
-        </NavLink>
-        <NavLink to="/fehlstunden">
-          <Icon name="absence" />
-          Fehlstunden
-        </NavLink>
-        <NavLink to="/vertretungen">
-          <Icon name="swap" />
-          Vertretungen
+        <NavLink to="/einstellungen">
+          {icons.settings}
+          Einstellungen
         </NavLink>
       </nav>
     </aside>

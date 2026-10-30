@@ -54,6 +54,27 @@ export function SubjectsPage() {
           onClose={() => setEditing(null)}
         />
       )}
+      {subjects.length > 0 && (
+        <div className="list" style={{ marginTop: 24 }}>
+          <button
+            type="button"
+            className="row danger"
+            onClick={async () => {
+              const ok = await confirmDialog(
+                `Alle ${subjects.length} Fächer entfernen? Sie verschwinden auch aus dem Stundenplan. Hausaufgaben, Klausuren und Noten bleiben gespeichert, stehen dann aber ohne Fach da.`,
+                { title: 'Fächer zurücksetzen?', confirm: 'Alle entfernen', danger: true },
+              )
+              if (!ok) return
+              const ids = new Set(subjects.map((s) => s.id))
+              const lessons = await db.records.where({ collection: C.lessons, deleted: 0 }).toArray()
+              for (const l of lessons) if (ids.has((l.data as Lesson).subjectId)) await remove(l.id)
+              for (const s of subjects) await remove(s.id)
+            }}
+          >
+            Alle Fächer entfernen
+          </button>
+        </div>
+      )}
       {picking && <StandardSubjectsSheet existing={subjects.map((s) => s.name.toLowerCase())} onClose={() => setPicking(false)} />}
     </div>
   )

@@ -23,6 +23,7 @@ import { GradeSettingsPage } from './pages/settings/GradeSettings'
 import { HolidaysPage } from './pages/settings/HolidaysPage'
 import { NotificationsPage } from './pages/settings/NotificationsPage'
 import { DisplaySettingsPage } from './pages/settings/DisplaySettings'
+import { LayoutPage } from './pages/settings/LayoutPage'
 import { AccountSettingsPage } from './pages/settings/AccountSettings'
 import { AbsencesPage } from './pages/absences/AbsencesPage'
 import { ChangesPage } from './pages/changes/ChangesPage'
@@ -83,6 +84,7 @@ function Shell() {
         <Route path="/einstellungen/ferien" element={<HolidaysPage />} />
         <Route path="/einstellungen/benachrichtigungen" element={<NotificationsPage />} />
         <Route path="/einstellungen/darstellung" element={<DisplaySettingsPage />} />
+        <Route path="/einstellungen/layout" element={<LayoutPage />} />
         <Route path="/einstellungen/konto" element={<AccountSettingsPage />} />
         <Route path="/fehlstunden" element={<AbsencesPage />} />
         <Route path="/notizen" element={<NotesPage />} />

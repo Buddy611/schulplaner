@@ -95,6 +95,9 @@ export function Settings() {
       </div>
 
       <div className="list settings-group">
+        <LinkRow to="/einstellungen/layout" icon="list" tone="red" sub="Reihenfolge auf „Heute“, Leiste unten und Seitenleiste">
+          Startseite & Navigation
+        </LinkRow>
         <LinkRow to="/einstellungen/darstellung" icon="palette" tone="pink" sub={`${themeName}, Farbschema, Schriftgröße`}>
           Darstellung
         </LinkRow>

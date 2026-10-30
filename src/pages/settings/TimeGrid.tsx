@@ -4,7 +4,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { Field, Segmented, Sheet, Switch } from '../../components/ui'
 import { db } from '../../lib/db'
 import { fromMinutes, toMinutes } from '../../lib/dates'
-import { C, periodTitle, sortPeriods, useActiveTimetable, type Lesson, type Period, type Timetable } from '../../lib/models'
+import { C, periodTitle, sortPeriods, templatePeriods, useActiveTimetable, type Lesson, type Period, type Timetable } from '../../lib/models'
 import { put, remove, type Item } from '../../lib/repo'
 
 function duration(p: Period) {
@@ -63,6 +63,25 @@ export function TimeGridPage() {
         </button>
       </div>
       <p className="hint">Neue Einträge beginnen automatisch am Ende des letzten. Tippe auf einen Eintrag, um Zeiten zu ändern.</p>
+
+      <div className="list" style={{ marginTop: 24 }}>
+        <button
+          type="button"
+          className="row action reset-row"
+          onClick={async () => {
+            const ok = await confirmDialog(
+              'Das Zeitraster wird durch ein Beispiel-Raster (45-Minuten-Stunden) ersetzt. Die eingetragenen Stunden dieses Stundenplans werden dabei entfernt.',
+              { title: 'Zeitraster zurücksetzen?', confirm: 'Zurücksetzen', danger: true },
+            )
+            if (!ok) return
+            const lessons = await db.records.where({ collection: C.lessons, deleted: 0 }).toArray()
+            for (const l of lessons) if ((l.data as Lesson).timetableId === timetable.id) await remove(l.id)
+            await savePeriods(timetable, templatePeriods())
+          }}
+        >
+          Auf Standard zurücksetzen
+        </button>
+      </div>
 
       {editing && (
         <PeriodSheet

@@ -1,0 +1,102 @@
+import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { PageHeader } from '../../components/PageHeader'
+import { ColorDot } from '../../components/ui'
+import { formatAverage, halfYearOf, reportGrade, shiftHalfYear } from '../../lib/grades'
+import { toISODate } from '../../lib/dates'
+import { useSettings } from '../../lib/settings'
+import { useGradeData } from '../../lib/useGradeData'
+import { GradeSheet } from './GradeSheet'
+
+/** Halbjahr aus der Adresse (?hj=2026-1) oder das aktuelle */
+export function useHalfYearParam() {
+  const settings = useSettings()
+  const [params, setParams] = useSearchParams()
+  const today = halfYearOf(toISODate(new Date()), settings)
+  const key = params.get('hj')
+  let half = today
+  if (key) {
+    const [y, h] = key.split('-').map(Number)
+    half = halfYearOf(h === 1 ? `${y}-${settings.schoolYearStart}` : `${y + 1}-${settings.secondHalfStart}`, settings)
+  }
+  const set = (dir: 1 | -1) => {
+    const next = shiftHalfYear(half, dir, settings)
+    setParams(next.key === today.key ? {} : { hj: next.key }, { replace: true })
+  }
+  return { half, set, isCurrent: half.key === today.key }
+}
+
+export function GradesPage() {
+  const { half, set } = useHalfYearParam()
+  const data = useGradeData(half)
+  const [adding, setAdding] = useState(false)
+  if (!data.loaded) return null
+  const sys = data.settings.gradeSystem
+  const q = half.key === halfYearOf(toISODate(new Date()), data.settings).key ? '' : `?hj=${half.key}`
+
+  return (
+    <div className="page">
+      <PageHeader title="Noten">
+        <button type="button" className="icon-btn" aria-label="Note eintragen" onClick={() => setAdding(true)}>
+          +
+        </button>
+      </PageHeader>
+
+      <div className="date-nav">
+        <button type="button" className="nav-btn" aria-label="Vorheriges Halbjahr" onClick={() => set(-1)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <div className="date-label">
+          {half.label}
+          <span className="badge">{sys === 'punkte' ? 'Punkte' : 'Noten'}</span>
+        </div>
+        <button type="button" className="nav-btn" aria-label="Nächstes Halbjahr" onClick={() => set(1)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="grade-hero">
+        <div>
+          <div className="hero-label">Gesamtdurchschnitt</div>
+          <div className="grade-big">{formatAverage(data.average, sys)}</div>
+          <div className="muted" style={{ fontSize: '0.875rem' }}>
+            {data.withTotal.length} von {data.rows.length} Fächern mit Noten
+          </div>
+        </div>
+        <Link to={`/noten/zeugnis${q}`} className="btn secondary" style={{ width: 'auto', textDecoration: 'none' }}>
+          Zeugnis-Vorschau
+        </Link>
+      </div>
+
+      {data.rows.length === 0 && <p className="hint">Lege zuerst unter Einstellungen → Fächer deine Fächer an.</p>}
+
+      <div className="list">
+        {data.rows.map(({ subject, result }) => (
+          <Link key={subject.id} to={`/noten/${subject.id}${q}`} className="row">
+            <ColorDot color={subject.color} size={14} />
+            <span className="label">
+              {subject.name}
+              <span className="sub">
+                {result.total == null
+                  ? 'Noch keine Noten'
+                  : `schriftlich ${formatAverage(result.written, sys)} · mündlich ${formatAverage(result.oral, sys)}`}
+              </span>
+            </span>
+            <span className="grade-chip">{formatAverage(result.total, sys)}</span>
+          </Link>
+        ))}
+      </div>
+      {data.withTotal.length > 0 && (
+        <p className="section-footer">
+          Der Gesamtdurchschnitt ist der Mittelwert aller Fächer mit Noten. Zeugnisnoten (gerundet): {data.withTotal.map((r) => `${r.subject.short} ${reportGrade(r.result.total, sys)}`).join(', ')}
+        </p>
+      )}
+
+      {adding && <GradeSheet onClose={() => setAdding(false)} />}
+    </div>
+  )
+}

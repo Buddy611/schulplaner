@@ -1,0 +1,436 @@
+import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { homeworkForLesson, openHomework, setDone, useHomework, type Homework } from '../lib/homework'
+import type { Item } from '../lib/repo'
+import { HomeworkSheet, type HomeworkDefaults } from './homework/HomeworkSheet'
+import { examsForDayOnly, examsForLesson, useExams, type Exam } from '../lib/exams'
+import { ExamSheet } from './exams/ExamSheet'
+import { CHANGE_LABEL, type LessonChange } from '../lib/changes'
+import { ChangeSheet } from './changes/ChangeSheet'
+import { Icon } from '../components/Icons'
+import { PageHeader } from '../components/PageHeader'
+import { Segmented } from '../components/ui'
+import { addDays, DAY_SHORT, formatDate, isoWeek, mondayOf, parseISODate, SCHOOL_DAYS, toISODate, toMinutes } from '../lib/dates'
+import { periodTitle, sortPeriods, weekTypeFor } from '../lib/models'
+import { useNow, useSchedule, type ScheduledLesson } from '../lib/schedule'
+
+type Mode = 'tag' | 'woche' | 'monat'
+const MODE_KEY = 'schulplaner-ansicht'
+
+function savedMode(): Mode {
+  try {
+    const m = localStorage.getItem(MODE_KEY)
+    if (m === 'tag' || m === 'woche' || m === 'monat') return m
+  } catch {
+    // egal
+  }
+  return 'woche'
+}
+
+/** Am Wochenende zeigt "Heute" in Tag/Woche den kommenden Montag */
+function defaultDate(mode: Mode) {
+  const d = new Date()
+  if (mode !== 'monat' && (d.getDay() === 0 || d.getDay() === 6)) return mondayOf(addDays(d, 7))
+  return d
+}
+
+export function SchedulePage() {
+  const [params, setParams] = useSearchParams()
+  const mode = (params.get('ansicht') as Mode | null) ?? savedMode()
+  const date = params.get('datum') ? parseISODate(params.get('datum')!) : defaultDate(mode)
+  const schedule = useSchedule()
+  const open = openHomework(useHomework())
+  const exams = useExams() ?? []
+  const [examOpen, setExamOpen] = useState<Item<Exam> | null>(null)
+
+  function go(nextMode: Mode, nextDate?: Date) {
+    try {
+      localStorage.setItem(MODE_KEY, nextMode)
+    } catch {
+      // egal
+    }
+    const p: Record<string, string> = { ansicht: nextMode }
+    if (nextDate) p.datum = toISODate(nextDate)
+    setParams(p, { replace: true })
+  }
+
+  function step(dir: 1 | -1) {
+    if (mode === 'tag') {
+      let d = addDays(date, dir)
+      while (d.getDay() === 0 || d.getDay() === 6) d = addDays(d, dir)
+      go(mode, d)
+    } else if (mode === 'woche') go(mode, addDays(date, 7 * dir))
+    else go(mode, new Date(date.getFullYear(), date.getMonth() + dir, 1))
+  }
+
+  if (!schedule.ready) return null
+  const tt = schedule.timetable
+
+  const week = tt ? weekTypeFor(tt, date) : null
+  const label =
+    mode === 'tag'
+      ? formatDate(date, { weekday: 'long', day: 'numeric', month: 'long' })
+      : mode === 'woche'
+        ? `KW ${isoWeek(date)} · ${formatDate(mondayOf(date), { day: 'numeric', month: 'short' })} – ${formatDate(addDays(mondayOf(date), 4), { day: 'numeric', month: 'short' })}`
+        : formatDate(date, { month: 'long', year: 'numeric' })
+
+  return (
+    <div className="page">
+      <PageHeader title="Stundenplan">
+        <Link to="/vertretungen" className="nav-btn" aria-label="Vertretungen und Ausfälle" title="Vertretungen">
+          <Icon name="swap" />
+        </Link>
+        <Link to="/stundenplan/bearbeiten" className="nav-btn" aria-label="Stundenplan bearbeiten" title="Bearbeiten">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15.5 4.5l4 4L9 19H5v-4z" />
+          </svg>
+        </Link>
+      </PageHeader>
+
+      {!tt ? (
+        <div className="card empty">
+          <p>Du hast noch keinen Stundenplan.</p>
+          <Link to="/stundenplan/bearbeiten" className="btn" style={{ textDecoration: 'none' }}>
+            Stundenplan einrichten
+          </Link>
+        </div>
+      ) : (
+        <>
+          <div className="toolbar view-switch">
+            <Segmented<Mode>
+              value={mode}
+              onChange={(m) => go(m, mode === 'monat' && m !== 'monat' ? undefined : date)}
+              options={[
+                { value: 'tag', label: 'Tag' },
+                { value: 'woche', label: 'Woche' },
+                { value: 'monat', label: 'Monat' },
+              ]}
+            />
+          </div>
+          <div className="date-nav">
+            <button type="button" className="nav-btn" aria-label="Zurück" onClick={() => step(-1)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M15 5l-7 7 7 7" />
+              </svg>
+            </button>
+            <div className="date-label">
+              {label}
+              {week && mode !== 'monat' && <span className="badge">{week}-Woche</span>}
+            </div>
+            <button type="button" className="nav-btn" aria-label="Weiter" onClick={() => step(1)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+            <button type="button" className="link-btn" onClick={() => go(mode)}>
+              Heute
+            </button>
+          </div>
+
+          {mode === 'woche' && <WeekView date={date} schedule={schedule} open={open} exams={exams} onDay={(d) => go('tag', d)} />}
+          {mode === 'tag' && <DayView date={date} schedule={schedule} open={open} exams={exams} onExam={setExamOpen} />}
+          {mode === 'monat' && <MonthView date={date} schedule={schedule} open={open} exams={exams} onDay={(d) => go('tag', d)} />}
+          {examOpen && <ExamSheet exam={examOpen} onClose={() => setExamOpen(null)} />}
+        </>
+      )}
+    </div>
+  )
+}
+
+type Schedule = ReturnType<typeof useSchedule>
+
+function lessonTileStyle(l: ScheduledLesson) {
+  return {
+    background: `color-mix(in srgb, ${l.subject.color} 24%, var(--card))`,
+    boxShadow: `inset 4px 0 0 ${l.subject.color}`,
+  }
+}
+
+function WeekView({
+  date,
+  schedule,
+  open,
+  exams,
+  onDay,
+}: {
+  date: Date
+  schedule: Schedule
+  open: Item<Homework>[]
+  exams: Item<Exam>[]
+  onDay: (d: Date) => void
+}) {
+  const tt = schedule.timetable!
+  const periods = sortPeriods(tt.periods)
+  const monday = mondayOf(date)
+  const days = SCHOOL_DAYS.map((wd) => addDays(monday, wd - 1))
+  const byDay = days.map((d) => new Map(schedule.lessonsOn(d).map((l) => [l.period.id, l])))
+  const todayIso = toISODate(new Date())
+
+  return (
+    <div className="tt-grid">
+      <div />
+      {days.map((d) => (
+        <button key={d.getDay()} type="button" className="tt-head day-head" onClick={() => onDay(d)}>
+          <span>{DAY_SHORT[d.getDay()]}</span>
+          <span className={`day-num ${toISODate(d) === todayIso ? 'today' : ''}`}>{d.getDate()}</span>
+          {schedule.holiday(d) && <span className="holiday-pill">{schedule.holiday(d)!.name}</span>}
+          {examsForDayOnly(exams, toISODate(d)).map((e) => (
+            <span key={e.id} className="exam-pill">
+              {e.type} {schedule.lookups.subjectMap.get(e.subjectId)?.short}
+            </span>
+          ))}
+        </button>
+      ))}
+      {periods.map((p) => {
+        if (p.kind === 'break') {
+          return [
+            <div key={p.id + 't'} className="tt-break-time">
+              {p.start}
+            </div>,
+            <div key={p.id} className="tt-break">
+              {periodTitle(periods, p)}
+            </div>,
+          ]
+        }
+        const minutes = toMinutes(p.end) - toMinutes(p.start)
+        return [
+          <div key={p.id + 't'} className="tt-time" style={{ height: `calc(var(--tt-px-per-min) * ${minutes})` }}>
+            <span>{p.start}</span>
+            <strong>{periodTitle(periods, p).replace('. Stunde', '.')}</strong>
+            <span>{p.end}</span>
+          </div>,
+          ...days.map((d, i) => {
+            const l = byDay[i].get(p.id)
+            if (!l) return <div key={p.id + i} className={`tt-cell blank ${schedule.holiday(d) ? 'holiday' : ''}`} />
+            const hwCount = homeworkForLesson(open, l).length
+            const exam = examsForLesson(exams, l)[0]
+            return (
+              <button
+                key={p.id + i}
+                type="button"
+                className={`tt-cell filled ${exam ? 'has-exam' : ''} ${l.cancelled ? 'cancelled' : ''} ${l.change && !l.cancelled ? 'changed' : ''}`}
+                style={lessonTileStyle(l)}
+                onClick={() => onDay(d)}
+              >
+                {exam && <span className="exam-pill">{exam.type}</span>}
+                {l.change && <span className="change-pill">{CHANGE_LABEL[l.change.kind]}</span>}
+                {hwCount > 0 && (
+                  <span className="tt-badge" title={`${hwCount} Hausaufgabe(n)`}>
+                    {hwCount}
+                  </span>
+                )}
+                <span className="short">{l.subject.short}</span>
+                <span className="name">{l.subject.name}</span>
+                {l.room && <span className="room">{l.room.name}</span>}
+                {l.teacher && <span className="teacher">{l.teacher.name}</span>}
+              </button>
+            )
+          }),
+        ]
+      })}
+    </div>
+  )
+}
+
+function DayView({
+  date,
+  schedule,
+  open,
+  exams,
+  onExam,
+}: {
+  date: Date
+  schedule: Schedule
+  open: Item<Homework>[]
+  exams: Item<Exam>[]
+  onExam: (e: Item<Exam>) => void
+}) {
+  const now = useNow()
+  const [editing, setEditing] = useState<{ hw?: Item<Homework>; defaults?: HomeworkDefaults } | null>(null)
+  const [changing, setChanging] = useState<{ change?: Item<LessonChange>; periodId: string } | null>(null)
+  const tt = schedule.timetable!
+  const periods = sortPeriods(tt.periods)
+  const lessons = schedule.lessonsOn(date)
+  const byPeriod = new Map(lessons.map((l) => [l.period.id, l]))
+
+  if (lessons.length === 0) {
+    const next = schedule.nextSchoolDay(addDays(date, 1))
+    const holiday = schedule.holiday(date)
+    return (
+      <div className={`card empty ${holiday ? 'holiday-card' : ''}`}>
+        {holiday ? (
+          <p>
+            <strong>{holiday.name}</strong> – kein Unterricht.
+          </p>
+        ) : (
+          'Kein Unterricht an diesem Tag.'
+        )}
+        {next && <p>Nächster Schultag: {formatDate(next, { weekday: 'long', day: 'numeric', month: 'long' })}</p>}
+      </div>
+    )
+  }
+
+  // Nur bis zur letzten Stunde des Tages anzeigen
+  const lastIndex = periods.findIndex((p) => p.id === lessons[lessons.length - 1].period.id)
+  const visible = periods.slice(0, lastIndex + 1)
+
+  return (
+    <div className="day-list">
+      {examsForDayOnly(exams, toISODate(date)).map((e) => (
+        <button key={e.id} type="button" className="day-exam-banner" onClick={() => onExam(e)}>
+          <strong>{e.type}</strong> {schedule.lookups.subjectMap.get(e.subjectId)?.name}
+          {e.topic && ` · ${e.topic}`}
+        </button>
+      ))}
+      {visible.map((p) => {
+        if (p.kind === 'break') {
+          return (
+            <div key={p.id} className="day-break">
+              <span>{p.start}</span>
+              {periodTitle(periods, p)}
+            </div>
+          )
+        }
+        const l = byPeriod.get(p.id)
+        const running = l && now >= l.start && now < l.end
+        const progress = running ? (now.getTime() - l.start.getTime()) / (l.end.getTime() - l.start.getTime()) : 0
+        return (
+          <div key={p.id} className="day-row">
+            <div className="day-time">
+              <strong>{p.start}</strong>
+              <span>{p.end}</span>
+            </div>
+            {l ? (
+              <div className={`day-card ${running ? 'running' : ''} ${l.cancelled ? 'cancelled' : ''}`} style={lessonTileStyle(l)}>
+                <div className="day-card-title">
+                  <span className="subject-name">{l.subject.name}</span>
+                  <span className="muted">{periodTitle(periods, p)}</span>
+                </div>
+                <div className="day-card-meta">
+                  {[l.room?.name, l.teacher?.name].filter(Boolean).join(' · ')}
+                </div>
+                {l.change && (
+                  <button type="button" className="day-change" onClick={() => setChanging({ change: l.change, periodId: p.id })}>
+                    <span className="change-pill">{CHANGE_LABEL[l.change.kind]}</span>
+                    {l.change.note ?? (l.cancelled ? 'Die Stunde fällt aus' : 'Geändert')}
+                  </button>
+                )}
+                {examsForLesson(exams, l).map((e) => (
+                  <button key={e.id} type="button" className="day-exam" onClick={() => onExam(e)}>
+                    <span className="exam-pill">{e.type}</span>
+                    {e.topic ?? 'Thema offen'}
+                  </button>
+                ))}
+                {running && (
+                  <div className="progress">
+                    <div style={{ width: `${progress * 100}%`, background: l.subject.color }} />
+                  </div>
+                )}
+                {homeworkForLesson(open, l).map((h) => (
+                  <div key={h.id} className="day-hw">
+                    <button
+                      type="button"
+                      className="hw-check small"
+                      style={{ borderColor: l.subject.color }}
+                      aria-label="Als erledigt markieren"
+                      onClick={() => void setDone(h, true)}
+                    />
+                    <button type="button" className="day-hw-title" onClick={() => setEditing({ hw: h })}>
+                      {h.title}
+                    </button>
+                  </div>
+                ))}
+                <div className="day-actions">
+                  <button
+                    type="button"
+                    className="day-hw-add"
+                    onClick={() => setEditing({ defaults: { subjectId: l.subject.id, dueDate: l.date, duePeriodId: l.period.id } })}
+                  >
+                    + Hausaufgabe
+                  </button>
+                  {!l.change && (
+                    <button type="button" className="day-hw-add" onClick={() => setChanging({ periodId: p.id })}>
+                      + Ausfall / Vertretung
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="day-card free">Frei</div>
+            )}
+          </div>
+        )
+      })}
+      {editing && <HomeworkSheet homework={editing.hw} defaults={editing.defaults} onClose={() => setEditing(null)} />}
+      {changing && (
+        <ChangeSheet change={changing.change} date={toISODate(date)} periodId={changing.periodId} onClose={() => setChanging(null)} />
+      )}
+    </div>
+  )
+}
+
+function MonthView({
+  date,
+  schedule,
+  open,
+  exams,
+  onDay,
+}: {
+  date: Date
+  schedule: Schedule
+  open: Item<Homework>[]
+  exams: Item<Exam>[]
+  onDay: (d: Date) => void
+}) {
+  const first = new Date(date.getFullYear(), date.getMonth(), 1)
+  const start = mondayOf(first)
+  const cells = Array.from({ length: 42 }, (_, i) => addDays(start, i))
+  // 6. Reihe weglassen, wenn sie komplett im nächsten Monat liegt
+  const shown = cells[35].getMonth() !== date.getMonth() ? cells.slice(0, 35) : cells
+  const todayIso = toISODate(new Date())
+
+  return (
+    <div className="month-grid">
+      {[1, 2, 3, 4, 5, 6, 0].map((wd) => (
+        <div key={wd} className="month-head">
+          {DAY_SHORT[wd]}
+        </div>
+      ))}
+      {shown.map((d) => {
+        const inMonth = d.getMonth() === date.getMonth()
+        const lessons = schedule.activeLessonsOn(d)
+        const colors = [...new Set(lessons.map((l) => l.subject.color))]
+        const weekend = d.getDay() === 0 || d.getDay() === 6
+        const holiday = schedule.holiday(d)
+        return (
+          <button
+            key={toISODate(d)}
+            type="button"
+            className={`month-cell ${inMonth ? '' : 'other'} ${weekend ? 'weekend' : ''} ${holiday && !weekend ? 'holiday' : ''}`}
+            onClick={() => onDay(d)}
+            disabled={weekend}
+          >
+            <span className={`day-num ${toISODate(d) === todayIso ? 'today' : ''}`}>{d.getDate()}</span>
+            {holiday && !weekend && <span className="holiday-name">{holiday.name}</span>}
+            <span className="month-dots">
+              {colors.slice(0, 8).map((c) => (
+                <i key={c} style={{ background: c }} />
+              ))}
+            </span>
+            {exams
+              .filter((e) => e.date === toISODate(d))
+              .map((e) => (
+                <span key={e.id} className="exam-pill">
+                  {schedule.lookups.subjectMap.get(e.subjectId)?.short} {e.type === 'Klausur' ? 'K' : e.type}
+                </span>
+              ))}
+            {(() => {
+              const n = open.filter((h) => h.dueDate === toISODate(d)).length
+              return n > 0 ? <span className="month-tag">{n} HA</span> : null
+            })()}
+          </button>
+        )
+      })}
+    </div>
+  )
+}

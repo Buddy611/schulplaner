@@ -2429,3 +2429,41 @@ a.row:active {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- Geteilte / übergreifende Stunden ---------- */
+:root {
+  --tt-time-col: 42px;
+}
+
+@media (min-width: 700px) {
+  :root {
+    --tt-time-col: 52px;
+  }
+}
+
+.tt-grid > .tt-time {
+  min-height: 0;
+}
+
+.tt-cell {
+  min-height: 0;
+}
+
+.tt-cell.half {
+  padding: 3px 4px;
+  gap: 0;
+}
+
+.tt-cell.half .teacher,
+.tt-cell.half .room + .room {
+  display: none;
+}
+
+@media (min-width: 700px) {
+  .tt-cell.filled.half {
+    padding: 4px 10px 4px 14px;
+  }
+  .tt-cell.half .name {
+    font-size: 0.95rem;
+  }
+}

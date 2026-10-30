@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { confirmDialog } from '../components/dialogs'
 import { PageHeader } from '../components/PageHeader'
 import { EntitySelect, Field, Segmented, Sheet } from '../components/ui'
-import { DAY_NAMES, DAY_SHORT, SCHOOL_DAYS, toMinutes } from '../lib/dates'
+import { WeekGrid, type GridBlock } from '../components/WeekGrid'
+import { DAY_NAMES, DAY_SHORT, SCHOOL_DAYS } from '../lib/dates'
 import {
   C,
   lessonAppliesToWeek,
+  lessonSlots,
   periodTitle,
+  slotTime,
   sortPeriods,
   useActiveTimetable,
   useLookups,
@@ -25,13 +29,18 @@ import { createTimetable } from './settings/Timetables'
 
 type WeekFilter = WeekType | 'all'
 
+/** Gleiche Darstellung wie im Stundenplan: getönter Hintergrund + farbiger Rand links */
+export function tileStyle(color: string) {
+  return { background: `color-mix(in srgb, ${color} 24%, var(--card))`, boxShadow: `inset 4px 0 0 ${color}` }
+}
+
 export function TimetableEditor() {
   const settings = useSettings()
   const { timetable } = useActiveTimetable()
   const lessons = useCollection<Lesson>(C.lessons)
   const lookups = useLookups()
   const [week, setWeek] = useState<WeekFilter | null>(null)
-  const [cell, setCell] = useState<{ day: number; period: Period } | null>(null)
+  const [cell, setCell] = useState<{ day: number; period: Period; half?: 0 | 1 } | null>(null)
 
   if (timetable === undefined || !lessons) return null
 
@@ -50,20 +59,57 @@ export function TimetableEditor() {
   }
 
   const periods = sortPeriods(timetable.periods)
+  const lessonPeriods = periods.filter((p) => p.kind === 'lesson')
   const currentWeek = weekTypeFor(timetable, new Date())
   const shownWeek: WeekFilter = timetable.abWeeks ? (week ?? currentWeek ?? 'A') : 'all'
   const ttLessons = lessons.filter((l) => l.timetableId === timetable.id)
 
-  function lessonAt(day: number, periodId: string) {
-    const here = ttLessons.filter((l) => l.day === day && l.periodId === periodId)
-    if (shownWeek === 'all') return here.find((l) => !l.week) ?? here[0]
-    return here.find((l) => l.week === shownWeek) ?? here.find((l) => lessonAppliesToWeek(l, shownWeek))
+  /** Stunden eines Tages für die gezeigte Woche (wochen-spezifische haben Vorrang) */
+  function lessonsOfDay(day: number) {
+    const list = ttLessons
+      .filter((l) => l.day === day && (shownWeek === 'all' ? true : lessonAppliesToWeek(l, shownWeek)))
+      .map((l) => ({ l, slots: lessonSlots(l, lessonPeriods) }))
+      .filter((x): x is { l: Item<Lesson>; slots: { start: number; end: number } } => x.slots !== null)
+      .sort((a, b) => Number(Boolean(b.l.week)) - Number(Boolean(a.l.week)))
+    const taken: { start: number; end: number }[] = []
+    return list.filter(({ slots }) => {
+      if (taken.some((t) => slots.start <= t.end && t.start <= slots.end)) return false
+      taken.push(slots)
+      return true
+    })
   }
+
+  const blocks: GridBlock[][] = SCHOOL_DAYS.map((day) =>
+    lessonsOfDay(day).flatMap(({ l, slots }) => {
+      const subject = lookups.subjectMap.get(l.subjectId)
+      if (!subject) return []
+      const roomId = l.roomId ?? subject.roomId
+      const teacherId = l.teacherId ?? subject.teacherId
+      return [
+        {
+          key: l.id,
+          start: slots.start,
+          end: slots.end,
+          style: tileStyle(subject.color),
+          onClick: () => setCell({ day, period: lessonPeriods[Math.floor(slots.start / 2)] }),
+          content: (
+            <>
+              <span className="short">{subject.short}</span>
+              <span className="name">{subject.name}</span>
+              {roomId && <span className="room">{lookups.roomMap.get(roomId)?.name}</span>}
+              {teacherId && <span className="teacher">{lookups.teacherMap.get(teacherId)?.name}</span>}
+              {l.week && <span className="room">nur {l.week}-Woche</span>}
+            </>
+          ),
+        },
+      ]
+    }),
+  )
 
   return (
     <div className="page">
       <PageHeader title="Bearbeiten" back={{ to: '/stundenplan', label: 'Stundenplan' }}>
-        <Link to="/einstellungen/zeitraster" className="link-btn" style={{ textDecoration: 'none' }}>
+        <Link to="/einstellungen/zeitraster" className="link-btn">
           Zeiten
         </Link>
       </PageHeader>
@@ -82,44 +128,33 @@ export function TimetableEditor() {
         </div>
       )}
 
-      {periods.length === 0 ? (
+      {lessonPeriods.length === 0 ? (
         <div className="card empty">
           Noch kein Zeitraster. <Link to="/einstellungen/zeitraster">Zeitraster einrichten</Link>
         </div>
       ) : (
-        <div className="tt-grid">
-          <div />
-          {SCHOOL_DAYS.map((d) => (
-            <div key={d} className="tt-head">
-              {DAY_SHORT[d]}
-            </div>
+        <WeekGrid
+          periods={periods}
+          heads={SCHOOL_DAYS.map((d) => (
+            <div className="tt-head">{DAY_SHORT[d]}</div>
           ))}
-          {periods.map((p) =>
-            p.kind === 'break' ? (
-              <BreakRow key={p.id} period={p} periods={periods} />
-            ) : (
-              <LessonRow
-                key={p.id}
-                period={p}
-                periods={periods}
-                lessonAt={lessonAt}
-                lookups={lookups}
-                onTap={(day) => setCell({ day, period: p })}
-              />
-            ),
-          )}
-        </div>
+          blocks={blocks}
+          emptyContent="+"
+          onEmpty={(col, i, half) => setCell({ day: SCHOOL_DAYS[col], period: lessonPeriods[i], half })}
+        />
       )}
 
-      <p className="hint">Tippe auf ein Feld, um eine Stunde einzutragen oder zu ändern.</p>
+      <p className="hint">Tippe auf ein Feld, um eine Stunde einzutragen. Stunden lassen sich teilen oder über mehrere Stunden ziehen.</p>
 
       {cell && (
         <LessonSheet
           timetable={timetable}
           day={cell.day}
           period={cell.period}
+          lessonPeriods={lessonPeriods}
           periods={periods}
-          lesson={lessonAt(cell.day, cell.period.id)}
+          dayLessons={lessonsOfDay(cell.day)}
+          tappedHalf={cell.half}
           week={shownWeek}
           onClose={() => setCell(null)}
         />
@@ -128,162 +163,180 @@ export function TimetableEditor() {
   )
 }
 
-function BreakRow({ period, periods }: { period: Period; periods: Period[] }) {
-  return (
-    <>
-      <div className="tt-break-time">{period.start}</div>
-      <div className="tt-break">{periodTitle(periods, period)}</div>
-    </>
-  )
+interface PartState {
+  subjectId?: string
+  roomId?: string
+  teacherId?: string
 }
 
-function LessonRow({
-  period,
-  periods,
-  lessonAt,
-  lookups,
-  onTap,
-}: {
-  period: Period
-  periods: Period[]
-  lessonAt: (day: number, periodId: string) => Item<Lesson> | undefined
-  lookups: ReturnType<typeof useLookups>
-  onTap: (day: number) => void
-}) {
-  // Höhe der Zeile passend zur Länge der Stunde
-  const minutes = toMinutes(period.end) - toMinutes(period.start)
-  return (
-    <>
-      <div className="tt-time" style={{ height: `calc(var(--tt-px-per-min) * ${minutes})` }}>
-        <span>{period.start}</span>
-        <strong>{periodTitle(periods, period).replace('. Stunde', '.')}</strong>
-        <span>{period.end}</span>
-      </div>
-      {SCHOOL_DAYS.map((day) => {
-        const lesson = lessonAt(day, period.id)
-        const subject = lesson && lookups.subjectMap.get(lesson.subjectId)
-        if (!lesson || !subject) {
-          return (
-            <button key={day} type="button" className="tt-cell empty" aria-label={`${DAY_NAMES[day]} eintragen`} onClick={() => onTap(day)}>
-              +
-            </button>
-          )
-        }
-        const roomId = lesson.roomId ?? subject.roomId
-        const teacherId = lesson.teacherId ?? subject.teacherId
-        return (
-          <button
-            key={day}
-            type="button"
-            className="tt-cell filled"
-            style={{
-              background: `color-mix(in srgb, ${subject.color} 24%, var(--card))`,
-              boxShadow: `inset 4px 0 0 ${subject.color}`,
-            }}
-            onClick={() => onTap(day)}
-          >
-            <span className="short">{subject.short}</span>
-            <span className="name">{subject.name}</span>
-            {roomId && <span className="room">{lookups.roomMap.get(roomId)?.name}</span>}
-            {teacherId && <span className="teacher">{lookups.teacherMap.get(teacherId)?.name}</span>}
-            {lesson.week && <span className="room">nur {lesson.week}-Woche</span>}
-          </button>
-        )
-      })}
-    </>
-  )
-}
+type Mode = 'full' | 'split'
 
 function LessonSheet({
   timetable,
   day,
   period,
+  lessonPeriods,
   periods,
-  lesson,
+  dayLessons,
+  tappedHalf,
   week,
   onClose,
 }: {
   timetable: Item<Timetable>
   day: number
   period: Period
+  lessonPeriods: Period[]
   periods: Period[]
-  lesson?: Item<Lesson>
+  dayLessons: { l: Item<Lesson>; slots: { start: number; end: number } }[]
+  tappedHalf?: 0 | 1
   week: WeekFilter
   onClose: () => void
 }) {
   const { subjects, teachers, rooms, subjectMap } = useLookups()
-  const [subjectId, setSubjectId] = useState(lesson?.subjectId)
-  const subject: Subject | undefined = subjectId ? subjectMap.get(subjectId) : undefined
-  // Raum/Lehrer: eigener Wert der Stunde, sonst Standard des Fachs
-  const [roomId, setRoomId] = useState(lesson?.roomId ?? subject?.roomId)
-  const [teacherId, setTeacherId] = useState(lesson?.teacherId ?? subject?.teacherId)
-  const [lessonWeek, setLessonWeek] = useState<WeekFilter>(lesson ? (lesson.week ?? 'all') : 'all')
-  const [creatingSubject, setCreatingSubject] = useState(false)
+  const idx = lessonPeriods.findIndex((p) => p.id === period.id)
+  const slotA = idx * 2
+  const slotB = idx * 2 + 1
 
-  function chooseSubject(id: string | undefined) {
-    setSubjectId(id)
-    const s = id ? subjectMap.get(id) : undefined
-    setRoomId(s?.roomId)
-    setTeacherId(s?.teacherId)
+  // Stunden, die in dieser Stunde beginnen – und ob die 1. Hälfte von einer früheren Stunde belegt ist
+  const startingHere = dayLessons.filter(({ slots }) => Math.floor(slots.start / 2) === idx)
+  const occupiedA = dayLessons.some(({ slots }) => slots.start < slotA && slots.end >= slotA)
+  const full = startingHere.find(({ slots }) => slots.start === slotA && slots.end !== slotA)
+  const halfA = startingHere.find(({ slots }) => slots.start === slotA && slots.end === slotA)
+  const halfB = startingHere.find(({ slots }) => slots.start === slotB)
+
+  const initialMode: Mode = occupiedA || halfA || halfB || (tappedHalf !== undefined && !full) ? 'split' : 'full'
+  const fromLesson = (l?: Item<Lesson>): PartState => {
+    if (!l) return {}
+    const s = subjectMap.get(l.subjectId)
+    return { subjectId: l.subjectId, roomId: l.roomId ?? s?.roomId, teacherId: l.teacherId ?? s?.teacherId }
   }
 
+  const [mode, setMode] = useState<Mode>(initialMode)
+  const [main, setMain] = useState<PartState>(fromLesson(full?.l ?? halfA?.l))
+  const [second, setSecond] = useState<PartState>(fromLesson(halfB?.l))
+  // Dauer bei ganzer Stunde: Anzahl Stunden
+  const [length, setLength] = useState(full ? Math.floor(full.slots.end / 2) - idx + 1 : 1)
+  // 2. Hälfte geht bis: Platz-Ende
+  const [secondEnd, setSecondEnd] = useState<number>(halfB ? halfB.slots.end : slotB)
+  const [lessonWeek, setLessonWeek] = useState<WeekFilter>((full ?? halfA ?? halfB)?.l.week ?? 'all')
+  const [creatingFor, setCreatingFor] = useState<'main' | 'second' | null>(null)
+
+  const maxLength = Math.min(3, lessonPeriods.length - idx)
+  const t = (slot: number, edge: 'start' | 'end') => slotTime(lessonPeriods, slot, edge)
+  const title = `${DAY_NAMES[day]}, ${periodTitle(periods, period)}`
+
   async function save() {
-    if (!subjectId) {
-      if (lesson) await remove(lesson.id)
-      onClose()
-      return
+    // Alte Einträge, die in dieser Stunde beginnen, ersetzen
+    for (const x of startingHere) await remove(x.l.id)
+    const base = { timetableId: timetable.id, day, week: timetable.abWeeks && lessonWeek !== 'all' ? lessonWeek : undefined }
+    const write = async (part: PartState, data: Partial<Lesson>) => {
+      if (!part.subjectId) return
+      const s = subjectMap.get(part.subjectId)
+      await put<Lesson>(C.lessons, newId(), {
+        ...base,
+        periodId: period.id,
+        subjectId: part.subjectId,
+        roomId: part.roomId !== s?.roomId ? part.roomId : undefined,
+        teacherId: part.teacherId !== s?.teacherId ? part.teacherId : undefined,
+        ...data,
+      } as Lesson)
     }
-    const s = subjectMap.get(subjectId)
-    await put<Lesson>(C.lessons, lesson?.id ?? newId(), {
-      timetableId: timetable.id,
-      day,
-      periodId: period.id,
-      subjectId,
-      // Nur speichern, wenn abweichend vom Fach – so wirken spätere Änderungen am Fach weiter
-      roomId: roomId !== s?.roomId ? roomId : undefined,
-      teacherId: teacherId !== s?.teacherId ? teacherId : undefined,
-      week: timetable.abWeeks && lessonWeek !== 'all' ? lessonWeek : undefined,
-    })
+    if (mode === 'full') {
+      await write(main, length > 1 ? { endPeriodId: lessonPeriods[idx + length - 1].id } : {})
+    } else {
+      if (!occupiedA) await write(main, { endHalf: 0 })
+      const endIdx = Math.floor(secondEnd / 2)
+      await write(second, {
+        startHalf: 1,
+        ...(endIdx !== idx ? { endPeriodId: lessonPeriods[endIdx].id } : {}),
+        ...(secondEnd % 2 === 0 ? { endHalf: 0 } : {}),
+      })
+    }
     onClose()
   }
 
   async function del() {
-    if (lesson) await remove(lesson.id)
+    if (!(await confirmDialog('Alle Einträge dieser Stunde entfernen?', { confirm: 'Entfernen', danger: true }))) return
+    for (const x of startingHere) await remove(x.l.id)
     onClose()
   }
 
-  const title = `${DAY_NAMES[day]}, ${periodTitle(periods, period)}`
+  const fieldProps = { subjects, rooms, teachers, subjectMap }
 
   return (
     <>
-      <Sheet title={title} onClose={onClose} onSave={save}>
-        <p className="section-footer" style={{ textAlign: 'center', marginBottom: 12 }}>
-          {period.start} – {period.end}
-          {timetable.abWeeks && week !== 'all' && ` · angezeigt: ${week}-Woche`}
-        </p>
+      <Sheet title={title} onClose={onClose} onSave={save} saveLabel="Sichern">
         <div className="list">
-          <Field label="Fach">
-            <EntitySelect
-              title="Fach"
-              value={subjectId}
-              items={subjects}
-              onChange={chooseSubject}
-              emptyLabel="Kein Unterricht"
-              onCreate={async () => {
-                setCreatingSubject(true)
-                return undefined
-              }}
-              createLabel="Neues Fach …"
+          <div className="row stack">
+            <Segmented<Mode>
+              value={mode}
+              onChange={setMode}
+              options={[
+                { value: 'full', label: 'Ganze Stunde' },
+                { value: 'split', label: 'Geteilt (2 Hälften)' },
+              ]}
             />
-          </Field>
-          <Field label="Raum">
-            <EntitySelect title="Raum" value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
-          </Field>
-          <Field label="Lehrer">
-            <EntitySelect title="Lehrer" value={teacherId} items={teachers} onChange={setTeacherId} onCreate={() => quickCreate(C.teachers)} createLabel="Neuer Lehrer …" />
-          </Field>
+          </div>
         </div>
-        {subject && <p className="section-footer">Raum und Lehrer sind vom Fach vorausgefüllt und hier nur für diese Stunde änderbar.</p>}
+
+        {mode === 'full' ? (
+          <>
+            <h3 className="section-title">
+              {t(slotA, 'start')} – {t(slotA + length * 2 - 1, 'end')}
+            </h3>
+            <div className="list">
+              <PartFields {...fieldProps} part={main} setPart={setMain} onCreateSubject={() => setCreatingFor('main')} />
+              {maxLength > 1 && (
+                <div className="row stack">
+                  <span className="field-label">Dauer</span>
+                  <div className="chips">
+                    {Array.from({ length: maxLength }, (_, i) => i + 1).map((n) => (
+                      <button key={n} type="button" className={`chip ${length === n ? 'active' : ''}`} onClick={() => setLength(n)}>
+                        {n === 1 ? '1 Stunde' : `${n} Stunden`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 className="section-title">
+              1. Hälfte · {t(slotA, 'start')} – {t(slotA, 'end')}
+            </h3>
+            <div className="list">
+              {occupiedA ? (
+                <div className="row muted">Durch die vorherige Stunde belegt</div>
+              ) : (
+                <PartFields {...fieldProps} part={main} setPart={setMain} onCreateSubject={() => setCreatingFor('main')} />
+              )}
+            </div>
+            <h3 className="section-title">
+              2. Hälfte · {t(slotB, 'start')} – {t(secondEnd, 'end')}
+            </h3>
+            <div className="list">
+              <PartFields {...fieldProps} part={second} setPart={setSecond} onCreateSubject={() => setCreatingFor('second')} />
+              {second.subjectId && idx + 1 < lessonPeriods.length && (
+                <div className="row stack">
+                  <span className="field-label">Geht bis</span>
+                  <div className="chips">
+                    {[
+                      { slot: slotB, label: 'Ende dieser Stunde' },
+                      { slot: slotB + 1, label: 'Mitte nächster Stunde' },
+                      { slot: slotB + 2, label: 'Ende nächster Stunde' },
+                    ].map((o) => (
+                      <button key={o.slot} type="button" className={`chip ${secondEnd === o.slot ? 'active' : ''}`} onClick={() => setSecondEnd(o.slot)}>
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <p className="section-footer">Zum Beispiel: erste Hälfte ein Fach, zweite Hälfte ein anderes – oder eine Stunde, die mitten im Block beginnt und in die nächste Stunde weiterläuft.</p>
+          </>
+        )}
 
         {timetable.abWeeks && (
           <>
@@ -301,10 +354,11 @@ function LessonSheet({
                 />
               </div>
             </div>
+            {week !== 'all' && <p className="section-footer">Angezeigt wird gerade die {week}-Woche.</p>}
           </>
         )}
 
-        {lesson && (
+        {startingHere.length > 0 && (
           <div className="list" style={{ marginTop: 24 }}>
             <button type="button" className="row danger" onClick={del}>
               Stunde entfernen
@@ -312,16 +366,63 @@ function LessonSheet({
           </div>
         )}
       </Sheet>
-      {creatingSubject && (
+      {creatingFor && (
         <SubjectSheet
           defaultColor={nextSubjectColor(subjects.map((s) => s.color))}
-          onClose={() => setCreatingSubject(false)}
-          onSaved={(id, s) => {
-            setSubjectId(id)
-            setRoomId(s.roomId)
-            setTeacherId(s.teacherId)
+          onClose={() => setCreatingFor(null)}
+          onSaved={(id, s: Subject) => {
+            const part = { subjectId: id, roomId: s.roomId, teacherId: s.teacherId }
+            if (creatingFor === 'second') setSecond(part)
+            else setMain(part)
           }}
         />
+      )}
+    </>
+  )
+}
+
+/** Fach, Raum und Lehrer für eine (halbe) Stunde – bewusst außerhalb von LessonSheet, damit offene Auswahllisten erhalten bleiben */
+function PartFields({
+  part,
+  setPart,
+  onCreateSubject,
+  subjects,
+  rooms,
+  teachers,
+  subjectMap,
+}: {
+  part: PartState
+  setPart: (p: PartState) => void
+  onCreateSubject: () => void
+} & Pick<ReturnType<typeof useLookups>, 'subjects' | 'rooms' | 'teachers' | 'subjectMap'>) {
+  return (
+    <>
+      <Field label="Fach">
+        <EntitySelect
+          title="Fach"
+          value={part.subjectId}
+          items={subjects}
+          emptyLabel="Kein Unterricht"
+          onChange={(id) => {
+            const s = id ? subjectMap.get(id) : undefined
+            setPart({ subjectId: id, roomId: s?.roomId, teacherId: s?.teacherId })
+          }}
+          onCreate={async () => {
+            onCreateSubject()
+            return undefined
+          }}
+          createLabel="Neues Fach …"
+        />
+      </Field>
+      {part.subjectId && (
+        <>
+          <Field label="Raum">
+            <EntitySelect title="Raum" value={part.roomId} items={rooms} onChange={(roomId) => setPart({ ...part, roomId })} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
+          </Field>
+          <Field label="Lehrer">
+            <EntitySelect title="Lehrer" value={part.teacherId} items={teachers} onChange={(teacherId) => setPart({ ...part, teacherId })} onCreate={() => quickCreate(C.teachers)} createLabel="Neuer Lehrer …" />
+          </Field>
+        </>
       )}
     </>
   )

@@ -1,4 +1,4 @@
-import { mondayOf, toISODate, toMinutes, parseISODate, weeksBetween } from './dates'
+import { fromMinutes, mondayOf, toISODate, toMinutes, parseISODate, weeksBetween } from './dates'
 import { useCollection, type Item } from './repo'
 import { useSettings } from './settings'
 
@@ -61,6 +61,38 @@ export interface Lesson {
   roomId?: string
   /** nur bei A/B-Wochen: gilt nur in dieser Woche; leer = jede Woche */
   week?: WeekType
+  /** 1 = beginnt erst in der Mitte der Stunde (2. Hälfte) */
+  startHalf?: 0 | 1
+  /** letzte Stunde, wenn die Stunde über mehrere Stunden geht (leer = dieselbe) */
+  endPeriodId?: string
+  /** 0 = endet in der Mitte der letzten Stunde, 1 (Standard) = am Ende */
+  endHalf?: 0 | 1
+}
+
+/**
+ * Lage einer Stunde in "Halbstunden-Plätzen": Jede Unterrichtsstunde hat zwei Plätze
+ * (1. und 2. Hälfte). Pausen zählen nicht mit.
+ */
+export function lessonSlots(l: Lesson, lessonPeriods: Period[]) {
+  const s = lessonPeriods.findIndex((p) => p.id === l.periodId)
+  if (s < 0) return null
+  const e0 = l.endPeriodId ? lessonPeriods.findIndex((p) => p.id === l.endPeriodId) : s
+  const e = e0 < s ? s : e0
+  const start = s * 2 + (l.startHalf ?? 0)
+  const end = Math.max(start, e * 2 + (l.endHalf ?? 1))
+  return { start, end }
+}
+
+/** Uhrzeit eines Platzes (Beginn der Hälfte bzw. Ende) */
+export function slotTime(lessonPeriods: Period[], slot: number, edge: 'start' | 'end') {
+  const p = lessonPeriods[Math.floor(slot / 2)]
+  if (!p) return '00:00'
+  const a = toMinutes(p.start)
+  const b = toMinutes(p.end)
+  const mid = Math.round((a + b) / 2)
+  const half = slot % 2
+  if (edge === 'start') return fromMinutes(half ? mid : a)
+  return fromMinutes(half ? b : mid)
 }
 
 export const SUBJECT_COLORS = [

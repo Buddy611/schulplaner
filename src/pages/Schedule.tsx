@@ -8,9 +8,10 @@ import { ExamSheet } from './exams/ExamSheet'
 import { CHANGE_LABEL, type LessonChange } from '../lib/changes'
 import { ChangeSheet } from './changes/ChangeSheet'
 import { Icon } from '../components/Icons'
+import { WeekGrid, type GridBlock } from '../components/WeekGrid'
 import { PageHeader } from '../components/PageHeader'
 import { Segmented } from '../components/ui'
-import { addDays, DAY_SHORT, formatDate, isoWeek, mondayOf, parseISODate, SCHOOL_DAYS, toISODate, toMinutes } from '../lib/dates'
+import { addDays, DAY_SHORT, formatDate, isoWeek, mondayOf, parseISODate, SCHOOL_DAYS, toISODate } from '../lib/dates'
 import { periodTitle, sortPeriods, weekTypeFor } from '../lib/models'
 import { useNow, useSchedule, type ScheduledLesson } from '../lib/schedule'
 
@@ -163,14 +164,43 @@ function WeekView({
   const periods = sortPeriods(tt.periods)
   const monday = mondayOf(date)
   const days = SCHOOL_DAYS.map((wd) => addDays(monday, wd - 1))
-  const byDay = days.map((d) => new Map(schedule.lessonsOn(d).map((l) => [l.period.id, l])))
   const todayIso = toISODate(new Date())
 
+  const blocks: GridBlock[][] = days.map((d) =>
+    schedule.lessonsOn(d).map((l) => {
+      const hwCount = homeworkForLesson(open, l).length
+      const exam = examsForLesson(exams, l)[0]
+      return {
+        key: l.lesson.id,
+        start: l.startSlot,
+        end: l.endSlot,
+        className: `${exam ? 'has-exam' : ''} ${l.cancelled ? 'cancelled' : ''} ${l.change && !l.cancelled ? 'changed' : ''}`,
+        style: lessonTileStyle(l),
+        onClick: () => onDay(d),
+        content: (
+          <>
+            {exam && <span className="exam-pill">{exam.type}</span>}
+            {l.change && <span className="change-pill">{CHANGE_LABEL[l.change.kind]}</span>}
+            {hwCount > 0 && (
+              <span className="tt-badge" title={`${hwCount} Hausaufgabe(n)`}>
+                {hwCount}
+              </span>
+            )}
+            <span className="short">{l.subject.short}</span>
+            <span className="name">{l.subject.name}</span>
+            {l.room && <span className="room">{l.room.name}</span>}
+            {l.teacher && <span className="teacher">{l.teacher.name}</span>}
+          </>
+        ),
+      }
+    }),
+  )
+
   return (
-    <div className="tt-grid">
-      <div />
-      {days.map((d) => (
-        <button key={d.getDay()} type="button" className="tt-head day-head" onClick={() => onDay(d)}>
+    <WeekGrid
+      periods={periods}
+      heads={days.map((d) => (
+        <button type="button" className="tt-head day-head" onClick={() => onDay(d)}>
           <span>{DAY_SHORT[d.getDay()]}</span>
           <span className={`day-num ${toISODate(d) === todayIso ? 'today' : ''}`}>{d.getDate()}</span>
           {schedule.holiday(d) && <span className="holiday-pill">{schedule.holiday(d)!.name}</span>}
@@ -181,54 +211,9 @@ function WeekView({
           ))}
         </button>
       ))}
-      {periods.map((p) => {
-        if (p.kind === 'break') {
-          return [
-            <div key={p.id + 't'} className="tt-break-time">
-              {p.start}
-            </div>,
-            <div key={p.id} className="tt-break">
-              {periodTitle(periods, p)}
-            </div>,
-          ]
-        }
-        const minutes = toMinutes(p.end) - toMinutes(p.start)
-        return [
-          <div key={p.id + 't'} className="tt-time" style={{ height: `calc(var(--tt-px-per-min) * ${minutes})` }}>
-            <span>{p.start}</span>
-            <strong>{periodTitle(periods, p).replace('. Stunde', '.')}</strong>
-            <span>{p.end}</span>
-          </div>,
-          ...days.map((d, i) => {
-            const l = byDay[i].get(p.id)
-            if (!l) return <div key={p.id + i} className={`tt-cell blank ${schedule.holiday(d) ? 'holiday' : ''}`} />
-            const hwCount = homeworkForLesson(open, l).length
-            const exam = examsForLesson(exams, l)[0]
-            return (
-              <button
-                key={p.id + i}
-                type="button"
-                className={`tt-cell filled ${exam ? 'has-exam' : ''} ${l.cancelled ? 'cancelled' : ''} ${l.change && !l.cancelled ? 'changed' : ''}`}
-                style={lessonTileStyle(l)}
-                onClick={() => onDay(d)}
-              >
-                {exam && <span className="exam-pill">{exam.type}</span>}
-                {l.change && <span className="change-pill">{CHANGE_LABEL[l.change.kind]}</span>}
-                {hwCount > 0 && (
-                  <span className="tt-badge" title={`${hwCount} Hausaufgabe(n)`}>
-                    {hwCount}
-                  </span>
-                )}
-                <span className="short">{l.subject.short}</span>
-                <span className="name">{l.subject.name}</span>
-                {l.room && <span className="room">{l.room.name}</span>}
-                {l.teacher && <span className="teacher">{l.teacher.name}</span>}
-              </button>
-            )
-          }),
-        ]
-      })}
-    </div>
+      blocks={blocks}
+      emptyClass={(col) => (schedule.holiday(days[col]) ? 'holiday' : '')}
+    />
   )
 }
 
@@ -251,7 +236,8 @@ function DayView({
   const tt = schedule.timetable!
   const periods = sortPeriods(tt.periods)
   const lessons = schedule.lessonsOn(date)
-  const byPeriod = new Map(lessons.map((l) => [l.period.id, l]))
+  const lessonPeriods = periods.filter((p) => p.kind === 'lesson')
+  const hhmm = (d: Date) => d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
 
   if (lessons.length === 0) {
     const next = schedule.nextSchoolDay(addDays(date, 1))
@@ -271,7 +257,8 @@ function DayView({
   }
 
   // Nur bis zur letzten Stunde des Tages anzeigen
-  const lastIndex = periods.findIndex((p) => p.id === lessons[lessons.length - 1].period.id)
+  const lastEnd = lessons.reduce((a, b) => (b.endSlot > a.endSlot ? b : a))
+  const lastIndex = periods.findIndex((p) => p.id === lastEnd.endPeriod.id)
   const visible = periods.slice(0, lastIndex + 1)
 
   return (
@@ -291,20 +278,30 @@ function DayView({
             </div>
           )
         }
-        const l = byPeriod.get(p.id)
+        // Stunden, die in dieser Stunde beginnen (bei geteilten Stunden bis zu zwei)
+        const i = lessonPeriods.findIndex((x) => x.id === p.id)
+        const starting = lessons.filter((x) => Math.floor(x.startSlot / 2) === i)
+        // Ganz von einer früheren, übergreifenden Stunde belegt → nichts extra anzeigen
+        if (!starting.length && lessons.some((x) => x.startSlot < i * 2 && x.endSlot >= i * 2 + 1)) return null
+        return (starting.length ? starting : [undefined]).map((l) => {
         const running = l && now >= l.start && now < l.end
         const progress = running ? (now.getTime() - l.start.getTime()) / (l.end.getTime() - l.start.getTime()) : 0
+        const halfLabel = l && l.endSlot === l.startSlot ? (l.startSlot % 2 ? ' · 2. Hälfte' : ' · 1. Hälfte') : ''
         return (
-          <div key={p.id} className="day-row">
+          <div key={p.id + (l?.lesson.id ?? '')} className="day-row">
             <div className="day-time">
-              <strong>{p.start}</strong>
-              <span>{p.end}</span>
+              <strong>{l ? hhmm(l.start) : p.start}</strong>
+              <span>{l ? hhmm(l.end) : p.end}</span>
             </div>
             {l ? (
               <div className={`day-card ${running ? 'running' : ''} ${l.cancelled ? 'cancelled' : ''}`} style={lessonTileStyle(l)}>
                 <div className="day-card-title">
                   <span className="subject-name">{l.subject.name}</span>
-                  <span className="muted">{periodTitle(periods, p)}</span>
+                  <span className="muted">
+                    {periodTitle(periods, p)}
+                    {l.endPeriod.id !== p.id && ` – ${periodTitle(periods, l.endPeriod)}`}
+                    {halfLabel}
+                  </span>
                 </div>
                 <div className="day-card-meta">
                   {[l.room?.name, l.teacher?.name].filter(Boolean).join(' · ')}
@@ -360,6 +357,7 @@ function DayView({
             )}
           </div>
         )
+        })
       })}
       {editing && <HomeworkSheet homework={editing.hw} defaults={editing.defaults} onClose={() => setEditing(null)} />}
       {changing && (

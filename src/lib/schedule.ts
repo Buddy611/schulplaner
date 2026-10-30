@@ -5,6 +5,8 @@ import { holidayOn, useHolidays, type Holiday } from './holidays'
 import {
   C,
   lessonAppliesToWeek,
+  lessonSlots,
+  slotTime,
   sortPeriods,
   useActiveTimetable,
   useLookups,
@@ -30,6 +32,11 @@ export interface ScheduledLesson {
   teacher?: Item<Teacher>
   start: Date
   end: Date
+  /** letzte Stunde (bei Stunden über mehrere Stunden) */
+  endPeriod: Period
+  /** Lage in Halbstunden-Plätzen (siehe lessonSlots) */
+  startSlot: number
+  endSlot: number
   /** Ausfall / Vertretung / Raumänderung für genau diese Stunde */
   change?: Item<LessonChange>
   cancelled: boolean
@@ -67,15 +74,27 @@ export function useSchedule() {
     if (holiday(date)) return []
     const week = weekTypeFor(timetable, date)
     const iso = toISODate(date)
+    const lessonPeriods = sortPeriods(timetable.periods).filter((p) => p.kind === 'lesson')
+    // Stunden dieses Tages; Wochen-spezifische (A/B) haben Vorrang vor "jede Woche", Überschneidungen fallen weg
+    const candidates = lessons
+      .filter((l) => l.timetableId === timetable.id && l.day === weekday && lessonAppliesToWeek(l, week))
+      .map((l) => ({ l, slots: lessonSlots(l, lessonPeriods) }))
+      .filter((x): x is { l: Item<Lesson>; slots: { start: number; end: number } } => x.slots !== null)
+      .sort((a, b) => Number(Boolean(b.l.week)) - Number(Boolean(a.l.week)))
+    const taken: { start: number; end: number }[] = []
+    const chosen = candidates.filter(({ slots }) => {
+      if (taken.some((t) => slots.start <= t.end && t.start <= slots.end)) return false
+      taken.push(slots)
+      return true
+    })
+    chosen.sort((a, b) => a.slots.start - b.slots.start)
+
     const result: ScheduledLesson[] = []
-    for (const period of sortPeriods(timetable.periods)) {
-      if (period.kind !== 'lesson') continue
-      const candidates = lessons.filter(
-        (l) => l.timetableId === timetable.id && l.day === weekday && l.periodId === period.id && lessonAppliesToWeek(l, week),
-      )
-      const lesson = candidates.find((l) => l.week) ?? candidates[0]
-      const planned = lesson && lookups.subjectMap.get(lesson.subjectId)
-      if (!lesson || !planned) continue
+    for (const { l: lesson, slots } of chosen) {
+      const period = lessonPeriods[Math.floor(slots.start / 2)]
+      const endPeriod = lessonPeriods[Math.floor(slots.end / 2)]
+      const planned = lookups.subjectMap.get(lesson.subjectId)
+      if (!planned) continue
       const change = changes?.find((c) => c.date === iso && c.periodId === period.id)
       const subject = (change?.kind === 'vertretung' && change.subjectId && lookups.subjectMap.get(change.subjectId)) || planned
       const roomId = change?.roomId ?? lesson.roomId ?? planned.roomId
@@ -87,8 +106,11 @@ export function useSchedule() {
         subject,
         room: roomId ? lookups.roomMap.get(roomId) : undefined,
         teacher: teacherId ? lookups.teacherMap.get(teacherId) : undefined,
-        start: at(date, period.start),
-        end: at(date, period.end),
+        start: at(date, slotTime(lessonPeriods, slots.start, 'start')),
+        end: at(date, slotTime(lessonPeriods, slots.end, 'end')),
+        endPeriod,
+        startSlot: slots.start,
+        endSlot: slots.end,
         change,
         cancelled: change?.kind === 'ausfall',
       })

@@ -2,10 +2,10 @@ import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { Field, Segmented, Sheet } from '../../components/ui'
 import { ABSENCES, unitsFor, type Absence } from '../../lib/changes'
-import { formatDate, parseISODate, toISODate, toMinutes } from '../../lib/dates'
+import { formatDate, parseISODate, toISODate } from '../../lib/dates'
 import { periodTitle, sortPeriods } from '../../lib/models'
 import { newId, put, remove, type Item } from '../../lib/repo'
-import { useSchedule } from '../../lib/schedule'
+import { useSchedule, type ScheduledLesson } from '../../lib/schedule'
 
 const REASONS = ['Krankheit', 'Arzttermin', 'Familiäre Gründe', 'Schulveranstaltung']
 
@@ -15,7 +15,7 @@ export function AbsenceSheet({ absence, onClose }: { absence?: Item<Absence>; on
   const [date, setDate] = useState(absence?.date ?? toISODate(new Date()))
   const dayLessons = schedule.lessonsOn(parseISODate(date))
   const [selected, setSelected] = useState<Set<string>>(
-    new Set(absence ? absence.lessons.map((l) => l.periodId) : dayLessons.map((l) => l.period.id)),
+    new Set(absence ? absence.lessons.map((l) => l.periodId) : dayLessons.map(lessonKey)),
   )
   const [reason, setReason] = useState(absence?.reason ?? 'Krankheit')
   const [excused, setExcused] = useState(absence?.excused ?? false)
@@ -24,14 +24,15 @@ export function AbsenceSheet({ absence, onClose }: { absence?: Item<Absence>; on
 
   // Beim Bearbeiten: festgehaltene Stunden auch zeigen, wenn sich der Plan inzwischen geändert hat
   const options = dayLessons.map((l) => ({
-    periodId: l.period.id,
+    // Geteilte Stunden: 2. Hälfte bekommt eine eigene Kennung
+    periodId: lessonKey(l),
     subjectId: l.lesson.subjectId,
-    label: `${periodTitle(periods, l.period)} · ${schedule.lookups.subjectMap.get(l.lesson.subjectId)?.name ?? ''}`,
-    units: unitsFor(toMinutes(l.period.end) - toMinutes(l.period.start)),
+    label: `${hhmm(l.start)}–${hhmm(l.end)} · ${schedule.lookups.subjectMap.get(l.lesson.subjectId)?.name ?? ''}`,
+    units: unitsFor(Math.round((l.end.getTime() - l.start.getTime()) / 60_000)),
   }))
   for (const l of absence?.lessons ?? []) {
     if (!options.some((o) => o.periodId === l.periodId)) {
-      const p = periods.find((x) => x.id === l.periodId)
+      const p = periods.find((x) => x.id === l.periodId.split('#')[0])
       options.push({
         periodId: l.periodId,
         subjectId: l.subjectId ?? '',
@@ -46,7 +47,7 @@ export function AbsenceSheet({ absence, onClose }: { absence?: Item<Absence>; on
 
   function changeDate(next: string) {
     setDate(next)
-    setSelected(new Set(schedule.lessonsOn(parseISODate(next)).map((l) => l.period.id)))
+    setSelected(new Set(schedule.lessonsOn(parseISODate(next)).map(lessonKey)))
   }
 
   function toggle(id: string) {
@@ -153,4 +154,12 @@ export function AbsenceSheet({ absence, onClose }: { absence?: Item<Absence>; on
       )}
     </Sheet>
   )
+}
+
+function lessonKey(l: ScheduledLesson) {
+  return l.startSlot % 2 ? `${l.period.id}#b` : l.period.id
+}
+
+function hhmm(d: Date) {
+  return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
 }

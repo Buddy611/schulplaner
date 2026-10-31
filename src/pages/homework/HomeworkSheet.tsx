@@ -1,13 +1,14 @@
 import { confirmDialog } from '../../components/dialogs'
 import { useMemo, useState } from 'react'
 import { AttachmentEditor } from '../../components/Attachments'
-import { EntitySelect, Field, Sheet, Switch } from '../../components/ui'
+import { Field, Sheet, Switch } from '../../components/ui'
 import { formatDate, parseISODate, toISODate } from '../../lib/dates'
 import { removeFiles, type Attachment } from '../../lib/files'
 import { deleteHomework, HOMEWORK, nextLessonsOfSubject, type Homework } from '../../lib/homework'
 import { periodTitle, sortPeriods } from '../../lib/models'
 import { newId, put, type Item } from '../../lib/repo'
 import { useSchedule } from '../../lib/schedule'
+import { SubjectSelect } from '../../components/SubjectSelect'
 
 type DueMode = 'next' | 'next2' | 'date'
 
@@ -31,7 +32,6 @@ export function HomeworkSheet({
   onClose: () => void
 }) {
   const schedule = useSchedule()
-  const { subjects } = schedule.lookups
   const [subjectId, setSubjectId] = useState(homework?.subjectId ?? defaults?.subjectId)
   const [title, setTitle] = useState(homework?.title ?? defaults?.title ?? '')
   const [notes, setNotes] = useState(homework?.notes ?? '')
@@ -101,7 +101,7 @@ export function HomeworkSheet({
     <Sheet title={homework ? 'Hausaufgabe' : 'Neue Hausaufgabe'} onClose={cancel} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
       <div className="list">
         <Field label="Fach">
-          <EntitySelect title="Fach" value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel="Fach wählen …" />
+          <SubjectSelect value={subjectId} onChange={setSubjectId} emptyLabel="Fach wählen …" />
         </Field>
         <Field label="Aufgabe">
           <textarea className="row-input" rows={2} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. S. 42 Nr. 3a–c" autoFocus={!homework} />

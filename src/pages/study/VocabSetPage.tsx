@@ -2,16 +2,15 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { confirmDialog, promptDialog } from '../../components/dialogs'
 import { PageHeader } from '../../components/PageHeader'
-import { EntitySelect, Field, Sheet } from '../../components/ui'
-import { useLookups } from '../../lib/models'
+import { Field, Sheet } from '../../components/ui'
 import { put, remove, useRecord } from '../../lib/repo'
 import { isDue, newCard, parseVocabList, VOCAB, type VocabCard, type VocabSet } from '../../lib/study'
+import { SubjectSelect } from '../../components/SubjectSelect'
 
 /** Ein Vokabelset: Wörter verwalten und Lernen starten */
 export function VocabSetPage() {
   const { id } = useParams()
   const set = useRecord<VocabSet>(id)
-  const { subjects } = useLookups()
   const navigate = useNavigate()
   const [front, setFront] = useState('')
   const [back, setBack] = useState('')
@@ -115,7 +114,7 @@ export function VocabSetPage() {
       <h2 className="section-title">Einstellungen</h2>
       <div className="list">
         <Field label="Fach">
-          <EntitySelect title="Fach" value={set.subjectId} items={subjects} onChange={(subjectId) => save({ subjectId })} emptyLabel="Kein Fach" />
+          <SubjectSelect value={set.subjectId} onChange={(subjectId) => save({ subjectId })} emptyLabel="Kein Fach" />
         </Field>
       </div>
 

@@ -976,6 +976,13 @@ input.row-input::placeholder {
     color: var(--on-sec-container);
   }
 
+  .sidenav-sep {
+    width: calc(100% - 32px);
+    margin: 8px 16px;
+    border: 0;
+    border-top: 1px solid var(--separator);
+  }
+
   .page {
     max-width: 1100px;
   }
@@ -3279,4 +3286,27 @@ div.lesson-tile {
   .lesson-tile-value {
     font-size: 1.5rem;
   }
+}
+
+/* Trennstrich im Layout-Editor */
+.layout-sep {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-2);
+  font-size: 0.875rem;
+}
+
+.layout-sep::before,
+.layout-sep::after {
+  content: '';
+  flex: 1;
+  border-top: 1px dashed currentColor;
+  opacity: 0.6;
+}
+
+/* Überschriften in Auswahlfenstern ("Vorgeschlagen", "Alle Fächer") */
+.select-heading:first-child {
+  margin-top: 0;
 }

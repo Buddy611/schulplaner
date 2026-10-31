@@ -13,6 +13,7 @@ import { quickCreate } from '../settings/MasterData'
 import { daysUntil } from '../../lib/homework'
 import { useGrades } from '../../lib/grades'
 import { GradeSheet } from '../grades/GradeSheet'
+import { SubjectSelect } from '../../components/SubjectSelect'
 
 export interface ExamDefaults {
   subjectId?: string
@@ -23,7 +24,7 @@ export interface ExamDefaults {
 export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defaults?: ExamDefaults; onClose: () => void }) {
   const schedule = useSchedule()
   const settings = useSettings()
-  const { subjects, rooms } = schedule.lookups
+  const { rooms } = schedule.lookups
   const [subjectId, setSubjectId] = useState(exam?.subjectId ?? defaults?.subjectId)
   const [type, setType] = useState(exam?.type ?? settings.examTypes[0] ?? 'Klausur')
   const [date, setDate] = useState(exam?.date ?? defaults?.date ?? toISODate(addDays(new Date(), 7)))
@@ -125,10 +126,8 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
           </div>
         </div>
         <Field label="Fach">
-          <EntitySelect
-            title="Fach"
+          <SubjectSelect
             value={subjectId}
-            items={subjects}
             emptyLabel="Fach wählen …"
             onChange={(id) => {
               setSubjectId(id)

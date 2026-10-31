@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { timetableForDate, useActiveTimetable } from '../lib/models'
 import { toISODate } from '../lib/dates'
 import { Icon } from './Icons'
-import { DEFAULT_NAV_LAYOUT, NAV_ITEMS, resolveLayout } from '../lib/layout'
+import { DEFAULT_NAV_LAYOUT, isSeparator, NAV_ITEMS, resolveLayout } from '../lib/layout'
 import { useSettings } from '../lib/settings'
 import type { JSX } from 'react'
 
@@ -59,17 +59,23 @@ function iconFor(item: (typeof NAV_ITEMS)[number]) {
   return outline[item.id] ?? <Icon name={item.icon} />
 }
 
-/** Sichtbare Navigationseinträge in der gewählten Reihenfolge */
-function useNavItems() {
+type NavEntry = (typeof NAV_ITEMS)[number] | 'trenner'
+
+/** Sichtbare Navigationseinträge in der gewählten Reihenfolge (mit Trennstrichen) */
+function useNavEntries(): NavEntry[] {
   const settings = useSettings()
-  return resolveLayout(settings.navLayout, DEFAULT_NAV_LAYOUT)
+  const entries = resolveLayout(settings.navLayout, DEFAULT_NAV_LAYOUT)
     .filter((x) => x.visible)
-    .map((x) => NAV_ITEMS.find((n) => n.id === x.id)!)
+    .map((x): NavEntry => (isSeparator(x.id) ? 'trenner' : NAV_ITEMS.find((n) => n.id === x.id)!))
+  // Keine Striche ganz oben oder doppelt hintereinander (ganz unten = vor "Einstellungen" ist erlaubt)
+  return entries.filter((e, i) => e !== 'trenner' || (i > 0 && entries[i - 1] !== 'trenner'))
 }
 
 /** Handy: Navigationsleiste unten mit den ersten 5 sichtbaren Einträgen (Einstellungen über das Zahnrad) */
 export function TabBar() {
-  const items = useNavItems().slice(0, 5)
+  const items = useNavEntries()
+    .filter((e) => e !== 'trenner')
+    .slice(0, 5)
   return (
     <nav className="tabbar">
       {items.map((t) => (
@@ -85,19 +91,23 @@ export function TabBar() {
 /** iPad / großer Bildschirm: Seitenleiste links mit allen sichtbaren Einträgen */
 export function SideNav() {
   const { timetable, all } = useActiveTimetable()
-  const items = useNavItems()
+  const items = useNavEntries()
   // Name des Plans, der heute gilt (nicht unbedingt der, den man gerade bearbeitet)
   const today = timetable ? timetableForDate(all ?? [], timetable, toISODate(new Date())) : null
   return (
     <aside className="sidenav">
       <div className="sidenav-title">{today?.name ?? 'Schulplaner'}</div>
       <nav>
-        {items.map((t) => (
-          <NavLink key={t.to} to={t.to} end={t.to === '/'}>
-            {iconFor(t)}
-            {t.label}
-          </NavLink>
-        ))}
+        {items.map((t, i) =>
+          t === 'trenner' ? (
+            <hr key={'trenner' + i} className="sidenav-sep" />
+          ) : (
+            <NavLink key={t.to} to={t.to} end={t.to === '/'}>
+              {iconFor(t)}
+              {t.label}
+            </NavLink>
+          ),
+        )}
         <NavLink to="/einstellungen">
           {icons.settings}
           Einstellungen

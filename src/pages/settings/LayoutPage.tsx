@@ -1,7 +1,7 @@
 import { Icon } from '../../components/Icons'
 import { PageHeader } from '../../components/PageHeader'
 import { ResetButton, Switch } from '../../components/ui'
-import { DEFAULT_NAV_LAYOUT, DEFAULT_TODAY_LAYOUT, NAV_ITEMS, resolveLayout, TODAY_SECTIONS, type LayoutItem } from '../../lib/layout'
+import { DEFAULT_NAV_LAYOUT, DEFAULT_TODAY_LAYOUT, isSeparator, NAV_ITEMS, newSeparator, resolveLayout, TODAY_SECTIONS, type LayoutItem } from '../../lib/layout'
 import { updateSettings, useSettings } from '../../lib/settings'
 
 /** Startseite und Navigation anpassen: Reihenfolge ändern, Einträge ein- und ausblenden */
@@ -9,7 +9,7 @@ export function LayoutPage() {
   const settings = useSettings()
   const today = resolveLayout(settings.todayLayout, DEFAULT_TODAY_LAYOUT)
   const nav = resolveLayout(settings.navLayout, DEFAULT_NAV_LAYOUT)
-  const visibleNav = nav.filter((n) => n.visible)
+  const visibleNav = nav.filter((n) => n.visible && !isSeparator(n.id))
 
   return (
     <div className="page">
@@ -30,6 +30,7 @@ export function LayoutPage() {
       <LayoutList
         items={nav}
         meta={(id) => {
+          if (isSeparator(id)) return { label: 'Trennstrich', separator: true }
           const n = NAV_ITEMS.find((x) => x.id === id)!
           const pos = visibleNav.findIndex((v) => v.id === id)
           return {
@@ -41,9 +42,14 @@ export function LayoutPage() {
         minVisible={1}
         onChange={(navLayout) => updateSettings(settings, { navLayout })}
       />
+      <div className="list" style={{ marginTop: 8 }}>
+        <button type="button" className="row action" onClick={() => updateSettings(settings, { navLayout: [...nav, newSeparator()] })}>
+          + Trennstrich hinzufügen
+        </button>
+      </div>
       <p className="section-footer">
-        Auf dem Handy zeigt die Leiste unten die ersten 5 sichtbaren Einträge. Auf dem iPad stehen alle sichtbaren Einträge in der Seitenleiste. Die Einstellungen
-        erreichst du immer über das Zahnrad.
+        Auf dem Handy zeigt die Leiste unten die ersten 5 sichtbaren Einträge. Auf dem iPad stehen alle sichtbaren Einträge in der Seitenleiste – Trennstriche
+        teilen sie dort in Gruppen. Ein Strich ganz unten steht vor den Einstellungen, die du immer über das Zahnrad erreichst.
       </p>
 
       <ResetButton what="Startseite und Navigation" onReset={() => updateSettings(settings, { todayLayout: undefined, navLayout: undefined })} />
@@ -58,7 +64,7 @@ function LayoutList({
   minVisible = 0,
 }: {
   items: LayoutItem[]
-  meta: (id: string) => { label: string; sub?: string; icon?: Parameters<typeof Icon>[0]['name'] }
+  meta: (id: string) => { label: string; sub?: string; icon?: Parameters<typeof Icon>[0]['name']; separator?: boolean }
   onChange: (items: LayoutItem[]) => void
   minVisible?: number
 }) {
@@ -69,7 +75,7 @@ function LayoutList({
     ;[next[i], next[j]] = [next[j], next[i]]
     onChange(next)
   }
-  const visibleCount = items.filter((x) => x.visible).length
+  const visibleCount = items.filter((x) => x.visible && !isSeparator(x.id)).length
 
   return (
     <div className="list">
@@ -82,10 +88,14 @@ function LayoutList({
                 <Icon name={m.icon} />
               </span>
             )}
-            <span className="label">
-              {m.label}
-              {m.sub && <span className="sub">{m.sub}</span>}
-            </span>
+            {m.separator ? (
+              <span className="layout-sep">{m.label}</span>
+            ) : (
+              <span className="label">
+                {m.label}
+                {m.sub && <span className="sub">{m.sub}</span>}
+              </span>
+            )}
             <span className="layout-arrows">
               <button type="button" className="arrow-btn" aria-label="Nach oben" disabled={i === 0} onClick={() => move(i, -1)}>
                 ↑
@@ -94,13 +104,19 @@ function LayoutList({
                 ↓
               </button>
             </span>
-            <Switch
-              checked={item.visible}
-              onChange={(visible) => {
-                if (!visible && visibleCount <= minVisible) return
-                onChange(items.map((x) => (x.id === item.id ? { ...x, visible } : x)))
-              }}
-            />
+            {m.separator ? (
+              <button type="button" className="arrow-btn" aria-label="Trennstrich entfernen" onClick={() => onChange(items.filter((x) => x.id !== item.id))}>
+                ✕
+              </button>
+            ) : (
+              <Switch
+                checked={item.visible}
+                onChange={(visible) => {
+                  if (!visible && visibleCount <= minVisible) return
+                  onChange(items.map((x) => (x.id === item.id ? { ...x, visible } : x)))
+                }}
+              />
+            )}
           </div>
         )
       })}

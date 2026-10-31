@@ -247,6 +247,14 @@ export interface SelectOption {
   value: string
   label: string
   color?: string
+  /** kleine zweite Zeile, z. B. "3. Stunde · 10:00" */
+  sub?: string
+}
+
+/** Vorschläge ganz oben in der Auswahl (z. B. die Stunden von heute) */
+export interface SelectSuggestions {
+  heading: string
+  options: SelectOption[]
 }
 
 /**
@@ -260,6 +268,8 @@ export function Select({
   title,
   placeholder = 'Bitte wählen …',
   extra,
+  suggested,
+  allHeading = 'Alle',
 }: {
   value: string | undefined
   options: SelectOption[]
@@ -268,9 +278,17 @@ export function Select({
   placeholder?: string
   /** zusätzlicher Eintrag am Ende, z. B. "Neuer Raum …" */
   extra?: { label: string; onSelect: () => void }
+  suggested?: SelectSuggestions
+  /** Überschrift der vollständigen Liste, wenn es Vorschläge gibt */
+  allHeading?: string
 }) {
   const [open, setOpen] = useState(false)
   const current = options.find((o) => o.value === (value ?? ''))
+  const pick = (v: string) => {
+    onChange(v)
+    setOpen(false)
+  }
+  const showSuggested = suggested && suggested.options.length > 0
   return (
     <>
       <button type="button" className="row-input select-btn" onClick={() => setOpen(true)}>
@@ -279,17 +297,26 @@ export function Select({
       </button>
       {open && (
         <Sheet title={title} onClose={() => setOpen(false)}>
+          {showSuggested && (
+            <>
+              <h3 className="section-title select-heading">{suggested.heading}</h3>
+              <div className="list">
+                {suggested.options.map((o, i) => (
+                  <button key={o.value + i} type="button" className="row" onClick={() => pick(o.value)}>
+                    {o.color && <ColorDot color={o.color} size={14} />}
+                    <span className="label">
+                      {o.label}
+                      {o.sub && <span className="sub">{o.sub}</span>}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <h3 className="section-title select-heading">{allHeading}</h3>
+            </>
+          )}
           <div className="list">
             {options.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                className="row"
-                onClick={() => {
-                  onChange(o.value)
-                  setOpen(false)
-                }}
-              >
+              <button key={o.value} type="button" className="row" onClick={() => pick(o.value)}>
                 {o.color && <ColorDot color={o.color} size={14} />}
                 <span className="label">{o.label}</span>
                 {o.value === (value ?? '') && <span className="check">✓</span>}
@@ -323,6 +350,8 @@ export function EntitySelect({
   onCreate,
   createLabel = 'Neu …',
   title = 'Auswählen',
+  suggested,
+  allHeading,
 }: {
   value: string | undefined
   items: { id: string; name: string; color?: string }[]
@@ -331,10 +360,14 @@ export function EntitySelect({
   onCreate?: () => Promise<string | undefined>
   createLabel?: string
   title?: string
+  suggested?: SelectSuggestions
+  allHeading?: string
 }) {
   return (
     <Select
       title={title}
+      suggested={suggested}
+      allHeading={allHeading}
       value={value ?? ''}
       options={[{ value: '', label: emptyLabel }, ...items.map((i) => ({ value: i.id, label: i.name, color: i.color }))]}
       onChange={(v) => onChange(v || undefined)}

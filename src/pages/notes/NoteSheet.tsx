@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { AttachmentEditor } from '../../components/Attachments'
 import { confirmDialog } from '../../components/dialogs'
-import { EntitySelect, Field, Sheet } from '../../components/ui'
+import { Field, Sheet } from '../../components/ui'
 import { formatDate, parseISODate, toISODate } from '../../lib/dates'
 import { removeFiles, type Attachment } from '../../lib/files'
-import { useLookups } from '../../lib/models'
 import { deleteNote, NOTES, type LessonNote } from '../../lib/notes'
 import { newId, put, type Item } from '../../lib/repo'
+import { SubjectSelect } from '../../components/SubjectSelect'
 
 export interface NoteDefaults {
   subjectId?: string
@@ -18,7 +18,6 @@ export interface NoteDefaults {
 
 /** Notiz zu einer Stunde: Text und Fotos/Dokumente */
 export function NoteSheet({ note, defaults, onClose }: { note?: Item<LessonNote>; defaults?: NoteDefaults; onClose: () => void }) {
-  const { subjects } = useLookups()
   const [subjectId, setSubjectId] = useState(note?.subjectId ?? defaults?.subjectId)
   const [date, setDate] = useState(note?.date ?? defaults?.date ?? toISODate(new Date()))
   const [text, setText] = useState(note?.text ?? defaults?.text ?? '')
@@ -58,7 +57,7 @@ export function NoteSheet({ note, defaults, onClose }: { note?: Item<LessonNote>
     <Sheet title={note ? 'Notiz' : 'Neue Notiz'} onClose={cancel} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
       <div className="list">
         <Field label="Fach">
-          <EntitySelect title="Fach" value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel="Fach wählen …" />
+          <SubjectSelect value={subjectId} onChange={setSubjectId} emptyLabel="Fach wählen …" />
         </Field>
         <Field label="Datum">
           <input className="row-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />

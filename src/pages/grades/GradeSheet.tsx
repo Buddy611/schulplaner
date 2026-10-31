@@ -1,11 +1,11 @@
 import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
-import { EntitySelect, Field, Sheet } from '../../components/ui'
+import { Field, Sheet } from '../../components/ui'
 import { toISODate } from '../../lib/dates'
 import { GRADES, gradeOptions, type Grade, type GradeKind, type GradeSystem } from '../../lib/grades'
-import { useLookups } from '../../lib/models'
 import { newId, put, remove, type Item } from '../../lib/repo'
 import { useSettings } from '../../lib/settings'
+import { SubjectSelect } from '../../components/SubjectSelect'
 
 export interface GradeDefaults {
   subjectId?: string
@@ -40,7 +40,6 @@ export function GradePicker({
 
 export function GradeSheet({ grade, defaults, onClose }: { grade?: Item<Grade>; defaults?: GradeDefaults; onClose: () => void }) {
   const settings = useSettings()
-  const { subjects } = useLookups()
   const [subjectId, setSubjectId] = useState(grade?.subjectId ?? defaults?.subjectId)
   const [kind, setKind] = useState<GradeKind>(grade?.kind ?? defaults?.kind ?? 'schriftlich')
   const [type, setType] = useState(grade?.type ?? defaults?.type ?? settings.examTypes[0])
@@ -81,7 +80,7 @@ export function GradeSheet({ grade, defaults, onClose }: { grade?: Item<Grade>; 
     <Sheet title={grade ? 'Note bearbeiten' : 'Neue Note'} onClose={onClose} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
       <div className="list">
         <Field label="Fach">
-          <EntitySelect title="Fach" value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel="Fach wählen …" />
+          <SubjectSelect value={subjectId} onChange={setSubjectId} emptyLabel="Fach wählen …" />
         </Field>
         <div className="row stack">
           <span className="field-label">Art</span>

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
-import { ColorDot, EntitySelect, Field } from '../../components/ui'
+import { ColorDot, Field } from '../../components/ui'
 import { addDays, mondayOf, toISODate } from '../../lib/dates'
 import { useLookups } from '../../lib/models'
 import { newId, put, useCollection } from '../../lib/repo'
+import { SubjectSelect } from '../../components/SubjectSelect'
 
 /** Gespeicherte Lernzeit (synchronisiert) */
 export const SESSIONS = 'studySessions'
@@ -79,7 +80,7 @@ async function signal(text: string) {
 export function StudyTimerPage() {
   const [state, setState] = useState<TimerState>(load)
   const [now, setNow] = useState(Date.now())
-  const { subjects, subjectMap } = useLookups()
+  const { subjectMap } = useLookups()
   const sessions = useCollection<StudySession>(SESSIONS) ?? []
 
   const update = (s: TimerState) => {
@@ -182,7 +183,7 @@ export function StudyTimerPage() {
       <h2 className="section-title">Einstellungen</h2>
       <div className="list">
         <Field label="Fach">
-          <EntitySelect title="Fach" value={state.subjectId} items={subjects} onChange={(subjectId) => update({ ...state, subjectId })} emptyLabel="Ohne Fach" />
+          <SubjectSelect value={state.subjectId} onChange={(subjectId) => update({ ...state, subjectId })} emptyLabel="Ohne Fach" />
         </Field>
         <div className="row stack">
           <span className="field-label">Lernen / Pause</span>

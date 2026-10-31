@@ -1,5 +1,5 @@
 import { Fragment, useState, type ReactNode } from 'react'
-import { DEFAULT_NAV_LAYOUT, DEFAULT_TODAY_LAYOUT, NAV_ITEMS, resolveLayout } from '../lib/layout'
+import { DEFAULT_NAV_LAYOUT, DEFAULT_TODAY_LAYOUT, isSeparator, NAV_ITEMS, resolveLayout } from '../lib/layout'
 import type { Tone } from '../components/Icons'
 
 const MORE_TONES: Record<string, Tone> = {
@@ -101,7 +101,7 @@ export function Today() {
         : formatDate(day, { weekday: 'long' })
 
   const visibleNav = resolveLayout(settings.navLayout, DEFAULT_NAV_LAYOUT)
-    .filter((x) => x.visible)
+    .filter((x) => x.visible && !isSeparator(x.id))
     .map((x) => NAV_ITEMS.find((n) => n.id === x.id)!)
   const moreItems = visibleNav.slice(5).filter((n) => n.id !== 'heute')
   const moreSub: Record<string, string> = {

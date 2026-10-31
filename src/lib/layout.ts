@@ -36,12 +36,23 @@ export const NAV_ITEMS: { id: string; label: string; short?: string; to: string;
 ]
 
 export const DEFAULT_TODAY_LAYOUT: LayoutItem[] = TODAY_SECTIONS.map((s) => ({ id: s.id, visible: true }))
-export const DEFAULT_NAV_LAYOUT: LayoutItem[] = NAV_ITEMS.map((n) => ({ id: n.id, visible: true }))
+
+/** Trennstriche in der Seitenleiste: eigene Einträge mit diesem Präfix (beliebig viele) */
+const SEPARATOR = 'trenner-'
+export const isSeparator = (id: string) => id.startsWith(SEPARATOR)
+export const newSeparator = (): LayoutItem => ({ id: SEPARATOR + Math.random().toString(36).slice(2, 8), visible: true })
+
+// Standard: Strich zwischen den Hauptbereichen (bis Noten) und dem Rest
+export const DEFAULT_NAV_LAYOUT: LayoutItem[] = NAV_ITEMS.flatMap((n) => {
+  const item = { id: n.id, visible: true }
+  return n.id === 'noten' ? [item, { id: SEPARATOR + 'standard', visible: true }] : [item]
+})
 
 /** Gespeicherte Reihenfolge mit den bekannten Einträgen abgleichen (neue Einträge hinten anhängen) */
 export function resolveLayout(saved: LayoutItem[] | undefined, defaults: LayoutItem[]): LayoutItem[] {
+  if (!saved) return defaults
   const known = new Set(defaults.map((d) => d.id))
-  const list = (saved ?? []).filter((x) => known.has(x.id))
-  for (const d of defaults) if (!list.some((x) => x.id === d.id)) list.push(d)
+  const list = saved.filter((x) => known.has(x.id) || isSeparator(x.id))
+  for (const d of defaults) if (!isSeparator(d.id) && !list.some((x) => x.id === d.id)) list.push(d)
   return list
 }

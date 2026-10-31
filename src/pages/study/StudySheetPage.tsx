@@ -3,13 +3,14 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { AttachmentEditor, AttachmentGrid } from '../../components/Attachments'
 import { confirmDialog } from '../../components/dialogs'
 import { PageHeader } from '../../components/PageHeader'
-import { EntitySelect, Field, Select } from '../../components/ui'
+import { Field, Select } from '../../components/ui'
 import { formatDate, parseISODate } from '../../lib/dates'
 import { upcomingExams, useExams } from '../../lib/exams'
 import { removeFiles } from '../../lib/files'
 import { useLookups } from '../../lib/models'
 import { put, remove, useRecord } from '../../lib/repo'
 import { STUDY_SHEETS, type StudySheet } from '../../lib/study'
+import { SubjectSelect } from '../../components/SubjectSelect'
 
 /** Lernzettel ansehen und bearbeiten */
 export function StudySheetPage() {
@@ -114,7 +115,7 @@ function SheetEditor({ sheet, save, onDelete }: { sheet: StudySheet; save: (c: P
           <input className="row-input" value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => title.trim() && commit({ title: title.trim() })} />
         </Field>
         <Field label="Fach">
-          <EntitySelect title="Fach" value={sheet.subjectId} items={subjects} onChange={(subjectId) => commit({ subjectId })} emptyLabel="Kein Fach" />
+          <SubjectSelect value={sheet.subjectId} onChange={(subjectId) => commit({ subjectId })} emptyLabel="Kein Fach" />
         </Field>
         <Field label="Für Klausur">
           <Select

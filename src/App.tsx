@@ -13,6 +13,7 @@ import { Settings } from './pages/Settings'
 import { Today } from './pages/Today'
 import { TimetableEditor } from './pages/TimetableEditor'
 import { SchedulePage } from './pages/Schedule'
+import { LessonPage } from './pages/LessonPage'
 import { HomeworkPage } from './pages/homework/HomeworkPage'
 import { ExamsPage } from './pages/exams/ExamsPage'
 import { ExamTypesPage } from './pages/settings/ExamTypes'
@@ -76,6 +77,7 @@ function Shell() {
         <Route path="/" element={<Today />} />
         <Route path="/stundenplan" element={<SchedulePage />} />
         <Route path="/stundenplan/bearbeiten" element={<TimetableEditor />} />
+        <Route path="/stunde/:date/:lessonId" element={<LessonPage />} />
         <Route path="/hausaufgaben" element={<HomeworkPage />} />
         <Route path="/klausuren" element={<ExamsPage />} />
         <Route path="/einstellungen/klausurtypen" element={<ExamTypesPage />} />

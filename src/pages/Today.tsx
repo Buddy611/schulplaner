@@ -222,7 +222,7 @@ export function Today() {
               return (
                 <Link
                   key={l.period.id + l.startSlot}
-                  to={`/stundenplan?ansicht=tag&datum=${l.date}`}
+                  to={`/stunde/${l.date}/${l.lesson.id}`}
                   className="row"
                   style={done || l.cancelled ? { opacity: 0.5 } : undefined}
                 >

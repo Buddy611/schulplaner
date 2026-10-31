@@ -23,6 +23,8 @@ const paths = {
   backpack: 'M20 8v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a4 4 0 0 1 3-3.9V2h3v2h4V2h3v2.1A4 4 0 0 1 20 8ZM6 12v2h10v2h2v-4H6Z',
   search: 'M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 9.5 16a6.5 6.5 0 0 0 4.2-1.6l.3.3v.8l5 5 1.5-1.5-5-5Zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z',
   chart: 'M5 9.2h3V19H5V9.2ZM10.6 5h2.8v14h-2.8V5Zm5.6 8H19v6h-2.8v-6Z',
+  more: 'M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z',
+  plus: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2Z',
 } as const
 
 export type IconName = keyof typeof paths

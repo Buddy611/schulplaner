@@ -12,18 +12,21 @@ export function ChangeSheet({
   change,
   date: initialDate,
   periodId: initialPeriod,
+  kind: initialKind,
   onClose,
 }: {
   change?: Item<LessonChange>
   date?: string
   periodId?: string
+  /** Vorauswahl für neue Einträge, z. B. "raum" */
+  kind?: ChangeKind
   onClose: () => void
 }) {
   const schedule = useSchedule()
   const { teachers, rooms, subjects } = schedule.lookups
   const [date, setDate] = useState(change?.date ?? initialDate ?? toISODate(new Date()))
   const [periodId, setPeriodId] = useState(change?.periodId ?? initialPeriod)
-  const [kind, setKind] = useState<ChangeKind>(change?.kind ?? 'ausfall')
+  const [kind, setKind] = useState<ChangeKind>(change?.kind ?? initialKind ?? 'ausfall')
   const [teacherId, setTeacherId] = useState(change?.teacherId)
   const [subjectId, setSubjectId] = useState(change?.subjectId)
   const [roomId, setRoomId] = useState(change?.roomId)

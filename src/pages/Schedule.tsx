@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { homeworkForLesson, openHomework, setDone, useHomework, type Homework } from '../lib/homework'
 import type { Item } from '../lib/repo'
 import { HomeworkSheet, type HomeworkDefaults } from './homework/HomeworkSheet'
@@ -165,6 +165,7 @@ function WeekView({
   exams: Item<Exam>[]
   onDay: (d: Date) => void
 }) {
+  const navigate = useNavigate()
   const tt = schedule.timetableFor(mondayOf(date)) ?? schedule.timetable!
   const periods = sortPeriods(tt.periods)
   const monday = mondayOf(date)
@@ -181,7 +182,7 @@ function WeekView({
         end: l.endSlot,
         className: `${exam ? 'has-exam' : ''} ${l.cancelled ? 'cancelled' : ''} ${l.change && !l.cancelled ? 'changed' : ''}`,
         style: lessonTileStyle(l),
-        onClick: () => onDay(d),
+        onClick: () => navigate(`/stunde/${l.date}/${l.lesson.id}`),
         content: (
           <>
             {exam && <span className="exam-pill">{exam.type}</span>}
@@ -236,6 +237,7 @@ function DayView({
   onExam: (e: Item<Exam>) => void
 }) {
   const now = useNow()
+  const navigate = useNavigate()
   const [editing, setEditing] = useState<{ hw?: Item<Homework>; defaults?: HomeworkDefaults } | null>(null)
   const [changing, setChanging] = useState<{ change?: Item<LessonChange>; periodId: string } | null>(null)
   const [noting, setNoting] = useState<{ note?: Item<LessonNote>; defaults?: NoteDefaults } | null>(null)
@@ -302,17 +304,19 @@ function DayView({
             </div>
             {l ? (
               <div className={`day-card ${running ? 'running' : ''} ${l.cancelled ? 'cancelled' : ''}`} style={lessonTileStyle(l)}>
-                <div className="day-card-title">
-                  <span className="subject-name">{l.subject.name}</span>
-                  <span className="muted">
-                    {periodTitle(periods, p)}
-                    {l.endPeriod.id !== p.id && ` – ${periodTitle(periods, l.endPeriod)}`}
-                    {halfLabel}
+                <button type="button" className="day-card-open" onClick={() => navigate(`/stunde/${l.date}/${l.lesson.id}`)}>
+                  <span className="day-card-title">
+                    <span className="subject-name">{l.subject.name}</span>
+                    <span className="muted">
+                      {periodTitle(periods, p)}
+                      {l.endPeriod.id !== p.id && ` – ${periodTitle(periods, l.endPeriod)}`}
+                      {halfLabel}
+                    </span>
                   </span>
-                </div>
-                <div className="day-card-meta">
-                  {[l.room?.name, l.teacher?.name].filter(Boolean).join(' · ')}
-                </div>
+                  <span className="day-card-meta">
+                    {[l.room?.name, l.teacher?.name].filter(Boolean).join(' · ')}
+                  </span>
+                </button>
                 {l.change && (
                   <button type="button" className="day-change" onClick={() => setChanging({ change: l.change, periodId: p.id })}>
                     <span className="change-pill">{CHANGE_LABEL[l.change.kind]}</span>

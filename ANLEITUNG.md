@@ -33,24 +33,158 @@ zum Home-Bildschirm hinzufügen und funktioniert komplett offline.
   (alle 15 Minuten per Zeitplan, siehe `supabase/push.sql`). Das Gerät braucht zur
   eingestellten Zeit Internet, sonst kommt die Nachricht später.
 
-## Supabase einrichten (einmalig, schon erledigt)
+---
 
-Im Supabase **SQL Editor** nacheinander ausführen:
+# Eigene Kopie einrichten
 
-1. `supabase/schema.sql` – Tabelle, Sicherheitsregeln (Row Level Security), privater Datei-Speicher
-2. `supabase/keepalive.sql` – verhindert, dass das kostenlose Projekt pausiert
-3. Zwei Geheimnisse im Vault anlegen (Werte nicht ins Repository!), dann `supabase/push.sql`
+Die komplette Einrichtung Schritt für Schritt: vom leeren Supabase-Projekt bis zur fertigen
+App auf GitHub Pages. Du brauchst ein kostenloses **GitHub**-Konto, ein kostenloses
+**Supabase**-Konto, **Git** und **Node.js 24** (nur zum Starten auf dem eigenen Computer).
 
-Edge Function hochladen:
+> Supabase und GitHub verschieben manchmal Menüpunkte. Wenn ein Menü etwas anders heißt,
+> nimm den Punkt, der am besten passt.
+
+## Überblick: was kommt wohin
+
+| Wert | Woher | Wohin |
+|---|---|---|
+| Projekt-URL (`https://xxxx.supabase.co`) | Supabase → Project Settings → Data API (oder Knopf „Connect“) | `.env.local` und GitHub-Variable `VITE_SUPABASE_URL` |
+| Publishable Key (`sb_publishable_…`) | Supabase → Project Settings → API Keys | `.env.local` und GitHub-Variable `VITE_SUPABASE_KEY` |
+| Öffentlicher VAPID-Schlüssel | erzeugst du selbst (Schritt 6) | `.env.local`, GitHub-Variable `VITE_VAPID_PUBLIC_KEY` **und** Supabase-Secret `VAPID_PUBLIC_KEY` |
+| Privater VAPID-Schlüssel | erzeugst du selbst (Schritt 6) | **nur** Supabase-Secret `VAPID_PRIVATE_KEY` |
+| Cron-Geheimnis (beliebiger langer Zufallstext) | denkst du dir aus (Schritt 6) | Supabase-Secret `CRON_SECRET` **und** Supabase-Vault `cron_secret` |
+| Projekt-ID (`xxxx` aus der Projekt-URL) | Supabase → Project Settings → General | nur in den Befehlen in Schritt 6 |
+
+**Niemals** den Secret-/Service-Role-Key, den privaten VAPID-Schlüssel oder das Cron-Geheimnis
+in die App, in `.env.local` oder ins Repository schreiben. Der Publishable Key und der
+öffentliche VAPID-Schlüssel dürfen öffentlich sein.
+
+## 1. Code holen
+
+Repository auf GitHub forken (oder ein eigenes Repository anlegen und den Code hochladen),
+dann herunterladen:
+
+```bash
+git clone https://github.com/<dein-name>/schulplaner.git
+cd schulplaner
+npm install
+```
+
+Die App erwartet die Adresse `https://<dein-name>.github.io/schulplaner/`.
+Heißt dein Repository anders, ändere `base` in `vite.config.ts` auf `/<repo-name>/`.
+
+## 2. Supabase-Projekt anlegen
+
+1. Auf supabase.com → **New project**.
+2. Namen, ein starkes Datenbank-Passwort (sicher aufbewahren, z. B. im Passwort-Manager)
+   und eine Region in deiner Nähe wählen.
+3. Warten, bis das Projekt fertig ist.
+
+## 3. Datenbank einrichten
+
+In Supabase den **SQL Editor** öffnen, die ganze Datei einfügen, **Run** klicken. Für:
+
+1. `supabase/schema.sql` – Datentabelle, Row Level Security (nur eigene Daten)
+   und der private Datei-Speicher `attachments` für Fotos und PDFs.
+2. `supabase/keepalive.sql` – kleine Funktion, damit das kostenlose Projekt nicht nach
+   7 Tagen ohne Nutzung pausiert (wird von `.github/workflows/keepalive.yml` alle 3 Tage aufgerufen).
+
+Beide Dateien kann man gefahrlos mehrmals ausführen.
+
+## 4. Anmeldung: Registrierung aus, eigenes Konto anlegen
+
+1. **Authentication → Sign In / Providers** → „Allow new users to sign up“ **aus**.
+   Dann kann sich niemand sonst ein Konto anlegen.
+2. **Authentication → Users → Add user → Create new user**: E-Mail und Passwort eintragen,
+   **„Auto Confirm User“** anhaken, speichern.
+
+Mit genau dieser E-Mail und diesem Passwort meldest du dich in der App an.
+
+## 5. Auf dem eigenen Computer starten
+
+1. `.env.example` nach `.env.local` kopieren (diese Datei ignoriert Git, sie wird nie hochgeladen).
+2. Projekt-URL und Publishable Key eintragen (siehe Tabelle oben).
+   `VITE_VAPID_PUBLIC_KEY` darf erst mal leer bleiben.
+3. Starten:
+
+```bash
+npm run dev
+```
+
+4. Die Adresse öffnen, die Vite anzeigt (z. B. `http://localhost:5173/schulplaner/`), und anmelden.
+
+## 6. Benachrichtigungen (optional)
+
+Wer keine Erinnerungen braucht, überspringt diesen Schritt. Die App läuft auch ohne.
+
+**a) Schlüssel erzeugen.** Ein VAPID-Schlüsselpaar erzeugen:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Dazu ein Cron-Geheimnis ausdenken: ein langer Zufallstext (z. B. 40 zufällige Buchstaben und Ziffern).
+
+**b) Server-Geheimnisse in Supabase speichern.** Im Projektordner eine Datei `.env.secrets`
+anlegen (Git ignoriert sie) mit:
 
 ```
-npx.cmd supabase@2 secrets set --project-ref <PROJEKT-ID> --env-file <Datei mit VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, CRON_SECRET>
-npx.cmd supabase@2 functions deploy send-reminders --project-ref <PROJEKT-ID> --no-verify-jwt
+VAPID_PUBLIC_KEY=<öffentlicher Schlüssel>
+VAPID_PRIVATE_KEY=<privater Schlüssel>
+CRON_SECRET=<Cron-Geheimnis>
+VAPID_SUBJECT=mailto:<eine E-Mail-Adresse für die Push-Dienste>
 ```
 
-Neue Registrierungen sind abgeschaltet (Authentication → Sign In / Providers →
-„Allow new users to sign up“ aus). Neue Konten legt man unter Authentication → Users →
-„Add user“ (mit „Auto Confirm User“) an.
+`VAPID_SUBJECT` ist freiwillig. Dann einmal beim Supabase-Kommandozeilenwerkzeug anmelden und
+Geheimnisse und Funktion hochladen (in Windows PowerShell `npx.cmd` statt `npx`):
+
+```bash
+npx supabase@2 login
+```
+
+```bash
+npx supabase@2 secrets set --project-ref <PROJEKT-ID> --env-file .env.secrets
+```
+
+```bash
+npx supabase@2 functions deploy send-reminders --project-ref <PROJEKT-ID> --no-verify-jwt
+```
+
+`.env.secrets` danach löschen oder nur auf deinem Computer behalten.
+
+**c) Zeitplan starten.** Im Supabase **SQL Editor** zuerst zwei Werte im Vault speichern
+(einmalig, mit deinen echten Werten):
+
+```sql
+select vault.create_secret('https://<PROJEKT-ID>.supabase.co', 'project_url');
+select vault.create_secret('<Cron-Geheimnis>', 'cron_secret');
+```
+
+Dann `supabase/push.sql` ausführen. Das legt die Tabellen für die Push-Anmeldungen an und
+ruft die Funktion alle 15 Minuten auf.
+
+**d) Der App den öffentlichen Schlüssel geben.** Den öffentlichen VAPID-Schlüssel in
+`VITE_VAPID_PUBLIC_KEY` in `.env.local` und in die gleichnamige GitHub-Variable (Schritt 7) eintragen.
+
+## 7. Auf GitHub Pages veröffentlichen
+
+1. In deinem Repository auf GitHub: **Settings → Pages → Build and deployment → Source:
+   „GitHub Actions“**.
+2. **Settings → Secrets and variables → Actions → Reiter „Variables“ → New repository variable**.
+   Diese drei anlegen (unter **Variables**, nicht Secrets – die Werte sind sowieso öffentlich):
+   - `VITE_SUPABASE_URL` – Projekt-URL
+   - `VITE_SUPABASE_KEY` – Publishable Key
+   - `VITE_VAPID_PUBLIC_KEY` – öffentlicher VAPID-Schlüssel (weglassen, wenn du Schritt 6 übersprungen hast)
+3. Auf `main` pushen oder von Hand starten: **Actions → „Veröffentlichen auf GitHub Pages“ → Run workflow**.
+4. Nach 1–2 Minuten läuft die App unter `https://<dein-name>.github.io/schulplaner/`.
+
+Ab jetzt baut und veröffentlicht jeder Push auf `main` die App automatisch.
+Der Auftrag „Supabase wach halten“ (Keepalive) nutzt dieselben Variablen und läuft von selbst.
+
+## 8. Aufs Handy holen
+
+Die Adresse aus Schritt 7 auf dem Handy öffnen und zum Home-Bildschirm hinzufügen
+(siehe „Auf dem Gerät installieren“ oben). Einmal mit Internet anmelden.
 
 ## Sicherheit
 
@@ -59,9 +193,5 @@ Neue Registrierungen sind abgeschaltet (Authentication → Sign In / Providers �
 - Jede Zeile in der Datenbank gehört einem Nutzer (`user_id`), Row Level Security erlaubt
   nur Zugriff auf eigene Daten. Ohne Login ist nichts abrufbar.
 - Fotos/Dokumente liegen im privaten Bucket `attachments` im Ordner des Nutzers.
-
-## Veröffentlichen
-
-Jeder Push auf `main` baut die App per GitHub Actions und veröffentlicht sie auf GitHub Pages.
-Benötigte Repository-Variablen (Settings → Secrets and variables → Actions → Variables):
-`VITE_SUPABASE_URL`, `VITE_SUPABASE_KEY`, `VITE_VAPID_PUBLIC_KEY`.
+- Die veröffentlichte App hat eine Content Security Policy: Sie darf nur mit deinem
+  Supabase-Projekt und der Ferien-Schnittstelle (openholidaysapi.org) sprechen.

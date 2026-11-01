@@ -22,4 +22,4 @@ The code was written step by step together with the AI and checked by me.
 - Dexie (IndexedDB) for local data
 - Supabase for sync and sign-in
 
-Setup notes (in German) are in [ANLEITUNG.md](ANLEITUNG.md).
+Setup notes are in [GUIDE.md](GUIDE.md) (English) and [ANLEITUNG.md](ANLEITUNG.md) (German).

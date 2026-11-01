@@ -1,6 +1,7 @@
 import { parseISODate, toISODate } from './dates'
 import { useCollection, type Item } from './repo'
 import type { Settings } from './settings'
+import { locale, t } from './i18n'
 
 export const GRADES = 'grades'
 
@@ -29,9 +30,9 @@ export function useGrades() {
 }
 
 export const KIND_LABEL: Record<GradeKind, string> = {
-  schriftlich: 'Schriftlich',
-  muendlich: 'Mündlich',
-  besprechung: 'Notenbesprechung',
+  schriftlich: t('Schriftlich'),
+  muendlich: t('Mündlich'),
+  besprechung: t('Notenbesprechung'),
 }
 
 // ---------- Notenskalen ----------
@@ -63,7 +64,7 @@ export function valueIn(g: Grade, system: GradeSystem) {
 
 export function formatAverage(v: number | null | undefined, system: GradeSystem) {
   if (v == null || Number.isNaN(v)) return '–'
-  return v.toLocaleString('de-DE', { minimumFractionDigits: system === 'punkte' ? 1 : 2, maximumFractionDigits: system === 'punkte' ? 1 : 2 })
+  return v.toLocaleString(locale, { minimumFractionDigits: system === 'punkte' ? 1 : 2, maximumFractionDigits: system === 'punkte' ? 1 : 2 })
 }
 
 /** Zeugnisnote: kaufmännisch gerundet (die Lehrkraft entscheidet am Ende selbst) */
@@ -190,7 +191,7 @@ function fmt(v: number, system: GradeSystem) {
 }
 
 function fmtW(w: number) {
-  return w.toLocaleString('de-DE', { maximumFractionDigits: 2 })
+  return w.toLocaleString(locale, { maximumFractionDigits: 2 })
 }
 
 const before = (a: Grade, b: Grade) => a.date < b.date || (a.date === b.date && a.createdAt < b.createdAt)
@@ -209,7 +210,7 @@ export function computeSubject(grades: Item<Grade>[], settings: Settings, writte
   const replaced = (g: Grade) => Boolean(besprechung && g !== besprechung && before(g, besprechung))
 
   const toPart = (g: Item<Grade>): Part => ({
-    label: `${g.kind === 'muendlich' ? 'Mündlich' : g.type ?? 'Schriftlich'} ${g.label}`,
+    label: `${g.kind === 'muendlich' ? t('Mündlich') : t(g.type ?? 'Schriftlich')} ${g.label}`,
     value: valueIn(g, sys),
     weight: g.kind === 'muendlich' ? 1 : settings.typeWeights[g.type ?? ''] ?? 1,
     grade: g,
@@ -244,23 +245,34 @@ export function computeSubject(grades: Item<Grade>[], settings: Settings, writte
   const sumW = (parts: Part[]) => parts.filter((p) => !p.replaced).reduce((s, p) => s + p.weight, 0)
   if (besprechung) {
     const count = sorted.filter((g) => replaced(g)).length
+    const vars = { date: parseISODate(besprechung.date).toLocaleDateString(locale), value: fmt(bValue!, sys), n: count }
     explanation.push(
-      `Zwischenstand aus der Notenbesprechung vom ${parseISODate(besprechung.date).toLocaleDateString('de-DE')}: ${fmt(bValue!, sys)}` +
-        (count ? ` – ersetzt ${count} frühere Note${count > 1 ? 'n' : ''}.` : '.'),
+      count === 0
+        ? t('Zwischenstand aus der Notenbesprechung vom {date}: {value}.', vars)
+        : count === 1
+          ? t('Zwischenstand aus der Notenbesprechung vom {date}: {value} – ersetzt 1 frühere Note.', vars)
+          : t('Zwischenstand aus der Notenbesprechung vom {date}: {value} – ersetzt {n} frühere Noten.', vars),
     )
   }
-  const prefix = besprechung ? 'Seitdem ' : ''
-  if (written != null) explanation.push(`${prefix}schriftlich: (${formula(writtenParts)}) ÷ ${fmtW(sumW(writtenParts))} = ${fmt(written, sys)}`.replace(/^s/, (c) => (prefix ? c : c.toUpperCase())))
-  if (oral != null) explanation.push(`${prefix}mündlich: (${formula(oralParts)}) ÷ ${fmtW(sumW(oralParts))} = ${fmt(oral, sys)}`.replace(/^m/, (c) => (prefix ? c : c.toUpperCase())))
+  if (written != null) {
+    const vars = { formula: formula(writtenParts), sum: fmtW(sumW(writtenParts)), value: fmt(written, sys) }
+    explanation.push(besprechung ? t('Seitdem schriftlich: ({formula}) ÷ {sum} = {value}', vars) : t('Schriftlich: ({formula}) ÷ {sum} = {value}', vars))
+  }
+  if (oral != null) {
+    const vars = { formula: formula(oralParts), sum: fmtW(sumW(oralParts)), value: fmt(oral, sys) }
+    explanation.push(besprechung ? t('Seitdem mündlich: ({formula}) ÷ {sum} = {value}', vars) : t('Mündlich: ({formula}) ÷ {sum} = {value}', vars))
+  }
   if (written != null && oral != null) {
-    explanation.push(`${besprechung ? 'Seitdem zusammen' : 'Gesamt'}: ${Math.round(share * 100)} % × ${fmt(written, sys)} + ${Math.round((1 - share) * 100)} % × ${fmt(oral, sys)} = ${fmt(since!, sys)}`)
+    const vars = { w: Math.round(share * 100), written: fmt(written, sys), o: Math.round((1 - share) * 100), oral: fmt(oral, sys), value: fmt(since!, sys) }
+    explanation.push(besprechung ? t('Seitdem zusammen: {w} % × {written} + {o} % × {oral} = {value}', vars) : t('Gesamt: {w} % × {written} + {o} % × {oral} = {value}', vars))
   } else if (since != null && !besprechung) {
-    explanation.push(`Gesamt: Es gibt bisher nur ${written != null ? 'schriftliche' : 'mündliche'} Noten, daher zählen nur diese.`)
+    explanation.push(written != null ? t('Gesamt: Es gibt bisher nur schriftliche Noten, daher zählen nur diese.') : t('Gesamt: Es gibt bisher nur mündliche Noten, daher zählen nur diese.'))
   }
   if (besprechung && since != null) {
-    explanation.push(`Gesamt: (${fmt(bValue!, sys)} × ${fmtW(n)} + ${fmt(since, sys)} × ${fmtW(m)}) ÷ ${fmtW(n + m)} = ${fmt(total!, sys)} – der Zwischenstand zählt wie ${fmtW(n)} Noten.`)
+    const vars = { b: fmt(bValue!, sys), n: fmtW(n), since: fmt(since, sys), m: fmtW(m), sum: fmtW(n + m), value: fmt(total!, sys) }
+    explanation.push(t('Gesamt: ({b} × {n} + {since} × {m}) ÷ {sum} = {value} – der Zwischenstand zählt wie {n} Noten.', vars))
   } else if (besprechung) {
-    explanation.push(`Seit der Besprechung gibt es noch keine neuen Noten, daher gilt der Zwischenstand.`)
+    explanation.push(t('Seit der Besprechung gibt es noch keine neuen Noten, daher gilt der Zwischenstand.'))
   }
 
   return { written, oral, total, writtenParts, oralParts, besprechung, writtenShare: share, explanation }
@@ -293,7 +305,7 @@ export function requiredGrade(
     date: '9999-12-31',
     createdAt: Number.MAX_SAFE_INTEGER - planned.length + i,
   })
-  const totalWith = (v: number) => computeSubject([...grades, ...planned.map((t, i) => fake(v, t, i))], settings, writtenPercent).total!
+  const totalWith = (v: number) => computeSubject([...grades, ...planned.map((tp, i) => fake(v, tp, i))], settings, writtenPercent).total!
   const reaches = (v: number) => (sys === 'punkte' ? totalWith(v) >= target - 1e-9 : totalWith(v) <= target + 1e-9)
   if (!reaches(best)) return 'unreachable'
   if (reaches(worst)) return 'safe'

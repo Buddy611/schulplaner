@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { toMinutes } from '../lib/dates'
 import { periodTitle, slotTime, type Period } from '../lib/models'
+import { t } from '../lib/i18n'
 
 /** Eine Kachel im Raster, von Platz `start` bis `end` (Halbstunden-Plätze, siehe lessonSlots) */
 export interface GridBlock {
@@ -101,7 +102,7 @@ export function WeekGrid({
             className={cls}
             style={{ gridColumn: col + 2, gridRow: rowStyle }}
             onClick={onEmpty ? () => onEmpty(col, i, half) : undefined}
-            aria-label="Freie Stunde eintragen"
+            aria-label={t('Freie Stunde eintragen')}
           >
             {onEmpty && emptyContent}
           </Tag>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useChanges, type LessonChange } from './changes'
 import { addDays, parseISODate, toISODate, toMinutes } from './dates'
-import { holidayOn, useHolidays, type Holiday } from './holidays'
+import { holidayOn, regionKey, useHolidays, type Holiday } from './holidays'
 import {
   C,
   lessonAppliesToWeek,
@@ -21,6 +21,7 @@ import {
 } from './models'
 import { useCollection, type Item } from './repo'
 import { useSettings } from './settings'
+import { t } from './i18n'
 
 /** Eine konkrete Stunde an einem bestimmten Datum */
 export interface ScheduledLesson {
@@ -56,7 +57,7 @@ export function useSchedule() {
   const { timetable, all: allTimetables } = useActiveTimetable()
   const lessons = useCollection<Lesson>(C.lessons)
   const changes = useChanges()
-  const holidays = useHolidays(settings.state)
+  const holidays = useHolidays(regionKey(settings))
   const lookups = useLookups()
   const ready = timetable !== undefined && lessons !== undefined && changes !== undefined && lookups.loaded
 
@@ -91,7 +92,7 @@ export function useSchedule() {
       .sort((a, b) => Number(Boolean(b.l.week)) - Number(Boolean(a.l.week)))
     const taken: { start: number; end: number }[] = []
     const chosen = candidates.filter(({ slots }) => {
-      if (taken.some((t) => slots.start <= t.end && t.start <= slots.end)) return false
+      if (taken.some((tp) => slots.start <= tp.end && tp.start <= slots.end)) return false
       taken.push(slots)
       return true
     })
@@ -180,13 +181,13 @@ export function useNow(intervalMs = 30_000) {
 }
 
 export function formatCountdown(minutes: number): string {
-  if (minutes < 1) return 'gleich'
-  if (minutes < 60) return `in ${minutes} Min.`
+  if (minutes < 1) return t('gleich')
+  if (minutes < 60) return t('in {n} Min.', { n: minutes })
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
-  if (h < 24) return m ? `in ${h} Std. ${m} Min.` : `in ${h} Std.`
+  if (h < 24) return m ? t('in {h} Std. {m} Min.', { h, m }) : t('in {h} Std.', { h })
   const days = Math.round(minutes / 1440)
-  return days === 1 ? 'morgen' : `in ${days} Tagen`
+  return days === 1 ? t('morgen') : t('in {n} Tagen', { n: days })
 }
 
 export function isToday(d: Date) {

@@ -1,4 +1,4 @@
-import { deriveHalfYears, useHolidays } from './holidays'
+import { deriveHalfYears, regionKey, useHolidays } from './holidays'
 import { useSettings, type Settings } from './settings'
 
 /**
@@ -7,7 +7,7 @@ import { useSettings, type Settings } from './settings'
  */
 export function useHalfYearSettings(): Settings & { halfYearSource: 'ferien' | 'eigene' } {
   const settings = useSettings()
-  const holidays = useHolidays(settings.state)
+  const holidays = useHolidays(regionKey(settings))
   const derived = settings.halfYearAuto ? deriveHalfYears(holidays) : null
   if (!derived) return { ...settings, halfYearSource: 'eigene' }
   return { ...settings, ...derived, halfYearSource: 'ferien' }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatDate, toISODate } from '../lib/dates'
 import type { useSchedule } from '../lib/schedule'
+import { t } from '../lib/i18n'
 
 const KEY = 'schulplaner-packed'
 
@@ -51,14 +52,15 @@ export function PackingList({ schedule, day }: { schedule: ReturnType<typeof use
   if (!hasAnyMaterials) {
     return (
       <div className="card empty" style={{ padding: 20 }}>
-        Trag bei deinen <Link to="/einstellungen/faecher">Fächern</Link> ein, was du mitbringen musst – dann steht hier, was in die Tasche gehört.
+        {t('Trag bei deinen Fächern ein, was du mitbringen musst – dann steht hier, was in die Tasche gehört.')}{' '}
+        <Link to="/einstellungen/faecher">{t('Zu den Fächern')}</Link>
       </div>
     )
   }
   if (items.length === 0) {
     return (
       <div className="card empty" style={{ padding: 20 }}>
-        Für {formatDate(day, { weekday: 'long' })} brauchst du kein besonderes Material.
+        {t('Für {day} brauchst du kein besonderes Material.', { day: formatDate(day, { weekday: 'long' }) })}
       </div>
     )
   }
@@ -74,7 +76,7 @@ export function PackingList({ schedule, day }: { schedule: ReturnType<typeof use
           <span className="value">{subjects.join(', ')}</span>
         </label>
       ))}
-      {done === items.length && <div className="row muted" style={{ justifyContent: 'center' }}>Alles eingepackt</div>}
+      {done === items.length && <div className="row muted" style={{ justifyContent: 'center' }}>{t('Alles eingepackt')}</div>}
     </div>
   )
 }

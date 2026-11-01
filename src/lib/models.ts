@@ -1,6 +1,7 @@
 import { fromMinutes, mondayOf, toISODate, toMinutes, parseISODate, weeksBetween } from './dates'
 import { useCollection, type Item } from './repo'
 import { useSettings } from './settings'
+import { t } from './i18n'
 
 export const C = {
   teachers: 'teachers',
@@ -39,7 +40,7 @@ export interface Subject {
 export type SubjectCategory = 'haupt' | 'neben'
 
 // Übliche Hauptfächer (Kernfächer und Fremdsprachen) – nur für Fächer ohne eigene Angabe
-const HAUPT_NAMES = ['deutsch', 'mathematik', 'mathe', 'englisch', 'französisch', 'latein', 'spanisch', 'russisch', 'italienisch', 'griechisch', 'altgriechisch', 'chinesisch', 'türkisch', 'polnisch', 'niederländisch']
+const HAUPT_NAMES = ['german', 'maths', 'math', 'mathematics', 'english', 'french', 'latin', 'spanish', 'deutsch', 'mathematik', 'mathe', 'englisch', 'französisch', 'latein', 'spanisch', 'russisch', 'italienisch', 'griechisch', 'altgriechisch', 'chinesisch', 'türkisch', 'polnisch', 'niederländisch']
 
 export function subjectCategory(s: Pick<Subject, 'name' | 'category'>): SubjectCategory {
   return s.category ?? (HAUPT_NAMES.includes(s.name.trim().toLowerCase()) ? 'haupt' : 'neben')
@@ -70,7 +71,7 @@ export interface Timetable {
  * Pläne ohne Datum gelten nur, wenn keiner mit Datum passt (dann der aktive).
  */
 export function timetableForDate<T extends Timetable & { id: string }>(all: T[], active: T | null, iso: string): T | null {
-  const dated = all.filter((t) => t.validFrom && t.validFrom <= iso).sort((a, b) => b.validFrom!.localeCompare(a.validFrom!))
+  const dated = all.filter((tp) => tp.validFrom && tp.validFrom <= iso).sort((a, b) => b.validFrom!.localeCompare(a.validFrom!))
   if (dated[0]) {
     // Ein aktiver Plan ohne Datum, der neuer angelegt ist, hat Vorrang vor älteren datierten Plänen
     if (active && !active.validFrom && active.createdAt > dated[0].createdAt) return active
@@ -78,7 +79,7 @@ export function timetableForDate<T extends Timetable & { id: string }>(all: T[],
   }
   if (active && active.validFrom && active.validFrom > iso) {
     // Aktiver Plan gilt erst später → bis dahin der neueste Plan ohne Datum
-    return [...all].filter((t) => !t.validFrom).sort((a, b) => b.createdAt - a.createdAt)[0] ?? active
+    return [...all].filter((tp) => !tp.validFrom).sort((a, b) => b.createdAt - a.createdAt)[0] ?? active
   }
   return active
 }
@@ -136,30 +137,32 @@ export const SUBJECT_COLORS = [
 ]
 
 /** Typische Schulfächer zum schnellen Anlegen (Namen später frei änderbar) */
-export const STANDARD_SUBJECTS: Omit<Subject, 'teacherId' | 'roomId'>[] = [
-  { name: 'Deutsch', short: 'De', color: '#e53935', category: 'haupt' },
-  { name: 'Mathematik', short: 'Ma', color: '#3949ab', category: 'haupt' },
-  { name: 'Englisch', short: 'En', color: '#fb8c00', category: 'haupt' },
-  { name: 'Französisch', short: 'Fr', color: '#1e88e5', category: 'haupt' },
-  { name: 'Latein', short: 'La', color: '#fdd835', category: 'haupt' },
-  { name: 'Spanisch', short: 'Sn', color: '#f4511e', category: 'haupt' },
-  { name: 'Biologie', short: 'Bi', color: '#7cb342', category: 'neben' },
-  { name: 'Chemie', short: 'Ch', color: '#43a047', category: 'neben' },
-  { name: 'Physik', short: 'Ph', color: '#757575', category: 'neben' },
-  { name: 'Informatik', short: 'If', color: '#00897b', category: 'neben' },
-  { name: 'Geschichte', short: 'Ge', color: '#29b6f6', category: 'neben' },
-  { name: 'Erdkunde', short: 'Ek', color: '#8d6e63', category: 'neben' },
-  { name: 'Politik', short: 'Po', color: '#ad1457', category: 'neben' },
-  { name: 'Wirtschaft', short: 'Wi', color: '#6a1b9a', category: 'neben' },
-  { name: 'Ev. Religion', short: 'eRe', color: '#c0ca33', category: 'neben' },
-  { name: 'Kath. Religion', short: 'kRe', color: '#afb42b', category: 'neben' },
-  { name: 'Ethik', short: 'Et', color: '#9e9d24', category: 'neben' },
-  { name: 'Philosophie', short: 'Phi', color: '#5d4037', category: 'neben' },
-  { name: 'Kunst', short: 'Ku', color: '#d81b60', category: 'neben' },
-  { name: 'Musik', short: 'Mu', color: '#00838f', category: 'neben' },
-  { name: 'Darstellendes Spiel', short: 'DS', color: '#6d4c41', category: 'neben' },
-  { name: 'Sport', short: 'Sp', color: '#f06292', category: 'neben' },
-]
+export const STANDARD_SUBJECTS: Omit<Subject, 'teacherId' | 'roomId'>[] = (
+  [
+    { name: 'Deutsch', short: 'De', color: '#e53935', category: 'haupt' },
+    { name: 'Mathematik', short: 'Ma', color: '#3949ab', category: 'haupt' },
+    { name: 'Englisch', short: 'En', color: '#fb8c00', category: 'haupt' },
+    { name: 'Französisch', short: 'Fr', color: '#1e88e5', category: 'haupt' },
+    { name: 'Latein', short: 'La', color: '#fdd835', category: 'haupt' },
+    { name: 'Spanisch', short: 'Sn', color: '#f4511e', category: 'haupt' },
+    { name: 'Biologie', short: 'Bi', color: '#7cb342', category: 'neben' },
+    { name: 'Chemie', short: 'Ch', color: '#43a047', category: 'neben' },
+    { name: 'Physik', short: 'Ph', color: '#757575', category: 'neben' },
+    { name: 'Informatik', short: 'If', color: '#00897b', category: 'neben' },
+    { name: 'Geschichte', short: 'Ge', color: '#29b6f6', category: 'neben' },
+    { name: 'Erdkunde', short: 'Ek', color: '#8d6e63', category: 'neben' },
+    { name: 'Politik', short: 'Po', color: '#ad1457', category: 'neben' },
+    { name: 'Wirtschaft', short: 'Wi', color: '#6a1b9a', category: 'neben' },
+    { name: 'Ev. Religion', short: 'eRe', color: '#c0ca33', category: 'neben' },
+    { name: 'Kath. Religion', short: 'kRe', color: '#afb42b', category: 'neben' },
+    { name: 'Ethik', short: 'Et', color: '#9e9d24', category: 'neben' },
+    { name: 'Philosophie', short: 'Phi', color: '#5d4037', category: 'neben' },
+    { name: 'Kunst', short: 'Ku', color: '#d81b60', category: 'neben' },
+    { name: 'Musik', short: 'Mu', color: '#00838f', category: 'neben' },
+    { name: 'Darstellendes Spiel', short: 'DS', color: '#6d4c41', category: 'neben' },
+    { name: 'Sport', short: 'Sp', color: '#f06292', category: 'neben' },
+  ] satisfies Omit<Subject, 'teacherId' | 'roomId'>[]
+).map((x) => ({ ...x, name: t(x.name), short: t(x.short + '|Kürzel') }))
 
 /** Beispiel-Zeitraster für einen neuen Stundenplan – frei änderbar */
 export function templatePeriods(): Period[] {
@@ -198,7 +201,7 @@ export function lessonNumber(periods: Period[], periodId: string): number {
 
 export function periodTitle(periods: Period[], period: Period): string {
   if (period.label) return period.label
-  return period.kind === 'lesson' ? `${lessonNumber(periods, period.id)}. Stunde` : 'Pause'
+  return period.kind === 'lesson' ? t('{n}. Stunde', { n: lessonNumber(periods, period.id) }) : t('Pause')
 }
 
 /** A- oder B-Woche für ein Datum (null, wenn der Stundenplan keine A/B-Wochen hat) */
@@ -229,7 +232,7 @@ export function useActiveTimetable(): { timetable: Item<Timetable> | null | unde
   const all = useCollection<Timetable>(C.timetables)
   if (!all) return { timetable: undefined, all }
   const sorted = [...all].sort((a, b) => a.createdAt - b.createdAt)
-  const timetable = sorted.find((t) => t.id === settings.activeTimetableId) ?? sorted[0] ?? null
+  const timetable = sorted.find((tp) => tp.id === settings.activeTimetableId) ?? sorted[0] ?? null
   return { timetable, all: sorted }
 }
 
@@ -243,7 +246,7 @@ export function useLookups() {
     teachers: [...(teachers ?? [])].sort(byName),
     rooms: [...(rooms ?? [])].sort(byName),
     subjectMap: new Map((subjects ?? []).map((s) => [s.id, s])),
-    teacherMap: new Map((teachers ?? []).map((t) => [t.id, t])),
+    teacherMap: new Map((teachers ?? []).map((tp) => [tp.id, tp])),
     roomMap: new Map((rooms ?? []).map((r) => [r.id, r])),
     loaded: Boolean(subjects && teachers && rooms),
   }

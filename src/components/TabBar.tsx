@@ -5,6 +5,7 @@ import { Icon } from './Icons'
 import { DEFAULT_NAV_LAYOUT, isSeparator, NAV_ITEMS, resolveLayout } from '../lib/layout'
 import { useSettings } from '../lib/settings'
 import type { JSX } from 'react'
+import { t as tr } from '../lib/i18n'
 
 const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' } as const
 
@@ -78,10 +79,10 @@ export function TabBar() {
     .slice(0, 5)
   return (
     <nav className="tabbar">
-      {items.map((t) => (
-        <NavLink key={t.to} to={t.to} end={t.to === '/'}>
-          <span className="indicator">{iconFor(t)}</span>
-          {t.short ?? t.label}
+      {items.map((tp) => (
+        <NavLink key={tp.to} to={tp.to} end={tp.to === '/'}>
+          <span className="indicator">{iconFor(tp)}</span>
+          {tp.short ?? tp.label}
         </NavLink>
       ))}
     </nav>
@@ -98,19 +99,19 @@ export function SideNav() {
     <aside className="sidenav">
       <div className="sidenav-title">{today?.name ?? 'Schulplaner'}</div>
       <nav>
-        {items.map((t, i) =>
-          t === 'trenner' ? (
+        {items.map((tp, i) =>
+          tp === 'trenner' ? (
             <hr key={'trenner' + i} className="sidenav-sep" />
           ) : (
-            <NavLink key={t.to} to={t.to} end={t.to === '/'}>
-              {iconFor(t)}
-              {t.label}
+            <NavLink key={tp.to} to={tp.to} end={tp.to === '/'}>
+              {iconFor(tp)}
+              {tp.label}
             </NavLink>
           ),
         )}
         <NavLink to="/einstellungen">
           {icons.settings}
-          Einstellungen
+          {tr('Einstellungen')}
         </NavLink>
       </nav>
     </aside>

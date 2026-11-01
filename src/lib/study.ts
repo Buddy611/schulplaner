@@ -58,7 +58,7 @@ export function parseVocabList(text: string): { front: string; back: string }[] 
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim()
     if (!line) continue
-    const parts = line.split(/\t| [-–=] |;|:(?=\s)/)
+    const parts = line.split(/\tp| [-–=] |;|:(?=\s)/)
     if (parts.length < 2) continue
     const front = parts[0].trim()
     const back = parts.slice(1).join(', ').trim()

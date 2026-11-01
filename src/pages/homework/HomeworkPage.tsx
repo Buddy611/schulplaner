@@ -8,6 +8,7 @@ import type { Item } from '../../lib/repo'
 import { useSchedule } from '../../lib/schedule'
 import { HomeworkRow } from './HomeworkCard'
 import { HomeworkSheet, type HomeworkDefaults } from './HomeworkSheet'
+import { t } from '../../lib/i18n'
 
 type Tab = 'offen' | 'erledigt'
 
@@ -31,7 +32,7 @@ export function HomeworkPage() {
   const open = openHomework(all)
   const q = query.trim().toLowerCase()
   const matches = (h: Homework) =>
-    !q || [h.title, h.notes, subjectMap.get(h.subjectId)?.name].some((t) => t?.toLowerCase().includes(q))
+    !q || [h.title, h.notes, subjectMap.get(h.subjectId)?.name].some((tp) => tp?.toLowerCase().includes(q))
 
   const list =
     tab === 'offen'
@@ -45,7 +46,7 @@ export function HomeworkPage() {
 
   async function toggle(h: Item<Homework>) {
     await setDone(h, !h.done)
-    if (!h.done) snackbar.show('Erledigt', { label: 'Rückgängig', run: () => void setDone({ ...h, done: true }, false) })
+    if (!h.done) snackbar.show(t('Erledigt'), { label: t('Rückgängig'), run: () => void setDone({ ...h, done: true }, false) })
   }
 
   function addNew() {
@@ -55,13 +56,13 @@ export function HomeworkPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Hausaufgaben">
-        <button type="button" className="icon-btn" aria-label="Hausaufgabe hinzufügen" onClick={addNew}>
+      <PageHeader title={t('Hausaufgaben')}>
+        <button type="button" className="icon-btn" aria-label={t('Hausaufgabe hinzufügen')} onClick={addNew}>
           +
         </button>
       </PageHeader>
       <p className="subtitle">
-        {open.length === 0 ? 'Alles erledigt' : `${open.length} offene Hausaufgabe${open.length > 1 ? 'n' : ''}`}
+        {open.length === 0 ? t('Alles erledigt') : open.length === 1 ? t('1 offene Hausaufgabe') : t('{n} offene Hausaufgaben', { n: open.length })}
       </p>
 
       <div className="toolbar">
@@ -69,22 +70,22 @@ export function HomeworkPage() {
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'offen', label: 'Offen' },
-            { value: 'erledigt', label: 'Erledigt' },
+            { value: 'offen', label: t('Offen') },
+            { value: 'erledigt', label: t('Erledigt') },
           ]}
         />
       </div>
-      <input className="input search" type="search" placeholder="Suchen" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <input className="input search" type="search" placeholder={t('Suchen')} value={query} onChange={(e) => setQuery(e.target.value)} />
 
       {list.length === 0 && (
         <p className="hint">
-          {q ? 'Nichts gefunden.' : tab === 'offen' ? 'Keine offenen Hausaufgaben. Tippe auf +, um eine einzutragen.' : 'Noch nichts erledigt.'}
+          {q ? t('Nichts gefunden.') : tab === 'offen' ? t('Keine offenen Hausaufgaben. Tippe auf +, um eine einzutragen.') : t('Noch nichts erledigt.')}
         </p>
       )}
 
       {overdue.length > 0 && (
         <>
-          <h2 className="section-title overdue">Überfällig</h2>
+          <h2 className="section-title overdue">{t('Überfällig')}</h2>
           <div className="list">
             {overdue.map((h) => (
               <HomeworkRow key={h.id} hw={h} onToggle={() => toggle(h)} onOpen={() => setEditing({ hw: h })} />

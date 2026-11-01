@@ -1,5 +1,6 @@
 import { db, type LocalFile } from './db'
 import { scheduleSync } from './sync'
+import { t } from './i18n'
 
 /**
  * Backup als eine JSON-Datei: alle Datensätze und alle lokal vorhandenen Fotos/Dokumente.
@@ -92,10 +93,10 @@ export async function importBackup(file: File): Promise<{ records: number; files
   try {
     backup = JSON.parse(await file.text())
   } catch {
-    throw new Error('Die Datei ist kein gültiges Backup.')
+    throw new Error(t('Die Datei ist kein gültiges Backup.'))
   }
   if (backup?.app !== 'schulplaner' || !Array.isArray(backup.records)) {
-    throw new Error('Die Datei ist kein Schulplaner-Backup.')
+    throw new Error(t('Die Datei ist kein Schulplaner-Backup.'))
   }
 
   const now = Date.now()

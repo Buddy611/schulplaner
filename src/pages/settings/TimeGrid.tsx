@@ -6,6 +6,7 @@ import { db } from '../../lib/db'
 import { fromMinutes, toMinutes } from '../../lib/dates'
 import { C, periodTitle, sortPeriods, templatePeriods, useActiveTimetable, type Lesson, type Period, type Timetable } from '../../lib/models'
 import { put, remove, type Item } from '../../lib/repo'
+import { t } from '../../lib/i18n'
 
 function duration(p: Period) {
   return toMinutes(p.end) - toMinutes(p.start)
@@ -21,12 +22,12 @@ export function TimeGridPage() {
   const [editing, setEditing] = useState<Period | 'lesson' | 'break' | null>(null)
 
   if (timetable === undefined) return null
-  const back = { to: '/einstellungen', label: 'Einstellungen' }
+  const back = { to: '/einstellungen', label: t('Einstellungen') }
   if (!timetable) {
     return (
       <div className="page">
-        <PageHeader title="Zeitraster" back={back} />
-        <p className="hint">Lege zuerst unter „Stundenpläne“ einen Stundenplan an.</p>
+        <PageHeader title={t('Zeitraster')} back={back} />
+        <p className="hint">{t('Lege zuerst unter „Stundenpläne“ einen Stundenplan an.')}</p>
       </div>
     )
   }
@@ -35,8 +36,8 @@ export function TimeGridPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Zeitraster" back={back} />
-      <p className="subtitle">für „{timetable.name}“</p>
+      <PageHeader title={t('Zeitraster')} back={back} />
+      <p className="subtitle">{t('für „{name}“', { name: timetable.name })}</p>
 
       {periods.length > 0 && (
         <div className="list">
@@ -56,13 +57,13 @@ export function TimeGridPage() {
 
       <div className="btn-row">
         <button type="button" className="btn secondary" onClick={() => setEditing('lesson')}>
-          + Stunde
+          + {t('Stunde')}
         </button>
         <button type="button" className="btn secondary" onClick={() => setEditing('break')}>
-          + Pause
+          + {t('Pause')}
         </button>
       </div>
-      <p className="hint">Neue Einträge beginnen automatisch am Ende des letzten. Tippe auf einen Eintrag, um Zeiten zu ändern.</p>
+      <p className="hint">{t('Neue Einträge beginnen automatisch am Ende des letzten. Tippe auf einen Eintrag, um Zeiten zu ändern.')}</p>
 
       <div className="list" style={{ marginTop: 24 }}>
         <button
@@ -70,8 +71,8 @@ export function TimeGridPage() {
           className="row action reset-row"
           onClick={async () => {
             const ok = await confirmDialog(
-              'Das Zeitraster wird durch ein Beispiel-Raster (45-Minuten-Stunden) ersetzt. Die eingetragenen Stunden dieses Stundenplans werden dabei entfernt.',
-              { title: 'Zeitraster zurücksetzen?', confirm: 'Zurücksetzen', danger: true },
+              t('Das Zeitraster wird durch ein Beispiel-Raster (45-Minuten-Stunden) ersetzt. Die eingetragenen Stunden dieses Stundenplans werden dabei entfernt.'),
+              { title: t('Zeitraster zurücksetzen?'), confirm: t('Zurücksetzen'), danger: true },
             )
             if (!ok) return
             const lessons = await db.records.where({ collection: C.lessons, deleted: 0 }).toArray()
@@ -79,7 +80,7 @@ export function TimeGridPage() {
             await savePeriods(timetable, templatePeriods())
           }}
         >
-          Auf Standard zurücksetzen
+          {t('Auf Standard zurücksetzen')}
         </button>
       </div>
 
@@ -150,9 +151,9 @@ function PeriodSheet({
     })
     const msg =
       lessons.length > 0
-        ? `Diesen Eintrag löschen? ${lessons.length} eingetragene Stunde(n) werden ebenfalls entfernt.`
-        : 'Diesen Eintrag löschen?'
-    if (!(await confirmDialog(msg, { confirm: 'Löschen', danger: true }))) return
+        ? t('Diesen Eintrag löschen? {n} eingetragene Stunde(n) werden ebenfalls entfernt.', { n: lessons.length })
+        : t('Diesen Eintrag löschen?')
+    if (!(await confirmDialog(msg, { confirm: t('Löschen'), danger: true }))) return
     for (const l of lessons) await remove(l.id)
     await savePeriods(
       timetable,
@@ -162,7 +163,7 @@ function PeriodSheet({
   }
 
   return (
-    <Sheet title={period ? 'Bearbeiten' : kind === 'lesson' ? 'Neue Stunde' : 'Neue Pause'} onClose={onClose} onSave={save} saveDisabled={!valid}>
+    <Sheet title={period ? t('Bearbeiten') : kind === 'lesson' ? t('Neue Stunde') : t('Neue Pause')} onClose={onClose} onSave={save} saveDisabled={!valid}>
       <div className="list">
         <div className="row stack">
           <Segmented<Period['kind']>
@@ -174,22 +175,22 @@ function PeriodSheet({
             ]}
           />
         </div>
-        <Field label="Beginn">
+        <Field label={t('Beginn')}>
           <input className="row-input" type="time" value={start} onChange={(e) => setStart(e.target.value)} />
         </Field>
-        <Field label="Ende">
+        <Field label={t('Ende')}>
           <input className="row-input" type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
         </Field>
         <div className="row">
-          <span className="label">Dauer</span>
-          <span className="value">{valid ? `${toMinutes(end) - toMinutes(start)} Min.` : '–'}</span>
+          <span className="label">{t('Dauer')}</span>
+          <span className="value">{valid ? t('{n} Min.', { n: toMinutes(end) - toMinutes(start) }) : '–'}</span>
         </div>
-        <Field label="Bezeichnung">
+        <Field label={t('Bezeichnung')}>
           <input
             className="row-input"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder={kind === 'lesson' ? 'automatisch' : 'z. B. Mittagspause'}
+            placeholder={kind === 'lesson' ? t('automatisch') : t('z. B. Mittagspause')}
           />
         </Field>
       </div>
@@ -198,14 +199,14 @@ function PeriodSheet({
         <>
           <div className="list" style={{ marginTop: 24 }}>
             <div className="row">
-              <span className="label">Nachfolgende Zeiten mitverschieben</span>
+              <span className="label">{t('Nachfolgende Zeiten mitverschieben')}</span>
               <Switch checked={shiftFollowing} onChange={setShiftFollowing} />
             </div>
           </div>
-          <p className="section-footer">Wenn du das Ende änderst, rutschen alle späteren Stunden und Pausen um dieselbe Zeit mit.</p>
+          <p className="section-footer">{t('Wenn du das Ende änderst, rutschen alle späteren Stunden und Pausen um dieselbe Zeit mit.')}</p>
           <div className="list" style={{ marginTop: 24 }}>
             <button type="button" className="row danger" onClick={del}>
-              Löschen
+              {t('Löschen')}
             </button>
           </div>
         </>

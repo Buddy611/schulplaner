@@ -12,8 +12,8 @@ export function useSnackbar() {
   const [state, setState] = useState<SnackbarState | null>(null)
   useEffect(() => {
     if (!state) return
-    const t = setTimeout(() => setState(null), 4500)
-    return () => clearTimeout(t)
+    const tp = setTimeout(() => setState(null), 4500)
+    return () => clearTimeout(tp)
   }, [state])
 
   const show = (message: string, action?: SnackbarState['action']) => setState({ message, action, key: Date.now() })

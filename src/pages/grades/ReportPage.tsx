@@ -5,6 +5,7 @@ import { formatAverage, reportGrade } from '../../lib/grades'
 import { useGradeData } from '../../lib/useGradeData'
 import { useHalfYearParam } from './GradesPage'
 import { HalfYearPicker } from '../../components/HalfYearPicker'
+import { t } from '../../lib/i18n'
 
 /** Alle Fächer mit voraussichtlicher Zeugnisnote auf einen Blick */
 export function ReportPage() {
@@ -17,7 +18,7 @@ export function ReportPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Zeugnis-Vorschau" back={{ to: `/noten${q}`, label: 'Noten' }}>
+      <PageHeader title={t('Zeugnis-Vorschau')} back={{ to: `/noten${q}`, label: t('Noten') }}>
         <button type="button" className="link-btn no-print" onClick={() => window.print()}>
           PDF
         </button>
@@ -26,9 +27,9 @@ export function ReportPage() {
 
       <div className="report">
         <div className="report-head">
-          <span>Fach</span>
-          <span>Schnitt</span>
-          <span>Zeugnis</span>
+          <span>{t('Fach')}</span>
+          <span>{t('Schnitt')}</span>
+          <span>{t('Zeugnis')}</span>
         </div>
         {data.rows.map(({ subject, result }) => (
           <div key={subject.id} className="report-row">
@@ -41,7 +42,7 @@ export function ReportPage() {
           </div>
         ))}
         <div className="report-row total">
-          <span className="report-subject">Durchschnitt</span>
+          <span className="report-subject">{t('Durchschnitt')}</span>
           <span className="muted">{formatAverage(data.average, sys)}</span>
           <span className="report-grade">
             {data.withTotal.length
@@ -54,8 +55,7 @@ export function ReportPage() {
         </div>
       </div>
       <p className="section-footer">
-        Zeugnisnoten sind hier mathematisch gerundet. Die endgültige Note legt die Lehrkraft fest – sie kann z. B. die Entwicklung im Halbjahr
-        berücksichtigen. Der Durchschnitt rechts ist der Schnitt der gerundeten Zeugnisnoten.
+        {t('Zeugnisnoten sind hier mathematisch gerundet. Die endgültige Note legt die Lehrkraft fest – sie kann z. B. die Entwicklung im Halbjahr berücksichtigen. Der Durchschnitt rechts ist der Schnitt der gerundeten Zeugnisnoten.')}
       </p>
     </div>
   )

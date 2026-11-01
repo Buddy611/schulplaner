@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../lib/db'
 import { useAuth } from '../lib/auth'
 import { useSyncState } from '../lib/sync'
+import { t } from '../lib/i18n'
 
 export function usePendingCount() {
   return (
@@ -24,7 +25,7 @@ export function StatusPill() {
     return (
       <span className="status-pill offline">
         <span className="dot" />
-        Offline{pending > 0 && ` · ${pending} ausstehend`}
+        Offline{pending > 0 && ` · ${t('{n} ausstehend', { n: pending })}`}
       </span>
     )
   }
@@ -32,7 +33,7 @@ export function StatusPill() {
     return (
       <span className="status-pill error">
         <span className="dot" />
-        Neu anmelden
+        {t('Neu anmelden')}
       </span>
     )
   }
@@ -40,7 +41,7 @@ export function StatusPill() {
     return (
       <span className="status-pill syncing">
         <span className="dot" />
-        Synchronisiere…
+        {t('Synchronisiere…')}
       </span>
     )
   }
@@ -48,7 +49,7 @@ export function StatusPill() {
     return (
       <span className="status-pill error" title={error}>
         <span className="dot" />
-        Sync-Fehler
+        {t('Sync-Fehler')}
       </span>
     )
   }
@@ -56,7 +57,7 @@ export function StatusPill() {
     return (
       <span className="status-pill pending">
         <span className="dot" />
-        {pending} ausstehend
+        {t('{n} ausstehend', { n: pending })}
       </span>
     )
   }

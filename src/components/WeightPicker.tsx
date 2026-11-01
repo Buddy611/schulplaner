@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Segmented } from './ui'
+import { locale, t } from '../lib/i18n'
 
 const STANDARD = 'standard'
 const EIGENE = 'eigene'
@@ -46,7 +47,7 @@ export function WeightPicker({
   }
 
   const written = value ?? 50
-  const fmt = (n: number) => n.toLocaleString('de-DE', { maximumFractionDigits: 1 })
+  const fmt = (n: number) => n.toLocaleString(locale, { maximumFractionDigits: 1 })
 
   return (
     <>
@@ -57,16 +58,16 @@ export function WeightPicker({
         options={[
           ...(standardLabel ? [{ value: STANDARD, label: standardLabel }] : []),
           ...presets.map((p) => ({ value: String(p), label: `${p}/${100 - p}` })),
-          { value: EIGENE, label: selected === EIGENE ? `${fmt(written)}/${fmt(100 - written)}` : 'Eigene' },
+          { value: EIGENE, label: selected === EIGENE ? `${fmt(written)}/${fmt(100 - written)}` : t('Eigene') },
         ]}
       />
       {selected === EIGENE && (
         <div className="weight-custom">
           <label>
-            Schriftlich
+            {t('Schriftlich')}
             <input className="input" inputMode="decimal" value={draft} onChange={(e) => type(e.target.value)} onBlur={() => setDraft(fmt(written))} />%
           </label>
-          <span>Mündlich {fmt(100 - written)} %</span>
+          <span>{t('Mündlich {n} %', { n: fmt(100 - written) })}</span>
         </div>
       )}
     </>

@@ -6,6 +6,7 @@ import { formatDate, parseISODate, toISODate } from '../../lib/dates'
 import { periodTitle, sortPeriods, useActiveTimetable, useLookups } from '../../lib/models'
 import type { Item } from '../../lib/repo'
 import { ChangeSheet } from './ChangeSheet'
+import { t } from '../../lib/i18n'
 
 type Tab = 'kommend' | 'vorbei'
 
@@ -35,27 +36,27 @@ export function ChangesPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Vertretungen" back={{ to: '/stundenplan', label: 'Stundenplan' }}>
-        <button type="button" className="icon-btn" aria-label="Änderung eintragen" onClick={() => setEditing('new')}>
+      <PageHeader title={t('Vertretungen')} back={{ to: '/stundenplan', label: t('Stundenplan') }}>
+        <button type="button" className="icon-btn" aria-label={t('Änderung eintragen')} onClick={() => setEditing('new')}>
           +
         </button>
       </PageHeader>
-      <p className="subtitle">Ausfälle, Vertretungen und Raumänderungen</p>
+      <p className="subtitle">{t('Ausfälle, Vertretungen und Raumänderungen')}</p>
 
       <div className="toolbar">
         <Segmented<Tab>
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'kommend', label: 'Heute & später' },
-            { value: 'vorbei', label: 'Vorbei' },
+            { value: 'kommend', label: t('Heute & später') },
+            { value: 'vorbei', label: t('Vorbei') },
           ]}
         />
       </div>
 
       {list.length === 0 && (
         <p className="hint">
-          {tab === 'kommend' ? 'Keine Änderungen eingetragen. Tippe auf + oder in der Tagesansicht auf „+ Ausfall / Vertretung“.' : 'Noch nichts.'}
+          {tab === 'kommend' ? t('Keine Änderungen eingetragen. Tippe auf + oder in der Tagesansicht auf „+ Ausfall / Vertretung“.') : t('Noch nichts.')}
         </p>
       )}
 
@@ -66,16 +67,16 @@ export function ChangesPage() {
             {items.map((c) => {
               const subject = c.subjectId ? subjectMap.get(c.subjectId) : undefined
               const details = [
-                c.kind === 'vertretung' && c.teacherId && `bei ${teacherMap.get(c.teacherId)?.name ?? '?'}`,
-                subject && `Fach: ${subject.name}`,
-                c.roomId && `Raum ${roomMap.get(c.roomId)?.name ?? '?'}`,
+                c.kind === 'vertretung' && c.teacherId && t('bei {name}', { name: teacherMap.get(c.teacherId)?.name ?? '?' }),
+                subject && t('Fach: {name}', { name: subject.name }),
+                c.roomId && t('Raum {name}', { name: roomMap.get(c.roomId)?.name ?? '?' }),
                 c.note,
               ].filter(Boolean)
               return (
                 <button key={c.id} type="button" className="row" onClick={() => setEditing(c)}>
                   <span className={`change-pill big ${c.kind}`}>{CHANGE_LABEL[c.kind]}</span>
                   <span className="label">
-                    {plannedSubject(c) ?? 'Stunde'}
+                    {plannedSubject(c) ?? t('Stunde')}
                     {details.length > 0 && <span className="sub">{details.join(' · ')}</span>}
                   </span>
                 </button>

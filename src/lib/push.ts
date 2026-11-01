@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { t } from './i18n'
 
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined
 
@@ -29,9 +30,9 @@ export async function currentSubscription() {
 
 /** Dieses Gerät für Erinnerungen anmelden (braucht Internet) */
 export async function enablePush() {
-  if (!navigator.onLine) throw new Error('Zum Aktivieren wird Internet benötigt.')
+  if (!navigator.onLine) throw new Error(t('Zum Aktivieren wird Internet benötigt.'))
   const permission = await Notification.requestPermission()
-  if (permission !== 'granted') throw new Error('Benachrichtigungen wurden nicht erlaubt. Du kannst das in den Geräte-Einstellungen ändern.')
+  if (permission !== 'granted') throw new Error(t('Benachrichtigungen wurden nicht erlaubt. Du kannst das in den Geräte-Einstellungen ändern.'))
   const reg = await navigator.serviceWorker.ready
   const sub =
     (await reg.pushManager.getSubscription()) ??

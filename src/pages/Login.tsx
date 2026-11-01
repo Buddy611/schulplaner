@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { supabaseConfigured } from '../lib/supabase'
+import { t } from '../lib/i18n'
 
 export function Login({ onDone }: { onDone?: () => void }) {
   const { signIn, user } = useAuth()
@@ -12,7 +13,7 @@ export function Login({ onDone }: { onDone?: () => void }) {
   async function submit(e: FormEvent) {
     e.preventDefault()
     if (!navigator.onLine) {
-      setError('Für die erste Anmeldung wird Internet benötigt.')
+      setError(t('Für die erste Anmeldung wird Internet benötigt.'))
       return
     }
     setBusy(true)
@@ -22,7 +23,7 @@ export function Login({ onDone }: { onDone?: () => void }) {
       onDone?.()
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      setError(msg.includes('Invalid login') ? 'E-Mail oder Passwort falsch.' : msg)
+      setError(msg.includes('Invalid login') ? t('E-Mail oder Passwort falsch.') : msg)
     } finally {
       setBusy(false)
     }
@@ -33,13 +34,13 @@ export function Login({ onDone }: { onDone?: () => void }) {
       <img src={`${import.meta.env.BASE_URL}pwa-192x192.png`} alt="" />
       <h1>Schulplaner</h1>
       {!supabaseConfigured && (
-        <p className="error-text">Supabase ist noch nicht eingerichtet (VITE_SUPABASE_URL / VITE_SUPABASE_KEY fehlen).</p>
+        <p className="error-text">{t('Supabase ist noch nicht eingerichtet (VITE_SUPABASE_URL / VITE_SUPABASE_KEY fehlen).')}</p>
       )}
       <input
         className="input"
         type="email"
         autoComplete="username"
-        placeholder="E-Mail"
+        placeholder={t('E-Mail')}
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
@@ -48,14 +49,14 @@ export function Login({ onDone }: { onDone?: () => void }) {
         className="input"
         type="password"
         autoComplete="current-password"
-        placeholder="Passwort"
+        placeholder={t('Passwort')}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
       />
       {error && <p className="error-text">{error}</p>}
       <button className="btn" disabled={busy}>
-        {busy ? 'Anmelden…' : 'Anmelden'}
+        {busy ? t('Anmelden…') : t('Anmelden')}
       </button>
     </form>
   )

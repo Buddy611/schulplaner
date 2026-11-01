@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { IconBubble, type IconName, type Tone } from './Icons'
 import { confirmDialog } from './dialogs'
 import { ColorWheel } from './ColorWheel'
+import { t } from '../lib/i18n'
 
 export function Segmented<T extends string>({
   value,
@@ -89,8 +90,8 @@ export function ColorDot({ color, size = 12 }: { color: string; size?: number })
 const PALETTE: string[][] = (() => {
   const tones = [30, 45, 60, 75]
   const rows: string[][] = []
-  for (let h = 0; h < 360; h += 24) rows.push(tones.map((t) => hexFromArgb(Hct.from(h, 60, t).toInt())))
-  rows.push([25, 45, 65, 85].map((t) => hexFromArgb(Hct.from(0, 0, t).toInt())))
+  for (let h = 0; h < 360; h += 24) rows.push(tones.map((tp) => hexFromArgb(Hct.from(h, 60, tp).toInt())))
+  rows.push([25, 45, 65, 85].map((tp) => hexFromArgb(Hct.from(0, 0, tp).toInt())))
   return rows
 })()
 
@@ -114,20 +115,20 @@ export function ColorPicker({ value, colors, onChange }: { value: string; colors
         type="button"
         className={`swatch custom ${!isPreset ? 'active has-color' : ''}`}
         style={!isPreset ? { background: value } : undefined}
-        aria-label="Weitere Farben"
+        aria-label={t('Weitere Farben')}
         onClick={() => setOpen(true)}
       >
         +
       </button>
       {open && (
-        <Sheet title="Farbe wählen" onClose={() => setOpen(false)}>
+        <Sheet title={t('Farbe wählen')} onClose={() => setOpen(false)}>
           <div style={{ margin: '4px 0 16px' }}>
             <Segmented<'palette' | 'wheel'>
               value={mode}
               onChange={setMode}
               options={[
-                { value: 'palette', label: 'Palette' },
-                { value: 'wheel', label: 'Farbrad & Code' },
+                { value: 'palette', label: t('Palette') },
+                { value: 'wheel', label: t('Farbrad & Code') },
               ]}
             />
           </div>
@@ -180,7 +181,7 @@ export function Sheet({
   title,
   onClose,
   onSave,
-  saveLabel = 'Fertig',
+  saveLabel = t('Fertig'),
   saveDisabled,
   children,
 }: {
@@ -210,7 +211,7 @@ export function Sheet({
       <div className="sheet" role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <header className="sheet-header">
           <button type="button" className="link-btn" onClick={onClose}>
-            Abbrechen
+            {t('Abbrechen')}
           </button>
           <h2>{title}</h2>
           {onSave ? (
@@ -236,10 +237,10 @@ export function ResetButton({ what, onReset }: { what: string; onReset: () => vo
         type="button"
         className="row action reset-row"
         onClick={async () => {
-          if (await confirmDialog(`${what} auf die Standardwerte zurücksetzen?`, { title: 'Zurücksetzen?', confirm: 'Zurücksetzen' })) await onReset()
+          if (await confirmDialog(t('{what} auf die Standardwerte zurücksetzen?', { what }), { title: t('Zurücksetzen?'), confirm: t('Zurücksetzen') })) await onReset()
         }}
       >
-        Auf Standard zurücksetzen
+        {t('Auf Standard zurücksetzen')}
       </button>
     </div>
   )
@@ -268,10 +269,10 @@ export function Select({
   options,
   onChange,
   title,
-  placeholder = 'Bitte wählen …',
+  placeholder = t('Bitte wählen …'),
   extra,
   suggested,
-  allHeading = 'Alle',
+  allHeading = t('Alle'),
 }: {
   value: string | undefined
   options: SelectOption[]
@@ -348,10 +349,10 @@ export function EntitySelect({
   value,
   items,
   onChange,
-  emptyLabel = 'Keine Angabe',
+  emptyLabel = t('Keine Angabe'),
   onCreate,
-  createLabel = 'Neu …',
-  title = 'Auswählen',
+  createLabel = t('Neu …'),
+  title = t('Auswählen'),
   suggested,
   allHeading,
 }: {

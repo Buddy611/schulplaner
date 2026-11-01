@@ -78,6 +78,41 @@ async function send(subs: Sub[], payload: { title: string; body: string; url?: s
   return sent
 }
 
+// Texte der Erinnerungen auf Deutsch und Englisch (Sprache aus den Einstellungen der App)
+const TEXTS = {
+  de: {
+    hw1: 'Hausaufgabe für morgen',
+    hwN: (n: number) => `${n} Hausaufgaben für morgen`,
+    more: (n: number) => `… und ${n} weitere`,
+    subject: 'Fach',
+    topics: (done: number, total: number) => ` · ${done}/${total} Themen gelernt`,
+    tomorrow: 'morgen',
+    inDays: (n: number) => `in ${n} Tagen`,
+    exam: (subject: string, type: string, when: string) => `${subject}-${type} ${when}`,
+    both: 'Hausaufgaben & Klausuren',
+    examTitle: 'Klausur-Erinnerung',
+    excuses: (n: number) => (n > 1 ? `${n} Entschuldigungen noch nicht abgegeben` : '1 Entschuldigung noch nicht abgegeben'),
+    excuseTitle: 'Entschuldigung abgeben',
+    test: 'Test: Benachrichtigungen funktionieren.',
+  },
+  en: {
+    hw1: 'Homework for tomorrow',
+    hwN: (n: number) => `${n} homework items for tomorrow`,
+    more: (n: number) => `… and ${n} more`,
+    subject: 'Subject',
+    topics: (done: number, total: number) => ` · ${done}/${total} topics studied`,
+    tomorrow: 'tomorrow',
+    inDays: (n: number) => `in ${n} days`,
+    exam: (subject: string, type: string, when: string) => `${subject} ${EXAM_TYPES_EN[type] ?? type} ${when}`,
+    both: 'Homework & exams',
+    examTitle: 'Exam reminder',
+    excuses: (n: number) => (n > 1 ? `${n} excuse notes not handed in yet` : '1 excuse note not handed in yet'),
+    excuseTitle: 'Hand in your excuse note',
+    test: 'Test: notifications are working.',
+  },
+}
+const EXAM_TYPES_EN: Record<string, string> = { Klausur: 'exam', Test: 'test', Sprechprüfung: 'oral exam' }
+
 /** Erinnerungen für einen Nutzer (einmal pro Tag, ab der eingestellten Uhrzeit) */
 async function remindUser(userId: string, subs: Sub[], now: { date: string; minutes: number }) {
   const { data: rows } = await db
@@ -88,7 +123,8 @@ async function remindUser(userId: string, subs: Sub[], now: { date: string; minu
     .in('collection', ['settings', 'homework', 'exams', 'subjects', 'absences'])
   if (!rows) return 0
 
-  const settings = rows.find((r) => r.collection === 'settings')?.data as { notifications?: NotifySettings } | undefined
+  const settings = rows.find((r) => r.collection === 'settings')?.data as { notifications?: NotifySettings; notifyLang?: string } | undefined
+  const tx = TEXTS[settings?.notifyLang === 'en' ? 'en' : 'de']
   const cfg = settings?.notifications
   if (!cfg?.enabled) return 0
   const target = toMinutes(cfg.time ?? '18:00')
@@ -110,9 +146,9 @@ async function remindUser(userId: string, subs: Sub[], now: { date: string; minu
       .map((r) => r.data as { subjectId: string; title: string; dueDate: string; done: boolean })
       .filter((h) => !h.done && h.dueDate === tomorrow)
     if (due.length) {
-      title = due.length === 1 ? 'Hausaufgabe für morgen' : `${due.length} Hausaufgaben für morgen`
-      for (const h of due.slice(0, 4)) lines.push(`${subjects.get(h.subjectId) ?? 'Fach'}: ${h.title}`)
-      if (due.length > 4) lines.push(`… und ${due.length - 4} weitere`)
+      title = due.length === 1 ? tx.hw1 : tx.hwN(due.length)
+      for (const h of due.slice(0, 4)) lines.push(`${subjects.get(h.subjectId) ?? tx.subject}: ${h.title}`)
+      if (due.length > 4) lines.push(tx.more(due.length - 4))
     }
   }
 
@@ -124,10 +160,10 @@ async function remindUser(userId: string, subs: Sub[], now: { date: string; minu
     for (const d of examDays) {
       if (e.date !== addDays(now.date, d)) continue
       const topics = e.studyTopics ?? []
-      const progress = topics.length ? ` · ${topics.filter((t) => t.done).length}/${topics.length} Themen gelernt` : ''
-      const when = d === 1 ? 'morgen' : `in ${d} Tagen`
-      lines.push(`${subjects.get(e.subjectId) ?? 'Fach'}-${e.type} ${when}${e.topic ? ` (${e.topic})` : ''}${progress}`)
-      title = title ? 'Hausaufgaben & Klausuren' : 'Klausur-Erinnerung'
+      const progress = topics.length ? tx.topics(topics.filter((t) => t.done).length, topics.length) : ''
+      const when = d === 1 ? tx.tomorrow : tx.inDays(d)
+      lines.push(`${tx.exam(subjects.get(e.subjectId) ?? tx.subject, e.type, when)}${e.topic ? ` (${e.topic})` : ''}${progress}`)
+      title = title ? tx.both : tx.examTitle
     }
   }
 
@@ -139,8 +175,8 @@ async function remindUser(userId: string, subs: Sub[], now: { date: string; minu
       .map((r) => r.data as { date: string; excused: boolean })
       .filter((a) => !a.excused && a.date <= limit).length
     if (open) {
-      lines.push(`${open} Entschuldigung${open > 1 ? 'en' : ''} noch nicht abgegeben`)
-      if (!title) title = 'Entschuldigung abgeben'
+      lines.push(tx.excuses(open))
+      if (!title) title = tx.excuseTitle
     }
   }
 
@@ -169,7 +205,9 @@ Deno.serve(async (req) => {
     const { data, error } = await db.auth.getUser(token)
     if (error || !data.user) return json({ error: 'Nicht angemeldet' }, 401)
     const { data: subs } = await db.from('push_subscriptions').select('user_id, endpoint, p256dh, auth').eq('user_id', data.user.id)
-    const sent = await send(subs ?? [], { title: 'Schulplaner', body: 'Test: Benachrichtigungen funktionieren.', url: '/schulplaner/#/' })
+    const { data: st } = await db.from('records').select('data').eq('user_id', data.user.id).eq('collection', 'settings').maybeSingle()
+    const tx = TEXTS[(st?.data as { notifyLang?: string } | undefined)?.notifyLang === 'en' ? 'en' : 'de']
+    const sent = await send(subs ?? [], { title: 'Schulplaner', body: tx.test, url: '/schulplaner/#/' })
     return json({ ok: true, sent })
   }
 

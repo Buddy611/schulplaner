@@ -4,6 +4,7 @@ import { removeFiles } from './files'
 import { newId, useCollection, type Item, put, remove } from './repo'
 import { db } from './db'
 import type { ScheduledLesson, useSchedule } from './schedule'
+import { t } from './i18n'
 
 export const HOMEWORK = 'homework'
 
@@ -82,11 +83,11 @@ export function daysUntil(dueDate: string, now = new Date()) {
 
 export function dueLabel(dueDate: string) {
   const d = daysUntil(dueDate)
-  if (d < -1) return `Seit ${-d} Tagen überfällig`
-  if (d === -1) return 'Seit gestern überfällig'
-  if (d === 0) return 'Heute fällig'
-  if (d === 1) return 'Morgen fällig'
-  return `In ${d} Tagen fällig`
+  if (d < -1) return t('Seit {n} Tagen überfällig', { n: -d })
+  if (d === -1) return t('Seit gestern überfällig')
+  if (d === 0) return t('Heute fällig')
+  if (d === 1) return t('Morgen fällig')
+  return t('In {n} Tagen fällig', { n: d })
 }
 
 export function dayHeading(dueDate: string) {

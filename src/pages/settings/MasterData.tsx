@@ -4,8 +4,9 @@ import { PageHeader } from '../../components/PageHeader'
 import { Field, Sheet } from '../../components/ui'
 import { byName, C, type Room, type Teacher } from '../../lib/models'
 import { newId, put, remove, useCollection, type Item } from '../../lib/repo'
+import { t } from '../../lib/i18n'
 
-const BACK = { to: '/einstellungen', label: 'Einstellungen' }
+const BACK = { to: '/einstellungen', label: t('Einstellungen') }
 
 /** Schnell anlegen per Eingabedialog (z. B. direkt aus einem Dropdown heraus) */
 export async function quickCreate(collection: typeof C.teachers | typeof C.rooms): Promise<string | undefined> {
@@ -22,18 +23,18 @@ export function TeachersPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Lehrer" back={BACK}>
-        <button type="button" className="icon-btn" aria-label="Lehrer hinzufügen" onClick={() => setEditing('new')}>
+      <PageHeader title={t('Lehrer')} back={BACK}>
+        <button type="button" className="icon-btn" aria-label={t('Lehrer hinzufügen')} onClick={() => setEditing('new')}>
           +
         </button>
       </PageHeader>
-      {teachers && teachers.length === 0 && <p className="hint">Noch keine Lehrer. Tippe auf +, um einen anzulegen.</p>}
+      {teachers && teachers.length === 0 && <p className="hint">{t('Noch keine Lehrer. Tippe auf +, um einen anzulegen.')}</p>}
       {teachers && teachers.length > 0 && (
         <div className="list">
-          {[...teachers].sort(byName).map((t) => (
-            <button key={t.id} type="button" className="row" onClick={() => setEditing(t)}>
-              <span className="label">{t.name}</span>
-              {t.short && <span className="value">{t.short}</span>}
+          {[...teachers].sort(byName).map((tp) => (
+            <button key={tp.id} type="button" className="row" onClick={() => setEditing(tp)}>
+              <span className="label">{tp.name}</span>
+              {tp.short && <span className="value">{tp.short}</span>}
             </button>
           ))}
         </div>
@@ -53,7 +54,7 @@ function TeacherSheet({ teacher, onClose }: { teacher?: Item<Teacher>; onClose: 
   }
 
   async function del() {
-    if (teacher && await confirmDialog(`„${teacher.name}“ löschen?`, { confirm: 'Löschen', danger: true })) {
+    if (teacher && await confirmDialog(t('„{name}“ löschen?', { name: teacher.name }), { confirm: t('Löschen'), danger: true })) {
       await remove(teacher.id)
       onClose()
     }
@@ -62,17 +63,17 @@ function TeacherSheet({ teacher, onClose }: { teacher?: Item<Teacher>; onClose: 
   return (
     <Sheet title={teacher ? 'Lehrer bearbeiten' : 'Neuer Lehrer'} onClose={onClose} onSave={save} saveDisabled={!name.trim()}>
       <div className="list">
-        <Field label="Name">
-          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Frau Meyer" autoFocus />
+        <Field label={t('Name')}>
+          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. Frau Meyer')} autoFocus />
         </Field>
-        <Field label="Kürzel">
-          <input className="row-input" value={short} onChange={(e) => setShort(e.target.value)} placeholder="optional" />
+        <Field label={t('Kürzel')}>
+          <input className="row-input" value={short} onChange={(e) => setShort(e.target.value)} placeholder={t('optional')} />
         </Field>
       </div>
       {teacher && (
         <div className="list" style={{ marginTop: 24 }}>
           <button type="button" className="row danger" onClick={del}>
-            Lehrer löschen
+            {t('Lehrer löschen')}
           </button>
         </div>
       )}
@@ -86,12 +87,12 @@ export function RoomsPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Räume" back={BACK}>
-        <button type="button" className="icon-btn" aria-label="Raum hinzufügen" onClick={() => setEditing('new')}>
+      <PageHeader title={t('Räume')} back={BACK}>
+        <button type="button" className="icon-btn" aria-label={t('Raum hinzufügen')} onClick={() => setEditing('new')}>
           +
         </button>
       </PageHeader>
-      {rooms && rooms.length === 0 && <p className="hint">Noch keine Räume. Tippe auf +, um einen anzulegen.</p>}
+      {rooms && rooms.length === 0 && <p className="hint">{t('Noch keine Räume. Tippe auf +, um einen anzulegen.')}</p>}
       {rooms && rooms.length > 0 && (
         <div className="list">
           {[...rooms].sort(byName).map((r) => (
@@ -115,7 +116,7 @@ function RoomSheet({ room, onClose }: { room?: Item<Room>; onClose: () => void }
   }
 
   async function del() {
-    if (room && await confirmDialog(`Raum „${room.name}“ löschen?`, { confirm: 'Löschen', danger: true })) {
+    if (room && await confirmDialog(t('Raum „{name}“ löschen?', { name: room.name }), { confirm: t('Löschen'), danger: true })) {
       await remove(room.id)
       onClose()
     }
@@ -124,14 +125,14 @@ function RoomSheet({ room, onClose }: { room?: Item<Room>; onClose: () => void }
   return (
     <Sheet title={room ? 'Raum bearbeiten' : 'Neuer Raum'} onClose={onClose} onSave={save} saveDisabled={!name.trim()}>
       <div className="list">
-        <Field label="Name">
-          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. A204" autoFocus />
+        <Field label={t('Name')}>
+          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. A204')} autoFocus />
         </Field>
       </div>
       {room && (
         <div className="list" style={{ marginTop: 24 }}>
           <button type="button" className="row danger" onClick={del}>
-            Raum löschen
+            {t('Raum löschen')}
           </button>
         </div>
       )}

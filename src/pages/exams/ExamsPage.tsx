@@ -8,6 +8,7 @@ import { useGrades } from '../../lib/grades'
 import { periodTitle, sortPeriods, useActiveTimetable, useLookups } from '../../lib/models'
 import type { Item } from '../../lib/repo'
 import { ExamSheet } from './ExamSheet'
+import { t } from '../../lib/i18n'
 
 type Tab = 'kommend' | 'vorbei'
 
@@ -28,13 +29,13 @@ export function ExamsPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Klausuren">
-        <button type="button" className="icon-btn" aria-label="Klausur hinzufügen" onClick={() => setEditing('new')}>
+      <PageHeader title={t('Klausuren')}>
+        <button type="button" className="icon-btn" aria-label={t('Klausur hinzufügen')} onClick={() => setEditing('new')}>
           +
         </button>
       </PageHeader>
       <p className="subtitle">
-        {upcoming.length === 0 ? 'Keine kommenden Klausuren' : `${upcoming.length} zukünftige Klausur${upcoming.length > 1 ? 'en' : ''}`}
+        {upcoming.length === 0 ? t('Keine kommenden Klausuren') : upcoming.length === 1 ? t('1 kommende Klausur') : t('{n} kommende Klausuren', { n: upcoming.length })}
       </p>
 
       <div className="toolbar">
@@ -42,20 +43,20 @@ export function ExamsPage() {
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'kommend', label: 'Kommend' },
-            { value: 'vorbei', label: 'Vorbei' },
+            { value: 'kommend', label: t('Kommend') },
+            { value: 'vorbei', label: t('Vorbei') },
           ]}
         />
       </div>
 
       {list.length === 0 && (
-        <p className="hint">{tab === 'kommend' ? 'Tippe auf +, um eine Klausur oder einen Test einzutragen.' : 'Noch keine vergangenen Klausuren.'}</p>
+        <p className="hint">{tab === 'kommend' ? t('Tippe auf +, um eine Klausur oder einen Test einzutragen.') : t('Noch keine vergangenen Klausuren.')}</p>
       )}
 
       {[...groups.entries()].map(([monday, items]) => (
         <div key={monday}>
           <h2 className="section-title">
-            KW {isoWeek(parseISODate(monday))}: {weekRange(monday)}
+            {t('KW {n}', { n: isoWeek(parseISODate(monday)) })}: {weekRange(monday)}
           </h2>
           <div className="list">
             {items.map((e) => (
@@ -84,29 +85,29 @@ export function ExamRow({ exam, onOpen, compact }: { exam: Item<Exam>; onOpen: (
     <button type="button" className="row exam-row" onClick={onOpen}>
       <span className="color-bar" style={{ background: subject?.color ?? 'var(--outline)' }} />
       <span className="label">
-        <span className="exam-subject">{subject?.name ?? 'Fach gelöscht'}</span>
+        <span className="exam-subject">{subject?.name ?? t('Fach gelöscht')}</span>
         <span className="sub">
-          {exam.type}
+          {t(exam.type)}
           {exam.topic && ` · ${exam.topic}`}
         </span>
         <span className="sub">
           {formatDate(parseISODate(exam.date), { weekday: compact ? 'short' : 'long', day: 'numeric', month: 'long', year: compact ? undefined : 'numeric' })}
           {period && timetable && ` · ${periodTitle(sortPeriods(timetable.periods), period)}`}
-          {exam.startTime && ` · ${exam.startTime}–${exam.endTime ?? ''} Uhr`}
+          {exam.startTime && ` · ${t('{from}–{to} Uhr', { from: exam.startTime, to: exam.endTime ?? '' })}`}
         </span>
         {total > 0 && (
           <span className="study">
             <span className="progress">
               <span style={{ width: `${(done / total) * 100}%`, background: subject?.color }} />
             </span>
-            {done}/{total} Themen gelernt
+            {t('{done}/{total} Themen gelernt', { done, total })}
           </span>
         )}
       </span>
       <span className="exam-side">
         {room && <span className="value">{room.name}</span>}
         {days >= 0 && <span className={`countdown ${days <= 3 ? 'soon' : ''}`}>{examCountdown(exam.date)}</span>}
-        {days < 0 && (grade ? <span className="grade-chip">{grade.label}</span> : <span className="countdown">Note fehlt</span>)}
+        {days < 0 && (grade ? <span className="grade-chip">{grade.label}</span> : <span className="countdown">{t('Note fehlt')}</span>)}
       </span>
     </button>
   )

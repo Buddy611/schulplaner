@@ -1,6 +1,7 @@
 import { useLookups, periodTitle, sortPeriods, useActiveTimetable } from '../../lib/models'
 import { dueLabel, daysUntil, type Homework } from '../../lib/homework'
 import type { Item } from '../../lib/repo'
+import { t } from '../../lib/i18n'
 
 /** Eine Hausaufgabe als Listenzeile mit Kreis zum Abhaken */
 export function HomeworkRow({
@@ -34,7 +35,7 @@ export function HomeworkRow({
       </button>
       <button type="button" className="hw-body" onClick={onOpen}>
         <span className="hw-top">
-          <span className="hw-subject">{subject?.name ?? 'Fach gelöscht'}</span>
+          <span className="hw-subject">{subject?.name ?? t('Fach gelöscht')}</span>
           {period && timetable && (
             <span className="hw-time">
               {periodTitle(sortPeriods(timetable.periods), period)} · {period.start}
@@ -44,9 +45,9 @@ export function HomeworkRow({
         <span className={`hw-title ${hw.done ? 'striked' : ''}`}>{hw.title}</span>
         {hw.notes && <span className="hw-notes">{hw.notes}</span>}
         <span className="hw-meta">
-          {showDue && <span className={overdue ? 'overdue' : ''}>{hw.done ? 'Erledigt' : dueLabel(hw.dueDate)}</span>}
-          {hw.attachments?.length > 0 && <span>· {hw.attachments.length} Anhang{hw.attachments.length > 1 ? 'e' : ''}</span>}
-          {hw.repeatWeekly && <span>· jede Woche</span>}
+          {showDue && <span className={overdue ? 'overdue' : ''}>{hw.done ? t('Erledigt') : dueLabel(hw.dueDate)}</span>}
+          {hw.attachments?.length > 0 && <span>· {t('{n} Anhang', { n: hw.attachments.length })}</span>}
+          {hw.repeatWeekly && <span>· {t('jede Woche')}</span>}
         </span>
       </button>
     </div>

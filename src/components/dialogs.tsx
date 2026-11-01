@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
+import { t } from '../lib/i18n'
 
 /**
  * Eigene Dialoge im Material-3-Stil statt der Browser-Fenster (confirm/prompt/alert).
@@ -35,7 +36,7 @@ export function confirmDialog(
       message,
       title: opts.title,
       confirm: opts.confirm ?? 'OK',
-      cancel: opts.cancel ?? 'Abbrechen',
+      cancel: opts.cancel ?? t('Abbrechen'),
       danger: opts.danger ?? false,
       resolve,
     }),
@@ -47,7 +48,7 @@ export function promptDialog(
   opts: { message?: string; initial?: string; placeholder?: string; confirm?: string } = {},
 ): Promise<string | null> {
   return new Promise((resolve) =>
-    push({ kind: 'prompt', title, message: opts.message, initial: opts.initial ?? '', placeholder: opts.placeholder, confirm: opts.confirm ?? 'Fertig', resolve }),
+    push({ kind: 'prompt', title, message: opts.message, initial: opts.initial ?? '', placeholder: opts.placeholder, confirm: opts.confirm ?? t('Fertig'), resolve }),
   )
 }
 
@@ -101,7 +102,7 @@ function DialogView({ dialog }: { dialog: Dialog }) {
         <div className="dialog-actions">
           {dialog.kind !== 'alert' && (
             <button type="button" className="link-btn" onClick={() => close('cancel')}>
-              {dialog.kind === 'confirm' ? dialog.cancel : 'Abbrechen'}
+              {dialog.kind === 'confirm' ? dialog.cancel : t('Abbrechen')}
             </button>
           )}
           <button

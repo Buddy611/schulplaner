@@ -6,6 +6,7 @@ import { GRADES, gradeOptions, type Grade, type GradeKind, type GradeSystem } fr
 import { newId, put, remove, type Item } from '../../lib/repo'
 import { useSettings } from '../../lib/settings'
 import { SubjectSelect } from '../../components/SubjectSelect'
+import { t } from '../../lib/i18n'
 
 export interface GradeDefaults {
   subjectId?: string
@@ -70,52 +71,54 @@ export function GradeSheet({ grade, defaults, onClose }: { grade?: Item<Grade>; 
   }
 
   async function del() {
-    if (grade && await confirmDialog('Note löschen?', { confirm: 'Löschen', danger: true })) {
+    if (grade && await confirmDialog(t('Note löschen?'), { confirm: t('Löschen'), danger: true })) {
       await remove(grade.id)
       onClose()
     }
   }
 
   return (
-    <Sheet title={grade ? 'Note bearbeiten' : 'Neue Note'} onClose={onClose} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
+    <Sheet title={grade ? t('Note bearbeiten') : t('Neue Note')} onClose={onClose} onSave={save} saveLabel={t('Sichern')} saveDisabled={!canSave}>
       <div className="list">
-        <Field label="Fach">
-          <SubjectSelect value={subjectId} onChange={setSubjectId} emptyLabel="Fach wählen …" />
+        <Field label={t('Fach')}>
+          <SubjectSelect value={subjectId} onChange={setSubjectId} emptyLabel={t('Fach wählen …')} />
         </Field>
         <div className="row stack">
-          <span className="field-label">Art</span>
+          <span className="field-label">{t('Art')}</span>
           <div className="chips">
-            {settings.examTypes.map((t) => (
+            {settings.examTypes.map((tp) => (
               <button
-                key={t}
+                key={tp}
                 type="button"
-                className={`chip ${kind === 'schriftlich' && t === type ? 'active' : ''}`}
+                className={`chip ${kind === 'schriftlich' && tp === type ? 'active' : ''}`}
                 onClick={() => {
                   setKind('schriftlich')
-                  setType(t)
+                  setType(tp)
                 }}
               >
-                {t}
+                {t(tp)}
               </button>
             ))}
             <button type="button" className={`chip ${kind === 'muendlich' ? 'active' : ''}`} onClick={() => setKind('muendlich')}>
-              Mündlich
+              {t('Mündlich')}
             </button>
             <button type="button" className={`chip ${kind === 'besprechung' ? 'active' : ''}`} onClick={() => setKind('besprechung')}>
-              Notenbesprechung
+              {t('Notenbesprechung')}
             </button>
           </div>
           <p className="section-footer" style={{ margin: '10px 0 0' }}>
             {kind === 'besprechung'
-              ? 'Zwischenstand wie eine Zwischenzeugnisnote: ersetzt alle Noten davor in diesem Fach.'
+              ? t('Zwischenstand wie eine Zwischenzeugnisnote: ersetzt alle Noten davor in diesem Fach.')
               : kind === 'muendlich'
-                ? 'Einzelne mündliche Note (Mitarbeit, Referat …).'
-                : `${type} zählt ${settings.typeCategory?.[type] === 'muendlich' ? 'mündlich' : 'schriftlich'} – änderbar unter Einstellungen → Gewichtung.`}
+                ? t('Einzelne mündliche Note (Mitarbeit, Referat …).')
+                : settings.typeCategory?.[type] === 'muendlich'
+                  ? t('{type} zählt mündlich – änderbar unter Einstellungen → Gewichtung.', { type: t(type) })
+                  : t('{type} zählt schriftlich – änderbar unter Einstellungen → Gewichtung.', { type: t(type) })}
           </p>
         </div>
       </div>
 
-      <h3 className="section-title">{system === 'punkte' ? 'Punkte' : 'Note'}</h3>
+      <h3 className="section-title">{system === 'punkte' ? t('Punkte') : t('Note')}</h3>
       <div className="list">
         <div className="row stack">
           <GradePicker value={picked?.label} system={system} onChange={setPicked} />
@@ -123,18 +126,18 @@ export function GradeSheet({ grade, defaults, onClose }: { grade?: Item<Grade>; 
       </div>
 
       <div className="list" style={{ marginTop: 16 }}>
-        <Field label="Datum">
+        <Field label={t('Datum')}>
           <input className="row-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
-        <Field label="Notiz">
-          <input className="row-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="optional" />
+        <Field label={t('Notiz')}>
+          <input className="row-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('optional')} />
         </Field>
       </div>
 
       {grade && (
         <div className="list" style={{ marginTop: 24 }}>
           <button type="button" className="row danger" onClick={del}>
-            Note löschen
+            {t('Note löschen')}
           </button>
         </div>
       )}

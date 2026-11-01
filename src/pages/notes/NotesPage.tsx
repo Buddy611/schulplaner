@@ -6,6 +6,7 @@ import { useLookups } from '../../lib/models'
 import { useNotes, type LessonNote } from '../../lib/notes'
 import type { Item } from '../../lib/repo'
 import { NoteSheet } from './NoteSheet'
+import { t } from '../../lib/i18n'
 
 /** Alle Notizen, nach Fach filterbar */
 export function NotesPage() {
@@ -24,8 +25,8 @@ export function NotesPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Notizen" back={{ to: '/', label: 'Heute' }}>
-        <button type="button" className="icon-btn" aria-label="Notiz hinzufügen" onClick={() => setEditing('new')}>
+      <PageHeader title={t('Notizen')} back={{ to: '/', label: t('Heute') }}>
+        <button type="button" className="icon-btn" aria-label={t('Notiz hinzufügen')} onClick={() => setEditing('new')}>
           +
         </button>
       </PageHeader>
@@ -33,7 +34,7 @@ export function NotesPage() {
       {usedSubjects.length > 0 && (
         <div className="chips scroll-chips">
           <button type="button" className={`chip ${!filter ? 'active' : ''}`} onClick={() => setFilter(null)}>
-            Alle
+            {t('Alle')}
           </button>
           {usedSubjects.map((s) => (
             <button key={s.id} type="button" className={`chip ${filter === s.id ? 'active' : ''}`} onClick={() => setFilter(s.id)}>
@@ -42,10 +43,10 @@ export function NotesPage() {
           ))}
         </div>
       )}
-      <input className="input search" type="search" placeholder="In Notizen suchen" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <input className="input search" type="search" placeholder={t('In Notizen suchen')} value={query} onChange={(e) => setQuery(e.target.value)} />
 
       {list.length === 0 && (
-        <p className="hint">{notes.length ? 'Nichts gefunden.' : 'Noch keine Notizen. In der Tagesansicht gibt es bei jeder Stunde „+ Notiz“.'}</p>
+        <p className="hint">{notes.length ? t('Nichts gefunden.') : t('Noch keine Notizen. In der Tagesansicht gibt es bei jeder Stunde „+ Notiz“.')}</p>
       )}
 
       <div className="note-list">
@@ -55,7 +56,7 @@ export function NotesPage() {
             <div key={n.id} className="card note-card" style={{ borderLeft: `5px solid ${s?.color ?? 'var(--outline)'}` }}>
               <button type="button" className="note-body" onClick={() => setEditing(n)}>
                 <span className="note-head">
-                  <strong>{s?.name ?? 'Fach gelöscht'}</strong>
+                  <strong>{s?.name ?? t('Fach gelöscht')}</strong>
                   <span className="muted">{formatDate(parseISODate(n.date), { weekday: 'short', day: 'numeric', month: 'long' })}</span>
                 </span>
                 {n.text && <span className="note-text">{n.text}</span>}

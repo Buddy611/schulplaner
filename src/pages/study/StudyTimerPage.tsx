@@ -5,6 +5,7 @@ import { addDays, mondayOf, toISODate } from '../../lib/dates'
 import { useLookups } from '../../lib/models'
 import { newId, put, useCollection } from '../../lib/repo'
 import { SubjectSelect } from '../../components/SubjectSelect'
+import { t } from '../../lib/i18n'
 
 /** Gespeicherte Lernzeit (synchronisiert) */
 export const SESSIONS = 'studySessions'
@@ -70,7 +71,7 @@ async function signal(text: string) {
   try {
     if ('Notification' in window && Notification.permission === 'granted') {
       const reg = await navigator.serviceWorker?.ready
-      await reg?.showNotification('Lern-Timer', { body: text, icon: 'pwa-192x192.png' })
+      await reg?.showNotification(t('Lern-Timer'), { body: text, icon: 'pwa-192x192.png' })
     }
   } catch {
     // egal
@@ -101,10 +102,10 @@ export function StudyTimerPage() {
     if (!running || remaining > 0) return
     if (state.phase === 'lernen') {
       void put<StudySession>(SESSIONS, newId(), { subjectId: state.subjectId, minutes: state.phaseMinutes, date: toISODate(new Date()), createdAt: Date.now() })
-      void signal(`Geschafft! ${state.phaseMinutes} Minuten gelernt – jetzt ${state.breakMin} Minuten Pause.`)
+      void signal(t('Geschafft! {n} Minuten gelernt – jetzt {m} Minuten Pause.', { n: state.phaseMinutes, m: state.breakMin }))
       update({ ...state, phase: 'pause', endsAt: null, remaining: state.breakMin * 60_000, phaseMinutes: state.breakMin })
     } else {
-      void signal('Pause vorbei – weiter geht’s!')
+      void signal(t('Pause vorbei – weiter geht’s!'))
       update({ ...state, phase: 'lernen', endsAt: null, remaining: state.focusMin * 60_000, phaseMinutes: state.focusMin })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -145,11 +146,11 @@ export function StudyTimerPage() {
   const perSubject = new Map<string, number>()
   for (const s of week) perSubject.set(s.subjectId ?? '', (perSubject.get(s.subjectId ?? '') ?? 0) + s.minutes)
   const maxSubject = Math.max(1, ...perSubject.values())
-  const fmtMin = (m: number) => (m >= 60 ? `${Math.floor(m / 60)} Std. ${m % 60} Min.` : `${m} Min.`)
+  const fmtMin = (m: number) => (m >= 60 ? t('{h} Std. {m} Min.', { h: Math.floor(m / 60), m: m % 60 }) : t('{n} Min.', { n: m }))
 
   return (
     <div className="page">
-      <PageHeader title="Lern-Timer" back={{ to: '/lernen', label: 'Lernen' }} />
+      <PageHeader title={t('Lern-Timer')} back={{ to: '/lernen', label: t('Lernen') }} />
 
       <div className={`timer ${state.phase}`}>
         <svg viewBox="0 0 120 120" className="timer-ring">
@@ -157,7 +158,7 @@ export function StudyTimerPage() {
           <circle cx="60" cy="60" r="54" className="timer-progress" style={{ strokeDasharray: 339.3, strokeDashoffset: 339.3 * (1 - progress) }} />
         </svg>
         <div className="timer-center">
-          <span className="timer-phase">{state.phase === 'lernen' ? 'Lernen' : 'Pause'}</span>
+          <span className="timer-phase">{state.phase === 'lernen' ? t('Lernen') : t('Pause')}</span>
           <span className="timer-time">
             {mm}:{ss}
           </span>
@@ -168,25 +169,25 @@ export function StudyTimerPage() {
       <div className="btn-row">
         {running ? (
           <button type="button" className="btn secondary" style={{ flex: 1 }} onClick={pause}>
-            Pause
+            {t('Pause')}
           </button>
         ) : (
           <button type="button" className="btn" style={{ flex: 1 }} onClick={start}>
-            {remaining < total ? 'Weiter' : 'Start'}
+            {remaining < total ? t('Weiter') : t('Start')}
           </button>
         )}
         <button type="button" className="btn secondary" style={{ flex: 1 }} onClick={reset}>
-          Zurücksetzen
+          {t('Zurücksetzen')}
         </button>
       </div>
 
-      <h2 className="section-title">Einstellungen</h2>
+      <h2 className="section-title">{t('Einstellungen')}</h2>
       <div className="list">
-        <Field label="Fach">
-          <SubjectSelect value={state.subjectId} onChange={(subjectId) => update({ ...state, subjectId })} emptyLabel="Ohne Fach" />
+        <Field label={t('Fach')}>
+          <SubjectSelect value={state.subjectId} onChange={(subjectId) => update({ ...state, subjectId })} emptyLabel={t('Ohne Fach')} />
         </Field>
         <div className="row stack">
-          <span className="field-label">Lernen / Pause</span>
+          <span className="field-label">{t('Lernen / Pause')}</span>
           <div className="chips">
             {[
               [25, 5],
@@ -195,23 +196,23 @@ export function StudyTimerPage() {
               [60, 10],
             ].map(([f, b]) => (
               <button key={f} type="button" className={`chip ${state.focusMin === f && state.breakMin === b ? 'active' : ''}`} onClick={() => setDurations(f, b)} disabled={running}>
-                {f} / {b} Min.
+                {t('{f} / {b} Min.', { f, b })}
               </button>
             ))}
           </div>
         </div>
       </div>
-      <p className="section-footer">Der Timer läuft weiter, auch wenn du die App schließt. Am Ende vibriert das Handy und es kommt ein Ton.</p>
+      <p className="section-footer">{t('Der Timer läuft weiter, auch wenn du die App schließt. Am Ende vibriert das Handy und es kommt ein Ton.')}</p>
 
-      <h2 className="section-title">Statistik</h2>
+      <h2 className="section-title">{t('Statistik')}</h2>
       <div className="stat-row">
         <div className="stat">
           <span className="stat-value">{fmtMin(todayMin)}</span>
-          <span className="stat-label">heute gelernt</span>
+          <span className="stat-label">{t('heute gelernt')}</span>
         </div>
         <div className="stat">
           <span className="stat-value">{fmtMin(weekMin)}</span>
-          <span className="stat-label">diese Woche</span>
+          <span className="stat-label">{t('diese Woche')}</span>
         </div>
       </div>
       {perSubject.size > 0 && (
@@ -224,7 +225,7 @@ export function StudyTimerPage() {
                 <div key={id || 'none'} className="row">
                   <ColorDot color={s?.color ?? 'var(--outline)'} size={12} />
                   <span className="label">
-                    {s?.name ?? 'Ohne Fach'}
+                    {s?.name ?? t('Ohne Fach')}
                     <span className="study-bar">
                       <span style={{ width: `${(m / maxSubject) * 100}%`, background: s?.color ?? 'var(--outline)' }} />
                     </span>

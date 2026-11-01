@@ -14,6 +14,7 @@ import { daysUntil } from '../../lib/homework'
 import { useGrades } from '../../lib/grades'
 import { GradeSheet } from '../grades/GradeSheet'
 import { SubjectSelect } from '../../components/SubjectSelect'
+import { t } from '../../lib/i18n'
 
 export interface ExamDefaults {
   subjectId?: string
@@ -97,7 +98,7 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
   }
 
   async function del() {
-    if (exam && await confirmDialog(`${exam.type} löschen?`, { confirm: 'Löschen', danger: true })) {
+    if (exam && await confirmDialog(t('{name} löschen?', { name: t(exam.type) }), { confirm: t('Löschen'), danger: true })) {
       await deleteExam(exam)
       onClose()
     }
@@ -114,33 +115,33 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
   }
 
   return (
-    <Sheet title={exam ? type : 'Neue Klausur'} onClose={cancel} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
+    <Sheet title={exam ? t(type) : t('Neue Klausur')} onClose={cancel} onSave={save} saveLabel={t('Sichern')} saveDisabled={!canSave}>
       <div className="list">
         <div className="row stack">
           <div className="chips">
-            {types.map((t) => (
-              <button key={t} type="button" className={`chip ${t === type ? 'active' : ''}`} onClick={() => setType(t)}>
-                {t}
+            {types.map((tp) => (
+              <button key={tp} type="button" className={`chip ${tp === type ? 'active' : ''}`} onClick={() => setType(tp)}>
+                {t(tp)}
               </button>
             ))}
           </div>
         </div>
-        <Field label="Fach">
+        <Field label={t('Fach')}>
           <SubjectSelect
             value={subjectId}
-            emptyLabel="Fach wählen …"
+            emptyLabel={t('Fach wählen …')}
             onChange={(id) => {
               setSubjectId(id)
               pickLesson(id, date)
             }}
           />
         </Field>
-        <Field label="Thema">
-          <input className="row-input" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="z. B. Lineare Funktionen" />
+        <Field label={t('Thema')}>
+          <input className="row-input" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={t('z. B. Lineare Funktionen')} />
         </Field>
       </div>
 
-      <h3 className="section-title">Wann</h3>
+      <h3 className="section-title">{t('Wann')}</h3>
       <div className="list">
         <div className="row stack">
           <input
@@ -175,12 +176,12 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
                 {timeMode === 'stunde' && periodId && !lessonsThatDay.some((l) => l.period.id === periodId)
                   ? `${periodTitle(periods, periods.find((p) => p.id === periodId)!)} · ${periods.find((p) => p.id === periodId)!.start}`
                   : lessonsThatDay.length
-                    ? 'Andere Stunde …'
-                    : 'Stunde wählen …'}
+                    ? t('Andere Stunde …')
+                    : t('Stunde wählen …')}
               </button>
             )}
             <button type="button" className={`chip ${timeMode === 'zeit' ? 'active' : ''}`} onClick={() => setTimeMode('zeit')}>
-              Eigene Uhrzeit
+              {t('Eigene Uhrzeit')}
             </button>
             <button
               type="button"
@@ -190,11 +191,11 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
                 setPeriodId(undefined)
               }}
             >
-              Ganzer Tag
+              {t('Ganzer Tag')}
             </button>
           </div>
           {pickingPeriod && (
-            <Sheet title="Stunde wählen" onClose={() => setPickingPeriod(false)}>
+            <Sheet title={t('Stunde wählen')} onClose={() => setPickingPeriod(false)}>
               <div className="list">
                 {otherPeriods.map((p) => {
                   const l = allThatDay.find((x) => x.period.id === p.id)
@@ -213,7 +214,7 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
                         {periodTitle(periods, p)}
                         <span className="sub">
                           {p.start}–{p.end}
-                          {l ? ` · sonst ${l.subject.name}` : ' · frei'}
+                          {l ? ` · ${t('sonst {name}', { name: l.subject.name })}` : ` · ${t('frei')}`}
                         </span>
                       </span>
                       {periodId === p.id && <span className="check">✓</span>}
@@ -226,11 +227,11 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
           {timeMode === 'zeit' && (
             <div className="time-range">
               <label>
-                <span className="field-label">Beginn</span>
+                <span className="field-label">{t('Beginn')}</span>
                 <input className="input" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
               </label>
               <label>
-                <span className="field-label">Ende</span>
+                <span className="field-label">{t('Ende')}</span>
                 <input className="input" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
               </label>
             </div>
@@ -241,37 +242,37 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
             </p>
           )}
         </div>
-        <Field label="Raum">
-          <EntitySelect title="Raum" value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
+        <Field label={t('Raum')}>
+          <EntitySelect title={t('Raum')} value={roomId} items={rooms} onChange={setRoomId} onCreate={() => quickCreate(C.rooms)} createLabel={t('Neuer Raum …')} />
         </Field>
       </div>
 
       {exam && daysUntil(exam.date) <= 0 && (
         <>
-          <h3 className="section-title">Note</h3>
+          <h3 className="section-title">{t('Note')}</h3>
           <div className="list">
             <button type="button" className="row action" onClick={() => setGradeOpen(true)}>
-              <span className="label">{examGrade ? `Note: ${examGrade.label}` : 'Note eintragen'}</span>
-              {examGrade && <span className="value">bearbeiten</span>}
+              <span className="label">{examGrade ? t('Note: {grade}', { grade: examGrade.label }) : t('Note eintragen')}</span>
+              {examGrade && <span className="value">{t('bearbeiten')}</span>}
             </button>
           </div>
         </>
       )}
 
-      <h3 className="section-title">Lernplan</h3>
+      <h3 className="section-title">{t('Lernplan')}</h3>
       <div className="list">
-        {studyTopics.map((t) => (
-          <div key={t.id} className="row">
+        {studyTopics.map((topic) => (
+          <div key={topic.id} className="row">
             <input
               type="checkbox"
               className="checkbox"
-              checked={t.done}
-              onChange={() => setStudyTopics(studyTopics.map((x) => (x.id === t.id ? { ...x, done: !x.done } : x)))}
+              checked={topic.done}
+              onChange={() => setStudyTopics(studyTopics.map((x) => (x.id === topic.id ? { ...x, done: !x.done } : x)))}
             />
-            <span className="label" style={t.done ? { textDecoration: 'line-through', color: 'var(--text-2)' } : undefined}>
-              {t.text}
+            <span className="label" style={topic.done ? { textDecoration: 'line-through', color: 'var(--text-2)' } : undefined}>
+              {topic.text}
             </span>
-            <button type="button" className="link-btn" aria-label="Thema entfernen" onClick={() => setStudyTopics(studyTopics.filter((x) => x.id !== t.id))}>
+            <button type="button" className="link-btn" aria-label={t('Thema entfernen')} onClick={() => setStudyTopics(studyTopics.filter((x) => x.id !== topic.id))}>
               ×
             </button>
           </div>
@@ -287,23 +288,23 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
                 addTopic()
               }
             }}
-            placeholder="Thema zum Lernen hinzufügen …"
+            placeholder={t('Thema zum Lernen hinzufügen …')}
           />
           <button type="button" className="link-btn" onClick={addTopic} disabled={!newTopic.trim()}>
-            Hinzufügen
+            {t('Hinzufügen')}
           </button>
         </div>
       </div>
-      <p className="section-footer">Hake Themen ab, die du gelernt hast. Erinnerungen ans Lernen kommen mit den Benachrichtigungen.</p>
+      <p className="section-footer">{t('Hake Themen ab, die du gelernt hast. Erinnerungen ans Lernen kommen mit den Benachrichtigungen.')}</p>
 
-      <h3 className="section-title">Notizen</h3>
+      <h3 className="section-title">{t('Notizen')}</h3>
       <div className="list">
         <div className="row stack">
-          <textarea className="row-input" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="optional" />
+          <textarea className="row-input" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('optional')} />
         </div>
       </div>
 
-      <h3 className="section-title">Fotos & Dokumente</h3>
+      <h3 className="section-title">{t('Fotos & Dokumente')}</h3>
       <div className="list">
         <div className="row stack">
           <AttachmentEditor
@@ -320,7 +321,7 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
       {exam && (
         <div className="list" style={{ marginTop: 24 }}>
           <button type="button" className="row danger" onClick={del}>
-            {exam.type} löschen
+            {t('{name} löschen', { name: t(exam.type) })}
           </button>
         </div>
       )}

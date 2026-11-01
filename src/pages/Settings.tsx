@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth'
 import { useActiveTimetable, useLookups } from '../lib/models'
 import { STATES, updateSettings, useSettings, type Settings as SettingsType } from '../lib/settings'
 import { useSyncState } from '../lib/sync'
+import { t } from '../lib/i18n'
 
 /** Einstellungen im Stil der Android-Einstellungen: Kategorien mit farbigen Symbolen */
 export function Settings() {
@@ -17,24 +18,24 @@ export function Settings() {
   const pending = usePendingCount()
   const set = (changes: Partial<SettingsType>) => updateSettings(settings, changes)
   const lessonCount = timetable?.periods.filter((p) => p.kind === 'lesson').length ?? 0
-  const stateName = STATES.find((s) => s.code === settings.state)?.name
-  const themeName = { system: 'System', light: 'Hell', dark: 'Dunkel' }[settings.theme]
+  const stateName = !settings.country ? STATES.find((s) => s.code === settings.state)?.name : (settings.regionName ?? settings.country)
+  const themeName = { system: t('System'), light: t('Hell'), dark: t('Dunkel') }[settings.theme]
 
   return (
     <div className="page">
-      <PageHeader title="Einstellungen" settingsButton={false} />
+      <PageHeader title={t('Einstellungen')} settingsButton={false} />
 
       <div className="list settings-group">
         <LinkRow
           to="/einstellungen/stundenplaene"
           icon="calendar"
           tone="blue"
-          sub={timetable ? `${timetable.name}${timetables && timetables.length > 1 ? ` · ${timetables.length} Pläne` : ''}` : 'Noch keiner angelegt'}
+          sub={timetable ? `${timetable.name}${timetables && timetables.length > 1 ? ` · ${t('{n} Pläne', { n: timetables.length })}` : ''}` : t('Noch keiner angelegt')}
         >
-          Stundenpläne
+          {t('Stundenpläne')}
         </LinkRow>
-        <LinkRow to="/einstellungen/zeitraster" icon="clock" tone="blue" sub={lessonCount ? `${lessonCount} Stunden, Pausen` : 'Stunden und Pausen'}>
-          Zeitraster
+        <LinkRow to="/einstellungen/zeitraster" icon="clock" tone="blue" sub={lessonCount ? t('{n} Stunden, Pausen', { n: lessonCount }) : t('Stunden und Pausen')}>
+          {t('Zeitraster')}
         </LinkRow>
       </div>
 
@@ -43,15 +44,15 @@ export function Settings() {
           to="/einstellungen/faecher"
           icon="book"
           tone="cyan"
-          sub={subjects.length ? `${subjects.length} ${subjects.length === 1 ? 'Fach' : 'Fächer'}, Farben` : 'Fächer und Farben anlegen'}
+          sub={subjects.length ? (subjects.length === 1 ? t('1 Fach, Farben') : t('{n} Fächer, Farben', { n: subjects.length })) : t('Fächer und Farben anlegen')}
         >
-          Fächer
+          {t('Fächer')}
         </LinkRow>
-        <LinkRow to="/einstellungen/lehrer" icon="person" tone="cyan" sub={teachers.length ? `${teachers.length} Lehrer` : 'Noch keine'}>
-          Lehrer
+        <LinkRow to="/einstellungen/lehrer" icon="person" tone="cyan" sub={teachers.length ? t('{n} Lehrer', { n: teachers.length }) : t('Noch keine')}>
+          {t('Lehrer')}
         </LinkRow>
-        <LinkRow to="/einstellungen/raeume" icon="door" tone="teal" sub={rooms.length ? `${rooms.length} ${rooms.length === 1 ? 'Raum' : 'Räume'}` : 'Noch keine'}>
-          Räume
+        <LinkRow to="/einstellungen/raeume" icon="door" tone="teal" sub={rooms.length ? (rooms.length === 1 ? t('1 Raum') : t('{n} Räume', { n: rooms.length })) : t('Noch keine')}>
+          {t('Räume')}
         </LinkRow>
       </div>
 
@@ -59,60 +60,60 @@ export function Settings() {
         <div className="row with-icon stack-icon">
           <IconBubble name="grade" tone="green" />
           <span className="label">
-            <span className="row-title">Notensystem</span>
+            <span className="row-title">{t('Notensystem')}</span>
             <div style={{ marginTop: 10 }}>
               <Segmented<SettingsType['gradeSystem']>
                 value={settings.gradeSystem}
                 onChange={(gradeSystem) => set({ gradeSystem })}
                 options={[
-                  { value: 'noten', label: 'Noten 1–6' },
-                  { value: 'punkte', label: 'Punkte 0–15' },
+                  { value: 'noten', label: t('Noten 1–6') },
+                  { value: 'punkte', label: t('Punkte 0–15') },
                 ]}
               />
             </div>
           </span>
         </div>
-        <LinkRow to="/einstellungen/noten" icon="tune" tone="green" sub="Schriftlich/mündlich, Notenbesprechung, Halbjahre">
-          Gewichtung & Halbjahre
+        <LinkRow to="/einstellungen/noten" icon="tune" tone="green" sub={t('Schriftlich/mündlich, Notenbesprechung, Halbjahre')}>
+          {t('Gewichtung & Halbjahre')}
         </LinkRow>
-        <LinkRow to="/einstellungen/klausurtypen" icon="exam" tone="lime" sub={settings.examTypes.join(', ')}>
-          Klausurtypen
+        <LinkRow to="/einstellungen/klausurtypen" icon="exam" tone="lime" sub={settings.examTypes.map((x) => t(x)).join(', ')}>
+          {t('Klausurtypen')}
         </LinkRow>
       </div>
 
       <div className="list settings-group">
-        <LinkRow to="/einstellungen/ferien" icon="sun" tone="yellow" sub={stateName ? `${stateName} · Ferien, Feiertage, freie Tage` : 'Bundesland wählen'}>
-          Ferien & Feiertage
+        <LinkRow to="/einstellungen/ferien" icon="sun" tone="yellow" sub={stateName ? `${stateName} · ${t('Ferien, Feiertage, freie Tage')}` : t('Bundesland wählen')}>
+          {t('Ferien & Feiertage')}
         </LinkRow>
         <LinkRow
           to="/einstellungen/benachrichtigungen"
           icon="bell"
           tone="orange"
-          sub={settings.notifications.enabled ? `An · ${settings.notifications.time} Uhr` : 'Erinnerungen an Hausaufgaben und Klausuren'}
+          sub={settings.notifications.enabled ? t('An · {time} Uhr', { time: settings.notifications.time }) : t('Erinnerungen an Hausaufgaben und Klausuren')}
         >
-          Benachrichtigungen
+          {t('Benachrichtigungen')}
         </LinkRow>
       </div>
 
       <div className="list settings-group">
-        <LinkRow to="/einstellungen/layout" icon="list" tone="red" sub="Reihenfolge auf „Heute“, Leiste unten und Seitenleiste">
-          Startseite & Navigation
+        <LinkRow to="/einstellungen/layout" icon="list" tone="red" sub={t('Reihenfolge auf „Heute“, Leiste unten und Seitenleiste')}>
+          {t('Startseite & Navigation')}
         </LinkRow>
-        <LinkRow to="/einstellungen/darstellung" icon="palette" tone="pink" sub={`${themeName}, Farbschema, Schriftgröße`}>
-          Darstellung
+        <LinkRow to="/einstellungen/darstellung" icon="palette" tone="pink" sub={`${themeName}, ${t('Farbschema, Schriftgröße, Sprache')}`}>
+          {t('Darstellung')}
         </LinkRow>
         <LinkRow
           to="/einstellungen/konto"
           icon="cloud"
           tone="purple"
-          sub={`${user?.email ?? ''} · ${!sync.online ? 'offline' : pending ? `${pending} ausstehend` : 'synchronisiert'}`}
+          sub={`${user?.email ?? ''} · ${!sync.online ? t('offline') : pending ? t('{n} ausstehend', { n: pending }) : t('synchronisiert')}`}
         >
-          Konto & Daten
+          {t('Konto & Daten')}
         </LinkRow>
       </div>
 
       <p className="section-footer" style={{ textAlign: 'center', marginTop: 24 }}>
-        Schulplaner · Version {__APP_VERSION__}
+        Schulplaner · {t('Version')} {__APP_VERSION__}
       </p>
     </div>
   )

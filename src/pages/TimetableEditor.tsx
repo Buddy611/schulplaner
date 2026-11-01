@@ -26,6 +26,7 @@ import { useSettings } from '../lib/settings'
 import { quickCreate } from './settings/MasterData'
 import { nextSubjectColor, SubjectSheet } from './settings/Subjects'
 import { createTimetable } from './settings/Timetables'
+import { t } from '../lib/i18n'
 
 type WeekFilter = WeekType | 'all'
 
@@ -47,11 +48,11 @@ export function TimetableEditor() {
   if (!timetable) {
     return (
       <div className="page">
-        <PageHeader title="Bearbeiten" back={{ to: '/stundenplan', label: 'Stundenplan' }} />
+        <PageHeader title={t('Bearbeiten')} back={{ to: '/stundenplan', label: t('Stundenplan') }} />
         <div className="card empty">
-          <p>Du hast noch keinen Stundenplan.</p>
-          <button type="button" className="btn" onClick={() => createTimetable(settings, 'Mein Stundenplan')}>
-            Stundenplan anlegen
+          <p>{t('Du hast noch keinen Stundenplan.')}</p>
+          <button type="button" className="btn" onClick={() => createTimetable(settings, t('Mein Stundenplan'))}>
+            {t('Stundenplan anlegen')}
           </button>
         </div>
       </div>
@@ -73,7 +74,7 @@ export function TimetableEditor() {
       .sort((a, b) => Number(Boolean(b.l.week)) - Number(Boolean(a.l.week)))
     const taken: { start: number; end: number }[] = []
     return list.filter(({ slots }) => {
-      if (taken.some((t) => slots.start <= t.end && t.start <= slots.end)) return false
+      if (taken.some((tp) => slots.start <= tp.end && tp.start <= slots.end)) return false
       taken.push(slots)
       return true
     })
@@ -98,7 +99,7 @@ export function TimetableEditor() {
               <span className="name">{subject.name}</span>
               {roomId && <span className="room">{lookups.roomMap.get(roomId)?.name}</span>}
               {teacherId && <span className="teacher">{lookups.teacherMap.get(teacherId)?.name}</span>}
-              {l.week && <span className="room">nur {l.week}-Woche</span>}
+              {l.week && <span className="room">{t('nur {week}-Woche', { week: l.week })}</span>}
             </>
           ),
         },
@@ -108,9 +109,9 @@ export function TimetableEditor() {
 
   return (
     <div className="page">
-      <PageHeader title="Bearbeiten" back={{ to: '/stundenplan', label: 'Stundenplan' }}>
+      <PageHeader title={t('Bearbeiten')} back={{ to: '/stundenplan', label: t('Stundenplan') }}>
         <Link to="/einstellungen/zeitraster" className="link-btn">
-          Zeiten
+          {t('Zeiten')}
         </Link>
       </PageHeader>
       <p className="subtitle">{timetable.name}</p>
@@ -121,8 +122,8 @@ export function TimetableEditor() {
             value={shownWeek}
             onChange={setWeek}
             options={[
-              { value: 'A', label: `A-Woche${currentWeek === 'A' ? ' (jetzt)' : ''}` },
-              { value: 'B', label: `B-Woche${currentWeek === 'B' ? ' (jetzt)' : ''}` },
+              { value: 'A', label: `${t('A-Woche')}${currentWeek === 'A' ? ` (${t('jetzt')})` : ''}` },
+              { value: 'B', label: `${t('B-Woche')}${currentWeek === 'B' ? ` (${t('jetzt')})` : ''}` },
             ]}
           />
         </div>
@@ -130,7 +131,7 @@ export function TimetableEditor() {
 
       {lessonPeriods.length === 0 ? (
         <div className="card empty">
-          Noch kein Zeitraster. <Link to="/einstellungen/zeitraster">Zeitraster einrichten</Link>
+          {t('Noch kein Zeitraster.')} <Link to="/einstellungen/zeitraster">{t('Zeitraster einrichten')}</Link>
         </div>
       ) : (
         <WeekGrid
@@ -144,7 +145,7 @@ export function TimetableEditor() {
         />
       )}
 
-      <p className="hint">Tippe auf ein Feld, um eine Stunde einzutragen. Stunden lassen sich teilen oder über mehrere Stunden ziehen.</p>
+      <p className="hint">{t('Tippe auf ein Feld, um eine Stunde einzutragen. Stunden lassen sich teilen oder über mehrere Stunden ziehen.')}</p>
 
       {cell && (
         <LessonSheet
@@ -222,7 +223,7 @@ function LessonSheet({
   const [creatingFor, setCreatingFor] = useState<'main' | 'second' | null>(null)
 
   const maxLength = Math.min(3, lessonPeriods.length - idx)
-  const t = (slot: number, edge: 'start' | 'end') => slotTime(lessonPeriods, slot, edge)
+  const at = (slot: number, edge: 'start' | 'end') => slotTime(lessonPeriods, slot, edge)
   const title = `${DAY_NAMES[day]}, ${periodTitle(periods, period)}`
 
   async function save() {
@@ -256,7 +257,7 @@ function LessonSheet({
   }
 
   async function del() {
-    if (!(await confirmDialog('Alle Einträge dieser Stunde entfernen?', { confirm: 'Entfernen', danger: true }))) return
+    if (!(await confirmDialog(t('Alle Einträge dieser Stunde entfernen?'), { confirm: t('Entfernen'), danger: true }))) return
     for (const x of startingHere) await remove(x.l.id)
     onClose()
   }
@@ -265,15 +266,15 @@ function LessonSheet({
 
   return (
     <>
-      <Sheet title={title} onClose={onClose} onSave={save} saveLabel="Sichern">
+      <Sheet title={title} onClose={onClose} onSave={save} saveLabel={t('Sichern')}>
         <div className="list">
           <div className="row stack">
             <Segmented<Mode>
               value={mode}
               onChange={setMode}
               options={[
-                { value: 'full', label: 'Ganze Stunde' },
-                { value: 'split', label: 'Geteilt (2 Hälften)' },
+                { value: 'full', label: t('Ganze Stunde') },
+                { value: 'split', label: t('Geteilt (2 Hälften)') },
               ]}
             />
           </div>
@@ -282,17 +283,17 @@ function LessonSheet({
         {mode === 'full' ? (
           <>
             <h3 className="section-title">
-              {t(slotA, 'start')} – {t(slotA + length * 2 - 1, 'end')}
+              {at(slotA, 'start')} – {at(slotA + length * 2 - 1, 'end')}
             </h3>
             <div className="list">
               <PartFields {...fieldProps} part={main} setPart={setMain} onCreateSubject={() => setCreatingFor('main')} />
               {maxLength > 1 && (
                 <div className="row stack">
-                  <span className="field-label">Dauer</span>
+                  <span className="field-label">{t('Dauer')}</span>
                   <div className="chips">
                     {Array.from({ length: maxLength }, (_, i) => i + 1).map((n) => (
                       <button key={n} type="button" className={`chip ${length === n ? 'active' : ''}`} onClick={() => setLength(n)}>
-                        {n === 1 ? '1 Stunde' : `${n} Stunden`}
+                        {n === 1 ? t('1 Stunde') : t('{n} Stunden', { n })}
                       </button>
                     ))}
                   </div>
@@ -303,28 +304,28 @@ function LessonSheet({
         ) : (
           <>
             <h3 className="section-title">
-              1. Hälfte · {t(slotA, 'start')} – {t(slotA, 'end')}
+              {t('1. Hälfte')} · {at(slotA, 'start')} – {at(slotA, 'end')}
             </h3>
             <div className="list">
               {occupiedA ? (
-                <div className="row muted">Durch die vorherige Stunde belegt</div>
+                <div className="row muted">{t('Durch die vorherige Stunde belegt')}</div>
               ) : (
                 <PartFields {...fieldProps} part={main} setPart={setMain} onCreateSubject={() => setCreatingFor('main')} />
               )}
             </div>
             <h3 className="section-title">
-              2. Hälfte · {t(slotB, 'start')} – {t(secondEnd, 'end')}
+              {t('2. Hälfte')} · {at(slotB, 'start')} – {at(secondEnd, 'end')}
             </h3>
             <div className="list">
               <PartFields {...fieldProps} part={second} setPart={setSecond} onCreateSubject={() => setCreatingFor('second')} />
               {second.subjectId && idx + 1 < lessonPeriods.length && (
                 <div className="row stack">
-                  <span className="field-label">Geht bis</span>
+                  <span className="field-label">{t('Geht bis')}</span>
                   <div className="chips">
                     {[
-                      { slot: slotB, label: 'Ende dieser Stunde' },
-                      { slot: slotB + 1, label: 'Mitte nächster Stunde' },
-                      { slot: slotB + 2, label: 'Ende nächster Stunde' },
+                      { slot: slotB, label: t('Ende dieser Stunde') },
+                      { slot: slotB + 1, label: t('Mitte nächster Stunde') },
+                      { slot: slotB + 2, label: t('Ende nächster Stunde') },
                     ].map((o) => (
                       <button key={o.slot} type="button" className={`chip ${secondEnd === o.slot ? 'active' : ''}`} onClick={() => setSecondEnd(o.slot)}>
                         {o.label}
@@ -334,34 +335,34 @@ function LessonSheet({
                 </div>
               )}
             </div>
-            <p className="section-footer">Zum Beispiel: erste Hälfte ein Fach, zweite Hälfte ein anderes – oder eine Stunde, die mitten im Block beginnt und in die nächste Stunde weiterläuft.</p>
+            <p className="section-footer">{t('Zum Beispiel: erste Hälfte ein Fach, zweite Hälfte ein anderes – oder eine Stunde, die mitten im Block beginnt und in die nächste Stunde weiterläuft.')}</p>
           </>
         )}
 
         {timetable.abWeeks && (
           <>
-            <h3 className="section-title">Findet statt</h3>
+            <h3 className="section-title">{t('Findet statt')}</h3>
             <div className="list">
               <div className="row stack">
                 <Segmented<WeekFilter>
                   value={lessonWeek}
                   onChange={setLessonWeek}
                   options={[
-                    { value: 'all', label: 'Jede Woche' },
-                    { value: 'A', label: 'Nur A' },
-                    { value: 'B', label: 'Nur B' },
+                    { value: 'all', label: t('Jede Woche') },
+                    { value: 'A', label: t('Nur A') },
+                    { value: 'B', label: t('Nur B') },
                   ]}
                 />
               </div>
             </div>
-            {week !== 'all' && <p className="section-footer">Angezeigt wird gerade die {week}-Woche.</p>}
+            {week !== 'all' && <p className="section-footer">{t('Angezeigt wird gerade die {week}-Woche.', { week })}</p>}
           </>
         )}
 
         {startingHere.length > 0 && (
           <div className="list" style={{ marginTop: 24 }}>
             <button type="button" className="row danger" onClick={del}>
-              Stunde entfernen
+              {t('Stunde entfernen')}
             </button>
           </div>
         )}
@@ -397,12 +398,12 @@ function PartFields({
 } & Pick<ReturnType<typeof useLookups>, 'subjects' | 'rooms' | 'teachers' | 'subjectMap'>) {
   return (
     <>
-      <Field label="Fach">
+      <Field label={t('Fach')}>
         <EntitySelect
-          title="Fach"
+          title={t('Fach')}
           value={part.subjectId}
           items={subjects}
-          emptyLabel="Kein Unterricht"
+          emptyLabel={t('Kein Unterricht')}
           onChange={(id) => {
             const s = id ? subjectMap.get(id) : undefined
             setPart({ subjectId: id, roomId: s?.roomId, teacherId: s?.teacherId })
@@ -411,16 +412,16 @@ function PartFields({
             onCreateSubject()
             return undefined
           }}
-          createLabel="Neues Fach …"
+          createLabel={t('Neues Fach …')}
         />
       </Field>
       {part.subjectId && (
         <>
-          <Field label="Raum">
-            <EntitySelect title="Raum" value={part.roomId} items={rooms} onChange={(roomId) => setPart({ ...part, roomId })} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
+          <Field label={t('Raum')}>
+            <EntitySelect title={t('Raum')} value={part.roomId} items={rooms} onChange={(roomId) => setPart({ ...part, roomId })} onCreate={() => quickCreate(C.rooms)} createLabel={t('Neuer Raum …')} />
           </Field>
-          <Field label="Lehrer">
-            <EntitySelect title="Lehrer" value={part.teacherId} items={teachers} onChange={(teacherId) => setPart({ ...part, teacherId })} onCreate={() => quickCreate(C.teachers)} createLabel="Neuer Lehrer …" />
+          <Field label={t('Lehrer')}>
+            <EntitySelect title={t('Lehrer')} value={part.teacherId} items={teachers} onChange={(teacherId) => setPart({ ...part, teacherId })} onCreate={() => quickCreate(C.teachers)} createLabel={t('Neuer Lehrer …')} />
           </Field>
         </>
       )}

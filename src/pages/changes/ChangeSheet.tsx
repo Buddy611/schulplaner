@@ -6,6 +6,7 @@ import { C, periodTitle, sortPeriods } from '../../lib/models'
 import { newId, put, remove, type Item } from '../../lib/repo'
 import { useSchedule } from '../../lib/schedule'
 import { quickCreate } from '../settings/MasterData'
+import { t } from '../../lib/i18n'
 
 /** Ausfall, Vertretung oder Raumänderung für eine einzelne Stunde eintragen */
 export function ChangeSheet({
@@ -62,16 +63,16 @@ export function ChangeSheet({
   }
 
   return (
-    <Sheet title={change ? 'Änderung' : 'Ausfall / Vertretung'} onClose={onClose} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
+    <Sheet title={change ? t('Änderung') : t('Ausfall / Vertretung')} onClose={onClose} onSave={save} saveLabel={t('Sichern')} saveDisabled={!canSave}>
       <div className="list">
-        <Field label="Datum">
+        <Field label={t('Datum')}>
           <input className="row-input" type="date" value={date} onChange={(e) => (setDate(e.target.value), setPeriodId(undefined))} />
         </Field>
         <div className="row stack">
-          <span className="field-label">Stunde</span>
+          <span className="field-label">{t('Stunde')}</span>
           {dayLessons.length === 0 ? (
             <p className="muted" style={{ margin: 0 }}>
-              An diesem Tag ist kein Unterricht.
+              {t('An diesem Tag ist kein Unterricht.')}
             </p>
           ) : (
             <div className="chips">
@@ -90,36 +91,36 @@ export function ChangeSheet({
         </div>
       </div>
 
-      <h3 className="section-title">Was ändert sich?</h3>
+      <h3 className="section-title">{t('Was ändert sich?')}</h3>
       <div className="list">
         <div className="row stack">
           <Segmented<ChangeKind>
             value={kind}
             onChange={setKind}
             options={[
-              { value: 'ausfall', label: 'Ausfall' },
-              { value: 'vertretung', label: 'Vertretung' },
-              { value: 'raum', label: 'Raum' },
+              { value: 'ausfall', label: t('Ausfall') },
+              { value: 'vertretung', label: t('Vertretung') },
+              { value: 'raum', label: t('Raum') },
             ]}
           />
         </div>
         {kind === 'vertretung' && (
           <>
-            <Field label="Vertretungslehrer">
-              <EntitySelect title="Lehrer" value={teacherId} items={teachers} onChange={setTeacherId} emptyLabel="Unbekannt" onCreate={() => quickCreate(C.teachers)} createLabel="Neuer Lehrer …" />
+            <Field label={t('Vertretungslehrer')}>
+              <EntitySelect title={t('Lehrer')} value={teacherId} items={teachers} onChange={setTeacherId} emptyLabel={t('Unbekannt')} onCreate={() => quickCreate(C.teachers)} createLabel={t('Neuer Lehrer …')} />
             </Field>
-            <Field label="Fach">
-              <EntitySelect title="Fach" value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel={plannedSubject ? `Wie geplant (${plannedSubject.name})` : 'Wie geplant'} />
+            <Field label={t('Fach')}>
+              <EntitySelect title={t('Fach')} value={subjectId} items={subjects} onChange={setSubjectId} emptyLabel={plannedSubject ? t('Wie geplant ({name})', { name: plannedSubject.name }) : t('Wie geplant')} />
             </Field>
           </>
         )}
         {kind !== 'ausfall' && (
-          <Field label={kind === 'raum' ? 'Neuer Raum' : 'Raum (falls anders)'}>
-            <EntitySelect title="Raum" value={roomId} items={rooms} onChange={setRoomId} emptyLabel={kind === 'raum' ? 'Raum wählen …' : 'Wie geplant'} onCreate={() => quickCreate(C.rooms)} createLabel="Neuer Raum …" />
+          <Field label={kind === 'raum' ? t('Neuer Raum') : t('Raum (falls anders)')}>
+            <EntitySelect title={t('Raum')} value={roomId} items={rooms} onChange={setRoomId} emptyLabel={kind === 'raum' ? t('Raum wählen …') : t('Wie geplant')} onCreate={() => quickCreate(C.rooms)} createLabel={t('Neuer Raum …')} />
           </Field>
         )}
-        <Field label="Notiz">
-          <input className="row-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="z. B. Aufgaben auf Moodle" />
+        <Field label={t('Notiz')}>
+          <input className="row-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('z. B. Aufgaben auf Moodle')} />
         </Field>
       </div>
       {date && (
@@ -129,7 +130,7 @@ export function ChangeSheet({
       {change && (
         <div className="list" style={{ marginTop: 24 }}>
           <button type="button" className="row danger" onClick={del}>
-            Änderung entfernen (Stunde wie geplant)
+            {t('Änderung entfernen (Stunde wie geplant)')}
           </button>
         </div>
       )}

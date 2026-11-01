@@ -9,6 +9,7 @@ import { useLookups } from '../../lib/models'
 import { put, type Item } from '../../lib/repo'
 import { useHalfYearSettings } from '../../lib/useHalfYears'
 import { AbsenceSheet } from './AbsenceSheet'
+import { t } from '../../lib/i18n'
 
 export function AbsencesPage() {
   const settings = useHalfYearSettings()
@@ -36,8 +37,8 @@ export function AbsencesPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Fehlstunden" back={{ to: '/', label: 'Heute' }}>
-        <button type="button" className="icon-btn" aria-label="Fehlstunden eintragen" onClick={() => setEditing('new')}>
+      <PageHeader title={t('Fehlstunden')} back={{ to: '/', label: t('Heute') }}>
+        <button type="button" className="icon-btn" aria-label={t('Fehlstunden eintragen')} onClick={() => setEditing('new')}>
           +
         </button>
       </PageHeader>
@@ -47,21 +48,22 @@ export function AbsencesPage() {
       <div className="stat-row">
         <div className="stat">
           <span className="stat-value">{total}</span>
-          <span className="stat-label">Fehlstunden</span>
+          <span className="stat-label">{t('Fehlstunden')}</span>
         </div>
         <div className={`stat ${openUnits ? 'warn' : ''}`}>
           <span className="stat-value">{openUnits}</span>
           <span className="stat-label">
-            unentschuldigt{openEntries ? ` (${openEntries} Entschuldigung${openEntries > 1 ? 'en' : ''} offen)` : ''}
+            {t('unentschuldigt')}
+            {openEntries ? ` (${openEntries > 1 ? t('{n} Entschuldigungen offen', { n: openEntries }) : t('1 Entschuldigung offen')})` : ''}
           </span>
         </div>
       </div>
 
-      {list.length === 0 && <p className="hint">Keine Fehlstunden in diesem Halbjahr.</p>}
+      {list.length === 0 && <p className="hint">{t('Keine Fehlstunden in diesem Halbjahr.')}</p>}
 
       {list.length > 0 && (
         <>
-          <h2 className="section-title">Einträge</h2>
+          <h2 className="section-title">{t('Einträge')}</h2>
           <div className="list">
             {list.map((a) => {
               const subjects = [...new Set(a.lessons.map((l) => (l.subjectId && subjectMap.get(l.subjectId)?.short) || '?'))]
@@ -69,7 +71,7 @@ export function AbsencesPage() {
                 <div key={a.id} className="row" style={{ padding: 0 }}>
                   <button type="button" className="row" style={{ flex: 1 }} onClick={() => setEditing(a)}>
                     <span className="label">
-                      {formatDate(parseISODate(a.date), { weekday: 'short', day: 'numeric', month: 'long' })} · {absenceUnits(a)} Std.
+                      {formatDate(parseISODate(a.date), { weekday: 'short', day: 'numeric', month: 'long' })} · {t('{n} Std.', { n: absenceUnits(a) })}
                       <span className="sub">
                         {a.reason} · {subjects.join(', ')}
                       </span>
@@ -79,17 +81,17 @@ export function AbsencesPage() {
                     type="button"
                     className={`status-chip ${a.excused ? 'ok' : 'open'}`}
                     onClick={() => toggleExcused(a)}
-                    title="Status umschalten"
+                    title={t('Status umschalten')}
                   >
-                    {a.excused ? 'entschuldigt' : 'offen'}
+                    {a.excused ? t('entschuldigt') : t('offen')}
                   </button>
                 </div>
               )
             })}
           </div>
-          <p className="section-footer">Tippe auf „offen“, sobald du die Entschuldigung abgegeben hast.</p>
+          <p className="section-footer">{t('Tippe auf „offen“, sobald du die Entschuldigung abgegeben hast.')}</p>
 
-          <h2 className="section-title">Pro Fach</h2>
+          <h2 className="section-title">{t('Pro Fach')}</h2>
           <div className="list">
             {[...perSubject.entries()]
               .sort((a, b) => b[1] - a[1])
@@ -98,8 +100,8 @@ export function AbsencesPage() {
                 return (
                   <div key={id} className="row">
                     <ColorDot color={s?.color ?? 'var(--outline)'} size={12} />
-                    <span className="label">{s?.name ?? 'Fach gelöscht'}</span>
-                    <span className="value">{n} Std.</span>
+                    <span className="label">{s?.name ?? t('Fach gelöscht')}</span>
+                    <span className="value">{t('{n} Std.', { n })}</span>
                   </div>
                 )
               })}

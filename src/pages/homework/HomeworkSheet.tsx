@@ -9,6 +9,7 @@ import { periodTitle, sortPeriods } from '../../lib/models'
 import { newId, put, type Item } from '../../lib/repo'
 import { useSchedule } from '../../lib/schedule'
 import { SubjectSelect } from '../../components/SubjectSelect'
+import { t } from '../../lib/i18n'
 
 type DueMode = 'next' | 'next2' | 'date'
 
@@ -88,7 +89,7 @@ export function HomeworkSheet({
   }
 
   async function del() {
-    if (homework && await confirmDialog('Hausaufgabe löschen?', { confirm: 'Löschen', danger: true })) {
+    if (homework && await confirmDialog(t('Hausaufgabe löschen?'), { confirm: t('Löschen'), danger: true })) {
       await deleteHomework(homework)
       onClose()
     }
@@ -98,28 +99,28 @@ export function HomeworkSheet({
   const lessonsThatDay = subjectId && mode === 'date' ? schedule.lessonsOn(parseISODate(date)).filter((l) => l.subject.id === subjectId) : []
 
   return (
-    <Sheet title={homework ? 'Hausaufgabe' : 'Neue Hausaufgabe'} onClose={cancel} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
+    <Sheet title={homework ? t('Hausaufgabe') : t('Neue Hausaufgabe')} onClose={cancel} onSave={save} saveLabel={t('Sichern')} saveDisabled={!canSave}>
       <div className="list">
-        <Field label="Fach">
-          <SubjectSelect value={subjectId} onChange={setSubjectId} emptyLabel="Fach wählen …" />
+        <Field label={t('Fach')}>
+          <SubjectSelect value={subjectId} onChange={setSubjectId} emptyLabel={t('Fach wählen …')} />
         </Field>
-        <Field label="Aufgabe">
-          <textarea className="row-input" rows={2} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z. B. S. 42 Nr. 3a–c" autoFocus={!homework} />
+        <Field label={t('Aufgabe')}>
+          <textarea className="row-input" rows={2} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('z. B. S. 42 Nr. 3a–c')} autoFocus={!homework} />
         </Field>
       </div>
 
-      <h3 className="section-title">Fällig</h3>
+      <h3 className="section-title">{t('Fällig')}</h3>
       <div className="list">
         <div className="row stack">
           <div className="chips">
             <button type="button" className={`chip ${mode === 'next' ? 'active' : ''}`} disabled={!upcoming[0]} onClick={() => setMode('next')}>
-              Nächste Stunde{upcoming[0] && ` · ${short(upcoming[0].date)}`}
+              {t('Nächste Stunde')}{upcoming[0] && ` · ${short(upcoming[0].date)}`}
             </button>
             <button type="button" className={`chip ${mode === 'next2' ? 'active' : ''}`} disabled={!upcoming[1]} onClick={() => setMode('next2')}>
-              Übernächste{upcoming[1] && ` · ${short(upcoming[1].date)}`}
+              {t('Übernächste')}{upcoming[1] && ` · ${short(upcoming[1].date)}`}
             </button>
             <button type="button" className={`chip ${mode === 'date' ? 'active' : ''}`} onClick={() => setMode('date')}>
-              Datum
+              {t('Datum')}
             </button>
           </div>
           {mode === 'date' && (
@@ -151,7 +152,7 @@ export function HomeworkSheet({
           )}
           {subjectId && !upcoming[0] && mode !== 'date' && (
             <p className="section-footer" style={{ margin: '10px 0 0' }}>
-              Dieses Fach steht nicht im Stundenplan – bitte ein Datum wählen.
+              {t('Dieses Fach steht nicht im Stundenplan – bitte ein Datum wählen.')}
             </p>
           )}
           {mode !== 'date' && upcoming[0] && (
@@ -163,24 +164,24 @@ export function HomeworkSheet({
         </div>
       </div>
 
-      <h3 className="section-title">Notizen</h3>
+      <h3 className="section-title">{t('Notizen')}</h3>
       <div className="list">
         <div className="row stack">
-          <textarea className="row-input" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="optional" />
+          <textarea className="row-input" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('optional')} />
         </div>
       </div>
 
       <div className="list" style={{ marginTop: 16 }}>
         <div className="row">
           <span className="label">
-            Jede Woche wiederholen
-            <span className="sub">Beim Abhaken kommt automatisch die nächste für eine Woche später</span>
+            {t('Jede Woche wiederholen')}
+            <span className="sub">{t('Beim Abhaken kommt automatisch die nächste für eine Woche später')}</span>
           </span>
           <Switch checked={repeatWeekly} onChange={setRepeatWeekly} />
         </div>
       </div>
 
-      <h3 className="section-title">Fotos & Dokumente</h3>
+      <h3 className="section-title">{t('Fotos & Dokumente')}</h3>
       <div className="list">
         <div className="row stack">
           <AttachmentEditor
@@ -197,7 +198,7 @@ export function HomeworkSheet({
       {homework && (
         <div className="list" style={{ marginTop: 24 }}>
           <button type="button" className="row danger" onClick={del}>
-            Hausaufgabe löschen
+            {t('Hausaufgabe löschen')}
           </button>
         </div>
       )}

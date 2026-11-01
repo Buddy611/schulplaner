@@ -6,8 +6,9 @@ import { formatDate, parseISODate, toISODate } from '../../lib/dates'
 import { periodTitle, sortPeriods } from '../../lib/models'
 import { newId, put, remove, type Item } from '../../lib/repo'
 import { useSchedule, type ScheduledLesson } from '../../lib/schedule'
+import { locale, t } from '../../lib/i18n'
 
-const REASONS = ['Krankheit', 'Arzttermin', 'Familiäre Gründe', 'Schulveranstaltung']
+const REASONS = [t('Krankheit'), t('Arzttermin'), t('Familiäre Gründe'), t('Schulveranstaltung')]
 
 /** Fehlstunden für einen Tag eintragen: Stunden auswählen, Grund, Status */
 export function AbsenceSheet({ absence, onClose }: { absence?: Item<Absence>; onClose: () => void }) {
@@ -17,7 +18,7 @@ export function AbsenceSheet({ absence, onClose }: { absence?: Item<Absence>; on
   const [selected, setSelected] = useState<Set<string>>(
     new Set(absence ? absence.lessons.map((l) => l.periodId) : dayLessons.map(lessonKey)),
   )
-  const [reason, setReason] = useState(absence?.reason ?? 'Krankheit')
+  const [reason, setReason] = useState(absence?.reason ?? REASONS[0])
   const [excused, setExcused] = useState(absence?.excused ?? false)
   const [note, setNote] = useState(absence?.note ?? '')
   const periods = schedule.timetable ? sortPeriods(schedule.timetable.periods) : []
@@ -36,7 +37,7 @@ export function AbsenceSheet({ absence, onClose }: { absence?: Item<Absence>; on
       options.push({
         periodId: l.periodId,
         subjectId: l.subjectId ?? '',
-        label: `${p ? periodTitle(periods, p) : 'Stunde'} · ${(l.subjectId && schedule.lookups.subjectMap.get(l.subjectId)?.name) ?? ''}`,
+        label: `${p ? periodTitle(periods, p) : t('Stunde')} · ${(l.subjectId && schedule.lookups.subjectMap.get(l.subjectId)?.name) ?? ''}`,
         units: l.units,
       })
     }
@@ -71,50 +72,50 @@ export function AbsenceSheet({ absence, onClose }: { absence?: Item<Absence>; on
   }
 
   async function del() {
-    if (absence && await confirmDialog('Fehlstunden-Eintrag löschen?', { confirm: 'Löschen', danger: true })) {
+    if (absence && await confirmDialog(t('Fehlstunden-Eintrag löschen?'), { confirm: t('Löschen'), danger: true })) {
       await remove(absence.id)
       onClose()
     }
   }
 
   return (
-    <Sheet title={absence ? 'Fehlstunden' : 'Fehlstunden eintragen'} onClose={onClose} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
+    <Sheet title={absence ? t('Fehlstunden') : t('Fehlstunden eintragen')} onClose={onClose} onSave={save} saveLabel={t('Sichern')} saveDisabled={!canSave}>
       <div className="list">
-        <Field label="Datum">
+        <Field label={t('Datum')}>
           <input className="row-input" type="date" value={date} onChange={(e) => changeDate(e.target.value)} />
         </Field>
       </div>
       <p className="section-footer">{formatDate(parseISODate(date), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
 
       <h3 className="section-title">
-        Versäumte Stunden
+        {t('Versäumte Stunden')}
         {options.length > 0 && (
           <button
             type="button"
             className="section-link link-btn"
             onClick={() => setSelected(selected.size === options.length ? new Set() : new Set(options.map((o) => o.periodId)))}
           >
-            {selected.size === options.length ? 'Keine' : 'Ganzer Tag'}
+            {selected.size === options.length ? t('Keine') : t('Ganzer Tag')}
           </button>
         )}
       </h3>
       <div className="list">
-        {options.length === 0 && <div className="row muted">An diesem Tag ist laut Stundenplan kein Unterricht.</div>}
+        {options.length === 0 && <div className="row muted">{t('An diesem Tag ist laut Stundenplan kein Unterricht.')}</div>}
         {options.map((o) => (
           <label key={o.periodId} className="row" style={{ cursor: 'pointer' }}>
             <span className="label">
               {o.label}
               <span className="sub">
-                {o.units} Fehlstunde{o.units > 1 ? 'n' : ''}
+                {o.units > 1 ? t('{n} Fehlstunden', { n: o.units }) : t('1 Fehlstunde')}
               </span>
             </span>
             <input type="checkbox" className="checkbox" checked={selected.has(o.periodId)} onChange={() => toggle(o.periodId)} />
           </label>
         ))}
       </div>
-      {units > 0 && <p className="section-footer">Zusammen {units} Fehlstunden (45 Min. = 1 Stunde).</p>}
+      {units > 0 && <p className="section-footer">{t('Zusammen {n} Fehlstunden (45 Min. = 1 Stunde).', { n: units })}</p>}
 
-      <h3 className="section-title">Grund</h3>
+      <h3 className="section-title">{t('Grund')}</h3>
       <div className="list">
         <div className="row stack">
           <div className="chips" style={{ marginBottom: 10 }}>
@@ -124,31 +125,31 @@ export function AbsenceSheet({ absence, onClose }: { absence?: Item<Absence>; on
               </button>
             ))}
           </div>
-          <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Grund" />
+          <input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('Grund')} />
         </div>
       </div>
 
-      <h3 className="section-title">Entschuldigung</h3>
+      <h3 className="section-title">{t('Entschuldigung')}</h3>
       <div className="list">
         <div className="row stack">
           <Segmented<'yes' | 'no'>
             value={excused ? 'yes' : 'no'}
             onChange={(v) => setExcused(v === 'yes')}
             options={[
-              { value: 'no', label: 'Noch nicht abgegeben' },
-              { value: 'yes', label: 'Entschuldigt' },
+              { value: 'no', label: t('Noch nicht abgegeben') },
+              { value: 'yes', label: t('Entschuldigt') },
             ]}
           />
         </div>
-        <Field label="Notiz">
-          <input className="row-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="optional" />
+        <Field label={t('Notiz')}>
+          <input className="row-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('optional')} />
         </Field>
       </div>
 
       {absence && (
         <div className="list" style={{ marginTop: 24 }}>
           <button type="button" className="row danger" onClick={del}>
-            Eintrag löschen
+            {t('Eintrag löschen')}
           </button>
         </div>
       )}
@@ -161,5 +162,5 @@ function lessonKey(l: ScheduledLesson) {
 }
 
 function hhmm(d: Date) {
-  return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 }

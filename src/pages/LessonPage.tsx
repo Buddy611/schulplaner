@@ -18,6 +18,7 @@ import { ExamSheet, type ExamDefaults } from './exams/ExamSheet'
 import { HomeworkRow } from './homework/HomeworkCard'
 import { HomeworkSheet, type HomeworkDefaults } from './homework/HomeworkSheet'
 import { NoteSheet, type NoteDefaults } from './notes/NoteSheet'
+import { locale, t } from '../lib/i18n'
 
 interface MenuItem {
   label: string
@@ -107,7 +108,7 @@ export function LessonPage() {
   const back = () => (window.history.length > 1 ? navigate(-1) : navigate('/stundenplan'))
   const header = (title: string, actions?: ReactNode) => (
     <header className="top-bar">
-      <button type="button" className="nav-btn" aria-label="Zurück" onClick={back}>
+      <button type="button" className="nav-btn" aria-label={t('Zurück')} onClick={back}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M19 12H5M11 18l-6-6 6-6" />
         </svg>
@@ -123,19 +124,19 @@ export function LessonPage() {
   if (!l) {
     return (
       <div className="page">
-        {header('Stunde')}
-        <p className="hint">Diese Stunde gibt es an diesem Tag nicht (mehr).</p>
+        {header(t('Stunde'))}
+        <p className="hint">{t('Diese Stunde gibt es an diesem Tag nicht (mehr).')}</p>
       </div>
     )
   }
 
   const subject = l.subject
   const periods = sortPeriods((schedule.timetableFor(day) ?? schedule.timetable!).periods)
-  const hhmm = (d: Date) => d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+  const hhmm = (d: Date) => d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
   const today = toISODate(new Date())
   const periodNum = periodTitle(periods, l.period).replace(/ Stunde$/, '')
   const endNum = l.endPeriod.id !== l.period.id ? periodTitle(periods, l.endPeriod).replace(/ Stunde$/, '') : null
-  const halfLabel = l.endSlot === l.startSlot ? (l.startSlot % 2 ? '2. Hälfte' : '1. Hälfte') : null
+  const halfLabel = l.endSlot === l.startSlot ? (l.startSlot % 2 ? t('2. Hälfte') : t('1. Hälfte')) : null
 
   const ofSubject = homework.filter((h) => h.subjectId === subject.id)
   const openCount = ofSubject.filter((h) => !h.done).length
@@ -153,27 +154,27 @@ export function LessonPage() {
   const thisDay = formatDate(day, { weekday: 'long', day: 'numeric', month: 'short' })
   const changeItems = (kind: ChangeKind, what: string): MenuItem[] => [
     l.change
-      ? { label: 'Änderung für diesen Tag bearbeiten', onClick: () => setChange({ change: l.change }) }
-      : { label: `${what} nur am ${thisDay} ändern`, onClick: () => setChange({ kind }) },
-    { label: `${what} dauerhaft ändern (Stundenplan)`, onClick: () => navigate('/stundenplan/bearbeiten') },
+      ? { label: t('Änderung für diesen Tag bearbeiten'), onClick: () => setChange({ change: l.change }) }
+      : { label: t('{what} nur am {day} ändern', { what, day: thisDay }), onClick: () => setChange({ kind }) },
+    { label: t('{what} dauerhaft ändern (Stundenplan)', { what }), onClick: () => navigate('/stundenplan/bearbeiten') },
   ]
 
   return (
     <div className="page">
       {header(
-        `${subject.name} Stunde`,
+        t('{subject} Stunde', { subject: subject.name }),
         <button
           type="button"
           className="nav-btn"
-          aria-label="Hinzufügen"
+          aria-label={t('Hinzufügen')}
           onClick={() =>
             setMenu({
-              title: 'Hinzufügen',
+              title: t('Hinzufügen'),
               items: [
-                { label: 'Hausaufgabe', onClick: () => setHw({ defaults: hwDefaults }) },
-                { label: 'Notiz', onClick: () => setNote({ defaults: { subjectId: subject.id, date: l.date, periodId: l.period.id } }) },
-                { label: 'Klausur / Test', onClick: () => setExam({ defaults: { subjectId: subject.id, date: l.date, periodId: l.period.id } }) },
-                ...(l.change ? [] : [{ label: 'Ausfall / Vertretung', onClick: () => setChange({}) }]),
+                { label: t('Hausaufgabe'), onClick: () => setHw({ defaults: hwDefaults }) },
+                { label: t('Notiz'), onClick: () => setNote({ defaults: { subjectId: subject.id, date: l.date, periodId: l.period.id } }) },
+                { label: t('Klausur / Test'), onClick: () => setExam({ defaults: { subjectId: subject.id, date: l.date, periodId: l.period.id } }) },
+                ...(l.change ? [] : [{ label: t('Ausfall / Vertretung'), onClick: () => setChange({}) }]),
               ],
             })
           }
@@ -183,13 +184,13 @@ export function LessonPage() {
       )}
 
       <div className="lesson-tiles">
-        <Tile label="Offene Aufgaben" value={openCount} to="/hausaufgaben" />
-        <Tile label="Notendurchschnitt" value={average} to={`/noten/${subject.id}`} />
+        <Tile label={t('Offene Aufgaben')} value={openCount} to="/hausaufgaben" />
+        <Tile label={t('Notendurchschnitt')} value={average} to={`/noten/${subject.id}`} />
       </div>
 
       <div className="lesson-day-head">
         <h2>{formatDate(day, { weekday: 'long', day: 'numeric', month: 'short' })}</h2>
-        <button type="button" className="nav-btn" aria-label="Diese Stunde ändern" onClick={() => setMenu({ title: 'Stunde ändern', items: changeItems('ausfall', 'Stunde') })}>
+        <button type="button" className="nav-btn" aria-label={t('Diese Stunde ändern')} onClick={() => setMenu({ title: t('Stunde ändern'), items: changeItems('ausfall', t('Stunde')) })}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15.5 4.5l4 4L9 19H5v-4z" />
           </svg>
@@ -199,13 +200,13 @@ export function LessonPage() {
       {l.change && (
         <button type="button" className="day-change lesson-change" onClick={() => setChange({ change: l.change })}>
           <span className="change-pill">{CHANGE_LABEL[l.change.kind]}</span>
-          {l.change.note ?? (l.cancelled ? 'Die Stunde fällt aus' : 'Geändert')}
+          {l.change.note ?? (l.cancelled ? t('Die Stunde fällt aus') : t('Geändert'))}
         </button>
       )}
 
       <div className={`lesson-tiles three ${l.cancelled ? 'cancelled' : ''}`}>
         <Tile
-          label="Stunde"
+          label={t('Stunde')}
           value={
             <>
               {endNum ? `${periodNum}–${endNum}` : periodNum}
@@ -216,16 +217,16 @@ export function LessonPage() {
             </>
           }
         />
-        <Tile label="Raum" value={l.room?.name ?? '–'} onMenu={() => setMenu({ title: 'Raum', items: changeItems('raum', 'Raum') })} />
-        <Tile label="Lehrer" value={l.teacher?.name ?? '–'} onMenu={() => setMenu({ title: 'Lehrer', items: changeItems('vertretung', 'Lehrer') })} />
+        <Tile label={t('Raum')} value={l.room?.name ?? '–'} onMenu={() => setMenu({ title: t('Raum'), items: changeItems('raum', t('Raum')) })} />
+        <Tile label={t('Lehrer')} value={l.teacher?.name ?? '–'} onMenu={() => setMenu({ title: t('Lehrer'), items: changeItems('vertretung', t('Lehrer')) })} />
       </div>
 
       {lessonExams.length > 0 && (
         <div className="list" style={{ marginTop: 8 }}>
           {lessonExams.map((e) => (
             <button key={e.id} type="button" className="row" onClick={() => setExam({ exam: e })}>
-              <span className="exam-pill">{e.type}</span>
-              <span className="label">{e.topic ?? 'Thema offen'}</span>
+              <span className="exam-pill">{t(e.type)}</span>
+              <span className="label">{e.topic ?? t('Thema offen')}</span>
               <Chevron />
             </button>
           ))}
@@ -234,12 +235,12 @@ export function LessonPage() {
 
       {lessonNotes.length > 0 && (
         <>
-          <h2 className="section-title">Notizen</h2>
+          <h2 className="section-title">{t('Notizen')}</h2>
           <div className="list">
             {lessonNotes.map((n) => (
               <button key={n.id} type="button" className="row" onClick={() => setNote({ note: n })}>
                 <Icon name="note" size={18} />
-                <span className="label">{n.text || `${n.attachments.length} Anhang`}</span>
+                <span className="label">{n.text || t('{n} Anhang', { n: n.attachments.length })}</span>
                 <Chevron />
               </button>
             ))}
@@ -249,17 +250,17 @@ export function LessonPage() {
 
       <div className="lesson-section-head">
         <div>
-          <h2>Hausaufgaben</h2>
-          <p className="muted">Zukünftige oder noch nicht erledigte</p>
+          <h2>{t('Hausaufgaben')}</h2>
+          <p className="muted">{t('Zukünftige oder noch nicht erledigte')}</p>
         </div>
         <Link to="/hausaufgaben" className="link-btn">
-          Alle anzeigen
+          {t('Alle anzeigen')}
         </Link>
       </div>
       {shown.length === 0 ? (
         <div className="list">
           <button type="button" className="row" onClick={() => setHw({ defaults: hwDefaults })}>
-            <span className="label muted">Keine Hausaufgaben – tippen zum Eintragen</span>
+            <span className="label muted">{t('Keine Hausaufgaben – tippen zum Eintragen')}</span>
           </button>
         </div>
       ) : (

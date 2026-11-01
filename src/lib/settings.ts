@@ -1,3 +1,4 @@
+import type { Language, LanguagePref } from './i18n'
 import type { LayoutItem } from './layout'
 import { put, useRecord } from './repo'
 
@@ -10,9 +11,17 @@ export interface Settings {
   /** Akzentfarbe für Buttons, Markierungen usw. (Hex) */
   accent: string
   textSize: TextSize
+  /** Sprache der App (automatisch = Sprache des Geräts) */
+  language?: LanguagePref
+  /** Sprache der Push-Erinnerungen (der Server kennt die Gerätesprache nicht) */
+  notifyLang?: Language
   corners: Corners
   /** Bundesland-Kürzel für Ferien/Feiertage (ISO 3166-2 ohne "DE-"), leer = noch nicht gewählt */
   state: string
+  /** Land für Ferien (ISO-Code, fehlt = Deutschland) */
+  country?: string
+  /** Anzeigename der gewählten Region (für Länder außer Deutschland) */
+  regionName?: string
   activeTimetableId?: string
   /** Arten von Leistungsüberprüfungen (erweiterbar) */
   examTypes: string[]

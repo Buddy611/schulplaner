@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { addFiles, formatSize, useFileUrl, type Attachment } from '../lib/files'
+import { t } from '../lib/i18n'
 
 /**
  * Anhänge bearbeiten: Foto aufnehmen, Fotos auswählen, Dokumente hinzufügen.
@@ -36,15 +37,15 @@ export function AttachmentEditor({
       {value.length > 0 && <AttachmentGrid items={value} onRemove={onRemove} />}
       <div className="chips" style={{ marginTop: value.length ? 12 : 0 }}>
         <button type="button" className="chip" onClick={() => camera.current?.click()} disabled={busy}>
-          + Kamera
+          + {t('Kamera')}
         </button>
         <button type="button" className="chip" onClick={() => photos.current?.click()} disabled={busy}>
-          + Fotos
+          + {t('Fotos')}
         </button>
         <button type="button" className="chip" onClick={() => docs.current?.click()} disabled={busy}>
-          + Dokument
+          + {t('Dokument')}
         </button>
-        {busy && <span className="muted" style={{ alignSelf: 'center', fontSize: '0.875rem' }}>Wird gespeichert …</span>}
+        {busy && <span className="muted" style={{ alignSelf: 'center', fontSize: '0.875rem' }}>{t('Wird gespeichert …')}</span>}
       </div>
       <input ref={camera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => (void handle(e.target.files), (e.target.value = ''))} />
       <input ref={photos} type="file" accept="image/*" multiple hidden onChange={(e) => (void handle(e.target.files), (e.target.value = ''))} />
@@ -72,7 +73,7 @@ export function AttachmentGrid({ items, onRemove }: { items: Attachment[]; onRem
               {SAFE_IMAGES.includes(a.type) ? <Thumb id={a.id} /> : <span className="att-doc">{a.name.split('.').pop()?.toUpperCase()}</span>}
             </button>
             {onRemove && (
-              <button type="button" className="att-remove" aria-label="Entfernen" onClick={() => onRemove(a)}>
+              <button type="button" className="att-remove" aria-label={t('Entfernen')} onClick={() => onRemove(a)}>
                 ×
               </button>
             )}
@@ -87,7 +88,7 @@ export function AttachmentGrid({ items, onRemove }: { items: Attachment[]; onRem
 
 function Thumb({ id }: { id: string }) {
   const { url, missing } = useFileUrl(id)
-  if (missing) return <span className="att-doc">offline</span>
+  if (missing) return <span className="att-doc">{t('offline')}</span>
   return url ? <img src={url} alt="" /> : <span className="att-doc">…</span>
 }
 
@@ -125,17 +126,17 @@ function Viewer({ attachment, onClose }: { attachment: Attachment; onClose: () =
     <div className="viewer" onClick={onClose}>
       <div className="viewer-bar" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="link-btn" onClick={onClose}>
-          Schließen
+          {t('Schließen')}
         </button>
         <span className="viewer-name">{attachment.name}</span>
         {url && (
           <button type="button" className="link-btn" onClick={() => void saveOrShare(url, attachment)}>
-            Teilen / Speichern
+            {t('Teilen / Speichern')}
           </button>
         )}
       </div>
       <div className="viewer-body" onClick={(e) => e.stopPropagation()}>
-        {missing && <p className="muted">Datei ist offline nicht verfügbar – sie wird geladen, sobald Internet da ist.</p>}
+        {missing && <p className="muted">{t('Datei ist offline nicht verfügbar – sie wird geladen, sobald Internet da ist.')}</p>}
         {url && isImage && <img src={url} alt={attachment.name} />}
         {url && isPdf && <iframe src={url} title={attachment.name} />}
         {url && !isImage && !isPdf && (
@@ -143,10 +144,10 @@ function Viewer({ attachment, onClose }: { attachment: Attachment; onClose: () =
             <span className="att-doc big">{attachment.name.split('.').pop()?.toUpperCase()}</span>
             <p>{attachment.name}</p>
             <button type="button" className="btn" style={{ width: 'auto' }} onClick={() => void saveOrShare(url, attachment)}>
-              Mit anderer App öffnen
+              {t('Mit anderer App öffnen')}
             </button>
             <p className="muted" style={{ fontSize: '0.8125rem' }}>
-              Zur Sicherheit zeigt die App nur Fotos und PDFs selbst an.
+              {t('Zur Sicherheit zeigt die App nur Fotos und PDFs selbst an.')}
             </p>
           </div>
         )}

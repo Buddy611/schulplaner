@@ -6,6 +6,7 @@ import { Field, Sheet } from '../../components/ui'
 import { put, remove, useRecord } from '../../lib/repo'
 import { isDue, newCard, parseVocabList, VOCAB, type VocabCard, type VocabSet } from '../../lib/study'
 import { SubjectSelect } from '../../components/SubjectSelect'
+import { t } from '../../lib/i18n'
 
 /** Ein Vokabelset: Wörter verwalten und Lernen starten */
 export function VocabSetPage() {
@@ -21,8 +22,8 @@ export function VocabSetPage() {
   if (set === null) {
     return (
       <div className="page">
-        <PageHeader title="Vokabeln" back={{ to: '/lernen', label: 'Lernen' }} />
-        <p className="hint">Dieses Set gibt es nicht mehr.</p>
+        <PageHeader title={t('Vokabeln')} back={{ to: '/lernen', label: t('Lernen') }} />
+        <p className="hint">{t('Dieses Set gibt es nicht mehr.')}</p>
       </div>
     )
   }
@@ -43,12 +44,12 @@ export function VocabSetPage() {
   }
 
   async function rename() {
-    const name = await promptDialog('Set umbenennen', { initial: set!.name })
+    const name = await promptDialog(t('Set umbenennen'), { initial: set!.name })
     if (name) await save({ name })
   }
 
   async function del() {
-    if (await confirmDialog(`„${set!.name}“ mit allen Vokabeln löschen?`, { confirm: 'Löschen', danger: true })) {
+    if (await confirmDialog(t('„{name}“ mit allen Vokabeln löschen?', { name: set!.name }), { confirm: t('Löschen'), danger: true })) {
       await remove(set!.id)
       navigate('/lernen')
     }
@@ -56,23 +57,23 @@ export function VocabSetPage() {
 
   return (
     <div className="page">
-      <PageHeader title={set.name} back={{ to: '/lernen', label: 'Lernen' }}>
+      <PageHeader title={set.name} back={{ to: '/lernen', label: t('Lernen') }}>
         <button type="button" className="link-btn" onClick={rename}>
-          Umbenennen
+          {t('Umbenennen')}
         </button>
       </PageHeader>
 
       <div className="grade-hero">
         <div>
-          <div className="hero-label">Heute fällig</div>
+          <div className="hero-label">{t('Heute fällig')}</div>
           <div className="grade-big">{due}</div>
           <div className="muted" style={{ fontSize: '0.875rem' }}>
-            von {set.cards.length} Vokabeln
+            {t('von {n} Vokabeln', { n: set.cards.length })}
           </div>
         </div>
-        <div className="boxes" aria-label="Karteikasten">
+        <div className="boxes" aria-label={t('Karteikasten')}>
           {boxes.map((n, i) => (
-            <div key={i} className="box-col" title={`Box ${i + 1}`}>
+            <div key={i} className="box-col" title={t('Box {n}', { n: i + 1 })}>
               <div className="box-bar" style={{ height: `${set.cards.length ? Math.max(4, (n / set.cards.length) * 64) : 4}px` }} />
               <span>{i + 1}</span>
             </div>
@@ -82,45 +83,45 @@ export function VocabSetPage() {
 
       <div className="btn-row">
         <button type="button" className="btn" style={{ flex: 1 }} disabled={!due} onClick={() => navigate(`/lernen/vokabeln/${set.id}/lernen`)}>
-          Lernen{due ? ` (${due})` : ''}
+          {t('Lernen')}{due ? ` (${due})` : ''}
         </button>
         <button type="button" className="btn secondary" style={{ flex: 1 }} disabled={!set.cards.length} onClick={() => navigate(`/lernen/vokabeln/${set.id}/lernen?alle=1`)}>
-          Alle üben
+          {t('Alle üben')}
         </button>
       </div>
 
-      <h2 className="section-title">Neue Vokabel</h2>
+      <h2 className="section-title">{t('Neue Vokabel')}</h2>
       <div className="list">
-        <Field label="Fremdsprache">
-          <input id="vocab-front" className="row-input" value={front} onChange={(e) => setFront(e.target.value)} placeholder="z. B. marriage" />
+        <Field label={t('Fremdsprache')}>
+          <input id="vocab-front" className="row-input" value={front} onChange={(e) => setFront(e.target.value)} placeholder={t('z. B. marriage')} />
         </Field>
-        <Field label="Deutsch">
+        <Field label={t('Deutsch|Vokabel')}>
           <input
             className="row-input"
             value={back}
             onChange={(e) => setBack(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void addCard()}
-            placeholder="z. B. Ehe, Heirat"
+            placeholder={t('z. B. Ehe, Heirat')}
           />
         </Field>
         <button type="button" className="row action" onClick={addCard} disabled={!front.trim() || !back.trim()}>
-          Hinzufügen
+          {t('Hinzufügen')}
         </button>
         <button type="button" className="row action" onClick={() => setImporting(true)}>
-          Liste einfügen …
+          {t('Liste einfügen …')}
         </button>
       </div>
 
-      <h2 className="section-title">Einstellungen</h2>
+      <h2 className="section-title">{t('Einstellungen')}</h2>
       <div className="list">
-        <Field label="Fach">
-          <SubjectSelect value={set.subjectId} onChange={(subjectId) => save({ subjectId })} emptyLabel="Kein Fach" />
+        <Field label={t('Fach')}>
+          <SubjectSelect value={set.subjectId} onChange={(subjectId) => save({ subjectId })} emptyLabel={t('Kein Fach')} />
         </Field>
       </div>
 
       {set.cards.length > 0 && (
         <>
-          <h2 className="section-title">{set.cards.length} Vokabeln</h2>
+          <h2 className="section-title">{t('{n} Vokabeln', { n: set.cards.length })}</h2>
           <div className="list">
             {[...set.cards].reverse().map((c) => (
               <button key={c.id} type="button" className="row" onClick={() => setEditing(c)}>
@@ -128,7 +129,7 @@ export function VocabSetPage() {
                   {c.front}
                   <span className="sub">{c.back}</span>
                 </span>
-                <span className="badge">Box {c.box}</span>
+                <span className="badge">{t('Box {n}', { n: c.box })}</span>
               </button>
             ))}
           </div>
@@ -137,7 +138,7 @@ export function VocabSetPage() {
 
       <div className="list" style={{ marginTop: 24 }}>
         <button type="button" className="row danger" onClick={del}>
-          Set löschen
+          {t('Set löschen')}
         </button>
       </div>
 
@@ -174,9 +175,9 @@ function CardSheet({
   const [back, setBack] = useState(card.back)
   return (
     <Sheet
-      title="Vokabel"
+      title={t('Vokabel')}
       onClose={onClose}
-      saveLabel="Sichern"
+      saveLabel={t('Sichern')}
       saveDisabled={!front.trim() || !back.trim()}
       onSave={async () => {
         await onSave({ ...card, front: front.trim(), back: back.trim() })
@@ -184,15 +185,15 @@ function CardSheet({
       }}
     >
       <div className="list">
-        <Field label="Fremdsprache">
+        <Field label={t('Fremdsprache')}>
           <input className="row-input" value={front} onChange={(e) => setFront(e.target.value)} />
         </Field>
-        <Field label="Deutsch">
+        <Field label={t('Deutsch|Vokabel')}>
           <input className="row-input" value={back} onChange={(e) => setBack(e.target.value)} />
         </Field>
       </div>
       <p className="section-footer">
-        Box {card.box} · {card.correct}× gewusst · {card.wrong}× nicht gewusst
+        {t('Box {n} · {right}× gewusst · {wrong}× nicht gewusst', { n: card.box, right: card.correct, wrong: card.wrong })}
       </p>
       <div className="list" style={{ marginTop: 16 }}>
         <button
@@ -203,7 +204,7 @@ function CardSheet({
             onClose()
           }}
         >
-          Wieder ganz von vorn lernen
+          {t('Wieder ganz von vorn lernen')}
         </button>
         <button
           type="button"
@@ -213,7 +214,7 @@ function CardSheet({
             onClose()
           }}
         >
-          Vokabel löschen
+          {t('Vokabel löschen')}
         </button>
       </div>
     </Sheet>
@@ -225,9 +226,9 @@ function ImportSheet({ onClose, onImport }: { onClose: () => void; onImport: (li
   const parsed = parseVocabList(text)
   return (
     <Sheet
-      title="Liste einfügen"
+      title={t('Liste einfügen')}
       onClose={onClose}
-      saveLabel={parsed.length ? `${parsed.length} übernehmen` : 'Übernehmen'}
+      saveLabel={parsed.length ? t('{n} übernehmen', { n: parsed.length }) : t('Übernehmen')}
       saveDisabled={!parsed.length}
       onSave={async () => {
         await onImport(parsed)
@@ -247,7 +248,7 @@ function ImportSheet({ onClose, onImport }: { onClose: () => void; onImport: (li
         </div>
       </div>
       <p className="section-footer">
-        Eine Vokabel pro Zeile: Fremdsprache, dann „ - “, „ = “, „;“ oder ein Tab, dann Deutsch. Du kannst z. B. eine Tabelle aus Word oder Excel einfügen.
+        {t('Eine Vokabel pro Zeile: Fremdsprache, dann „ - “, „ = “, „;“ oder ein Tab, dann Deutsch. Du kannst z. B. eine Tabelle aus Word oder Excel einfügen.')}
       </p>
       {parsed.length > 0 && (
         <div className="list" style={{ marginTop: 12 }}>
@@ -259,7 +260,7 @@ function ImportSheet({ onClose, onImport }: { onClose: () => void; onImport: (li
               </span>
             </div>
           ))}
-          {parsed.length > 5 && <div className="row muted">… und {parsed.length - 5} weitere</div>}
+          {parsed.length > 5 && <div className="row muted">{t('… und {n} weitere', { n: parsed.length - 5 })}</div>}
         </div>
       )}
     </Sheet>

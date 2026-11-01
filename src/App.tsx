@@ -6,8 +6,9 @@ import { AuthProvider, useAuth } from './lib/auth'
 import { requestPersistentStorage } from './lib/db'
 import { useSettings } from './lib/settings'
 import { startAutoSync } from './lib/sync'
-import { ensureHolidays } from './lib/holidays'
+import { ensureHolidays, regionKey } from './lib/holidays'
 import { useApplyTheme } from './lib/theme'
+import { useLanguagePref } from './lib/i18n'
 import { Login } from './pages/Login'
 import { Settings } from './pages/Settings'
 import { Today } from './pages/Today'
@@ -51,6 +52,7 @@ function Shell() {
   const { user } = useAuth()
   const settings = useSettings()
   useApplyTheme(settings)
+  useLanguagePref(settings.language)
 
   useEffect(() => {
     if (!user) return
@@ -60,12 +62,13 @@ function Shell() {
 
   // Ferien für das gewählte Bundesland im Voraus laden (und auffrischen, sobald wieder online)
   useEffect(() => {
-    if (!user || !settings.state) return
-    const load = () => void ensureHolidays(settings.state).catch(() => undefined)
+    const region = regionKey(settings)
+    if (!user || !region) return
+    const load = () => void ensureHolidays(region).catch(() => undefined)
     load()
     window.addEventListener('online', load)
     return () => window.removeEventListener('online', load)
-  }, [user, settings.state])
+  }, [user, settings.state, settings.country])
 
   if (!user) return <Login />
 

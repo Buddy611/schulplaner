@@ -9,6 +9,7 @@ import { useHalfYearSettings } from '../../lib/useHalfYears'
 import { useGradeData } from '../../lib/useGradeData'
 import { subjectCategory } from '../../lib/models'
 import { GradeSheet } from './GradeSheet'
+import { t } from '../../lib/i18n'
 
 /** Halbjahr aus der Adresse (?hj=2026-1) oder das aktuelle */
 export function useHalfYearParam() {
@@ -33,39 +34,39 @@ export function GradesPage() {
   if (!data.loaded) return null
   const sys = data.settings.gradeSystem
   const groups = [
-    { title: 'Hauptfächer', rows: data.rows.filter((r) => subjectCategory(r.subject) === 'haupt') },
-    { title: 'Nebenfächer', rows: data.rows.filter((r) => subjectCategory(r.subject) === 'neben') },
+    { title: t('Hauptfächer'), rows: data.rows.filter((r) => subjectCategory(r.subject) === 'haupt') },
+    { title: t('Nebenfächer'), rows: data.rows.filter((r) => subjectCategory(r.subject) === 'neben') },
   ].filter((g) => g.rows.length > 0)
   const q = half.key === halfYearOf(toISODate(new Date()), data.settings).key ? '' : `?hj=${half.key}`
 
   return (
     <div className="page">
-      <PageHeader title="Noten">
+      <PageHeader title={t('Noten')}>
         <button type="button" className="link-btn no-print" onClick={() => window.print()}>
           PDF
         </button>
-        <button type="button" className="icon-btn" aria-label="Note eintragen" onClick={() => setAdding(true)}>
+        <button type="button" className="icon-btn" aria-label={t('Note eintragen')} onClick={() => setAdding(true)}>
           +
         </button>
       </PageHeader>
 
       <HalfYearPicker value={half} settings={halfSettings} onChange={select} />
-      {sys === 'punkte' && <p className="section-footer">Dieses Halbjahr wird in Punkten angezeigt.</p>}
+      {sys === 'punkte' && <p className="section-footer">{t('Dieses Halbjahr wird in Punkten angezeigt.')}</p>}
 
       <div className="grade-hero">
         <div>
-          <div className="hero-label">Gesamtdurchschnitt</div>
+          <div className="hero-label">{t('Gesamtdurchschnitt')}</div>
           <div className="grade-big">{formatAverage(data.average, sys)}</div>
           <div className="muted" style={{ fontSize: '0.875rem' }}>
-            {data.withTotal.length} von {data.rows.length} Fächern mit Noten
+            {t('{n} von {m} Fächern mit Noten', { n: data.withTotal.length, m: data.rows.length })}
           </div>
         </div>
         <Link to={`/noten/zeugnis${q}`} className="btn secondary" style={{ width: 'auto', textDecoration: 'none' }}>
-          Zeugnis-Vorschau
+          {t('Zeugnis-Vorschau')}
         </Link>
       </div>
 
-      {data.rows.length === 0 && <p className="hint">Lege zuerst unter Einstellungen → Fächer deine Fächer an.</p>}
+      {data.rows.length === 0 && <p className="hint">{t('Lege zuerst unter Einstellungen → Fächer deine Fächer an.')}</p>}
 
       {groups.map(({ title, rows }) => (
         <div key={title}>
@@ -78,11 +79,11 @@ export function GradesPage() {
                   {subject.name}
                   <span className="sub">
                     {result.total == null
-                      ? 'Noch keine Noten'
-                      : `schriftlich ${formatAverage(result.written, sys)} · mündlich ${formatAverage(result.oral, sys)}`}
+                      ? t('Noch keine Noten')
+                      : t('schriftlich {w} · mündlich {o}', { w: formatAverage(result.written, sys), o: formatAverage(result.oral, sys) })}
                   </span>
                 </span>
-                <span className={`grade-chip ${belowGoal(result.total, subject.goal, sys) ? 'warn' : ''}`} title={subject.goal ? 'Ziel: ' + goalLabel(subject.goal, sys) : undefined}>
+                <span className={`grade-chip ${belowGoal(result.total, subject.goal, sys) ? 'warn' : ''}`} title={subject.goal ? t('Ziel: {goal}', { goal: goalLabel(subject.goal, sys) }) : undefined}>
                   {formatAverage(result.total, sys)}
                 </span>
               </Link>
@@ -92,7 +93,7 @@ export function GradesPage() {
       ))}
       {data.withTotal.length > 0 && (
         <p className="section-footer">
-          Der Gesamtdurchschnitt ist der Mittelwert aller Fächer mit Noten. Zeugnisnoten (gerundet): {data.withTotal.map((r) => `${r.subject.short} ${reportGrade(r.result.total, sys)}`).join(', ')}
+          {t('Der Gesamtdurchschnitt ist der Mittelwert aller Fächer mit Noten. Zeugnisnoten (gerundet):')} {data.withTotal.map((r) => `${r.subject.short} ${reportGrade(r.result.total, sys)}`).join(', ')}
         </p>
       )}
 

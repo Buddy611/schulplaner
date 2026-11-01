@@ -11,6 +11,7 @@ import { useLookups } from '../../lib/models'
 import { put, remove, useRecord } from '../../lib/repo'
 import { STUDY_SHEETS, type StudySheet } from '../../lib/study'
 import { SubjectSelect } from '../../components/SubjectSelect'
+import { t } from '../../lib/i18n'
 
 /** Lernzettel ansehen und bearbeiten */
 export function StudySheetPage() {
@@ -24,7 +25,7 @@ export function StudySheetPage() {
   if (sheet === null) {
     return (
       <div className="page">
-        <PageHeader title="Lernzettel" back={{ to: '/lernen?tab=zettel', label: 'Lernen' }} />
+        <PageHeader title={t('Lernzettel')} back={{ to: '/lernen?tab=zettel', label: t('Lernen') }} />
         <p className="hint">Diesen Lernzettel gibt es nicht mehr.</p>
       </div>
     )
@@ -36,7 +37,7 @@ export function StudySheetPage() {
   }
 
   async function del() {
-    if (await confirmDialog(`„${sheet!.title}“ löschen?`, { confirm: 'Löschen', danger: true })) {
+    if (await confirmDialog(t('„{name}“ löschen?', { name: sheet!.title }), { confirm: t('Löschen'), danger: true })) {
       await removeFiles(sheet!.attachments ?? [])
       await remove(sheet!.id)
       navigate('/lernen?tab=zettel')
@@ -45,9 +46,9 @@ export function StudySheetPage() {
 
   return (
     <div className="page">
-      <PageHeader title={editing ? 'Bearbeiten' : sheet.title} back={{ to: '/lernen?tab=zettel', label: 'Lernen' }}>
+      <PageHeader title={editing ? t('Bearbeiten') : sheet.title} back={{ to: '/lernen?tab=zettel', label: t('Lernen') }}>
         <button type="button" className="link-btn strong" onClick={() => setParams(editing ? {} : { bearbeiten: '1' }, { replace: true })}>
-          {editing ? 'Fertig' : 'Bearbeiten'}
+          {editing ? t('Fertig') : t('Bearbeiten')}
         </button>
       </PageHeader>
       {editing ? <SheetEditor sheet={sheet} save={save} onDelete={del} /> : <SheetView sheet={sheet} onToggle={(content) => save({ content })} />}
@@ -64,11 +65,11 @@ function SheetView({ sheet, onToggle }: { sheet: StudySheet; onToggle: (content:
     <>
       {(subject || exam) && (
         <p className="subtitle">
-          {[subject?.name, exam && `${exam.type} am ${formatDate(parseISODate(exam.date), { day: 'numeric', month: 'long' })}`].filter(Boolean).join(' · ')}
+          {[subject?.name, exam && t('{type} am {date}', { type: t(exam.type), date: formatDate(parseISODate(exam.date), { day: 'numeric', month: 'long' }) })].filter(Boolean).join(' · ')}
         </p>
       )}
       <div className="card study-sheet" style={subject ? { borderTop: `5px solid ${subject.color}` } : undefined}>
-        {sheet.content.trim() ? <RichText text={sheet.content} onToggle={onToggle} /> : <p className="muted">Noch leer – tippe oben auf „Bearbeiten“.</p>}
+        {sheet.content.trim() ? <RichText text={sheet.content} onToggle={onToggle} /> : <p className="muted">{t('Noch leer – tippe oben auf „Bearbeiten“.')}</p>}
       </div>
       {sheet.attachments?.length > 0 && (
         <div className="card">
@@ -96,7 +97,7 @@ function SheetEditor({ sheet, save, onDelete }: { sheet: StudySheet; save: (c: P
     const { selectionStart: s, selectionEnd: e } = el
     let next = content
     if (kind === 'bold') {
-      const sel = content.slice(s, e) || 'fett'
+      const sel = content.slice(s, e) || t('fett')
       next = content.slice(0, s) + `**${sel}**` + content.slice(e)
     } else {
       const lineStart = content.lastIndexOf('\n', s - 1) + 1
@@ -111,17 +112,17 @@ function SheetEditor({ sheet, save, onDelete }: { sheet: StudySheet; save: (c: P
   return (
     <>
       <div className="list">
-        <Field label="Titel">
+        <Field label={t('Titel')}>
           <input className="row-input" value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => title.trim() && commit({ title: title.trim() })} />
         </Field>
-        <Field label="Fach">
-          <SubjectSelect value={sheet.subjectId} onChange={(subjectId) => commit({ subjectId })} emptyLabel="Kein Fach" />
+        <Field label={t('Fach')}>
+          <SubjectSelect value={sheet.subjectId} onChange={(subjectId) => commit({ subjectId })} emptyLabel={t('Kein Fach')} />
         </Field>
-        <Field label="Für Klausur">
+        <Field label={t('Für Klausur')}>
           <Select
-            title="Klausur"
+            title={t('Klausur')}
             value={sheet.examId ?? ''}
-            options={[{ value: '', label: 'Keine' }, ...exams.map((e) => ({ value: e.id, label: `${subjects.find((s) => s.id === e.subjectId)?.name ?? ''} ${e.type} · ${formatDate(parseISODate(e.date), { day: 'numeric', month: 'short' })}` }))]}
+            options={[{ value: '', label: t('Keine') }, ...exams.map((e) => ({ value: e.id, label: `${subjects.find((s) => s.id === e.subjectId)?.name ?? ''} ${t(e.type)} · ${formatDate(parseISODate(e.date), { day: 'numeric', month: 'short' })}` }))]}
             onChange={(v) => commit({ examId: v || undefined })}
           />
         </Field>
@@ -129,16 +130,16 @@ function SheetEditor({ sheet, save, onDelete }: { sheet: StudySheet; save: (c: P
 
       <div className="format-bar">
         <button type="button" className="chip" onClick={() => format('h')}>
-          Überschrift
+          {t('Überschrift')}
         </button>
         <button type="button" className="chip" onClick={() => format('list')}>
-          • Liste
+          • {t('Liste')}
         </button>
         <button type="button" className="chip" onClick={() => format('todo')}>
-          ☐ Aufgabe
+          ☐ {t('Aufgabe')}
         </button>
         <button type="button" className="chip" onClick={() => format('bold')}>
-          <strong>Fett</strong>
+          <strong>{t('Fett')}</strong>
         </button>
       </div>
       <div className="list">
@@ -150,12 +151,12 @@ function SheetEditor({ sheet, save, onDelete }: { sheet: StudySheet; save: (c: P
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onBlur={() => commit({ content })}
-            placeholder={'# Thema\n- wichtiger Punkt\n- **Merke:** …\n- [ ] Aufgabe zum Üben'}
+            placeholder={t('# Thema\n- wichtiger Punkt\n- **Merke:** …\n- [ ] Aufgabe zum Üben')}
           />
         </div>
       </div>
 
-      <h3 className="section-title">Fotos & Dokumente</h3>
+      <h3 className="section-title">{t('Fotos & Dokumente')}</h3>
       <div className="list">
         <div className="row stack">
           <AttachmentEditor
@@ -171,7 +172,7 @@ function SheetEditor({ sheet, save, onDelete }: { sheet: StudySheet; save: (c: P
 
       <div className="list" style={{ marginTop: 24 }}>
         <button type="button" className="row danger" onClick={onDelete}>
-          Lernzettel löschen
+          {t('Lernzettel löschen')}
         </button>
       </div>
     </>

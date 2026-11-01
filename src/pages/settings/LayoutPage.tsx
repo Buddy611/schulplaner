@@ -3,6 +3,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { ResetButton, Switch } from '../../components/ui'
 import { DEFAULT_NAV_LAYOUT, DEFAULT_TODAY_LAYOUT, isSeparator, NAV_ITEMS, newSeparator, resolveLayout, TODAY_SECTIONS, type LayoutItem } from '../../lib/layout'
 import { updateSettings, useSettings } from '../../lib/settings'
+import { t } from '../../lib/i18n'
 
 /** Startseite und Navigation anpassen: Reihenfolge ändern, Einträge ein- und ausblenden */
 export function LayoutPage() {
@@ -13,9 +14,9 @@ export function LayoutPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Startseite & Navigation" back={{ to: '/einstellungen', label: 'Einstellungen' }} />
+      <PageHeader title={t('Startseite & Navigation')} back={{ to: '/einstellungen', label: t('Einstellungen') }} />
 
-      <h2 className="section-title">Startseite „Heute“</h2>
+      <h2 className="section-title">{t('Startseite „Heute“')}</h2>
       <LayoutList
         items={today}
         meta={(id) => {
@@ -24,19 +25,19 @@ export function LayoutPage() {
         }}
         onChange={(todayLayout) => updateSettings(settings, { todayLayout })}
       />
-      <p className="section-footer">Mit den Pfeilen änderst du die Reihenfolge, mit dem Schalter blendest du einen Abschnitt aus.</p>
+      <p className="section-footer">{t('Mit den Pfeilen änderst du die Reihenfolge, mit dem Schalter blendest du einen Abschnitt aus.')}</p>
 
-      <h2 className="section-title">Navigation</h2>
+      <h2 className="section-title">{t('Navigation')}</h2>
       <LayoutList
         items={nav}
         meta={(id) => {
-          if (isSeparator(id)) return { label: 'Trennstrich', separator: true }
+          if (isSeparator(id)) return { label: t('Trennstrich'), separator: true }
           const n = NAV_ITEMS.find((x) => x.id === id)!
           const pos = visibleNav.findIndex((v) => v.id === id)
           return {
             label: n.label,
             icon: n.icon,
-            sub: pos < 0 ? 'Ausgeblendet' : pos < 5 ? 'Leiste unten (Handy) und Seitenleiste' : 'Nur in der Seitenleiste (iPad) und unter „Mehr“',
+            sub: pos < 0 ? t('Ausgeblendet') : pos < 5 ? t('Leiste unten (Handy) und Seitenleiste') : t('Nur in der Seitenleiste (iPad) und unter „Mehr“'),
           }
         }}
         minVisible={1}
@@ -44,15 +45,14 @@ export function LayoutPage() {
       />
       <div className="list" style={{ marginTop: 8 }}>
         <button type="button" className="row action" onClick={() => updateSettings(settings, { navLayout: [...nav, newSeparator()] })}>
-          + Trennstrich hinzufügen
+          + {t('Trennstrich hinzufügen')}
         </button>
       </div>
       <p className="section-footer">
-        Auf dem Handy zeigt die Leiste unten die ersten 5 sichtbaren Einträge. Auf dem iPad stehen alle sichtbaren Einträge in der Seitenleiste – Trennstriche
-        teilen sie dort in Gruppen. Ein Strich ganz unten steht vor den Einstellungen, die du immer über das Zahnrad erreichst.
+        {t('Auf dem Handy zeigt die Leiste unten die ersten 5 sichtbaren Einträge. Auf dem iPad stehen alle sichtbaren Einträge in der Seitenleiste – Trennstriche teilen sie dort in Gruppen. Ein Strich ganz unten steht vor den Einstellungen, die du immer über das Zahnrad erreichst.')}
       </p>
 
-      <ResetButton what="Startseite und Navigation" onReset={() => updateSettings(settings, { todayLayout: undefined, navLayout: undefined })} />
+      <ResetButton what={t('Startseite und Navigation')} onReset={() => updateSettings(settings, { todayLayout: undefined, navLayout: undefined })} />
     </div>
   )
 }
@@ -97,15 +97,15 @@ function LayoutList({
               </span>
             )}
             <span className="layout-arrows">
-              <button type="button" className="arrow-btn" aria-label="Nach oben" disabled={i === 0} onClick={() => move(i, -1)}>
+              <button type="button" className="arrow-btn" aria-label={t('Nach oben')} disabled={i === 0} onClick={() => move(i, -1)}>
                 ↑
               </button>
-              <button type="button" className="arrow-btn" aria-label="Nach unten" disabled={i === items.length - 1} onClick={() => move(i, 1)}>
+              <button type="button" className="arrow-btn" aria-label={t('Nach unten')} disabled={i === items.length - 1} onClick={() => move(i, 1)}>
                 ↓
               </button>
             </span>
             {m.separator ? (
-              <button type="button" className="arrow-btn" aria-label="Trennstrich entfernen" onClick={() => onChange(items.filter((x) => x.id !== item.id))}>
+              <button type="button" className="arrow-btn" aria-label={t('Trennstrich entfernen')} onClick={() => onChange(items.filter((x) => x.id !== item.id))}>
                 ✕
               </button>
             ) : (

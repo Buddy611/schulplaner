@@ -1,5 +1,6 @@
 import { parseISODate } from '../../lib/dates'
 import type { GradeSystem } from '../../lib/grades'
+import { locale, t } from '../../lib/i18n'
 
 export interface ChartPoint {
   date: string
@@ -25,12 +26,12 @@ export function GradeChart({ points, system, color }: { points: ChartPoint[]; sy
   const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(p.date).toFixed(1)},${y(p.average).toFixed(1)}`).join(' ')
 
   return (
-    <svg className="grade-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Notenverlauf">
-      {ticks.map((t) => (
-        <g key={t}>
-          <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} className="grid" />
-          <text x={pad.l - 8} y={y(t) + 4} textAnchor="end" className="axis">
-            {t}
+    <svg className="grade-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('Notenverlauf')}>
+      {ticks.map((tp) => (
+        <g key={tp}>
+          <line x1={pad.l} x2={W - pad.r} y1={y(tp)} y2={y(tp)} className="grid" />
+          <text x={pad.l - 8} y={y(tp) + 4} textAnchor="end" className="axis">
+            {tp}
           </text>
         </g>
       ))}
@@ -39,10 +40,10 @@ export function GradeChart({ points, system, color }: { points: ChartPoint[]; sy
         <circle key={i} cx={x(p.date)} cy={y(p.value)} r="5" fill="var(--card)" stroke={color} strokeWidth="2.5" />
       ))}
       <text x={pad.l} y={H - 6} className="axis">
-        {parseISODate(points[0].date).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
+        {parseISODate(points[0].date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
       </text>
       <text x={W - pad.r} y={H - 6} textAnchor="end" className="axis">
-        {parseISODate(points[points.length - 1].date).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
+        {parseISODate(points[points.length - 1].date).toLocaleDateString(locale, { day: 'numeric', month: 'short' })}
       </text>
     </svg>
   )

@@ -7,6 +7,7 @@ import { removeFiles, type Attachment } from '../../lib/files'
 import { deleteNote, NOTES, type LessonNote } from '../../lib/notes'
 import { newId, put, type Item } from '../../lib/repo'
 import { SubjectSelect } from '../../components/SubjectSelect'
+import { t } from '../../lib/i18n'
 
 export interface NoteDefaults {
   subjectId?: string
@@ -47,32 +48,32 @@ export function NoteSheet({ note, defaults, onClose }: { note?: Item<LessonNote>
   }
 
   async function del() {
-    if (note && (await confirmDialog('Notiz löschen?', { confirm: 'Löschen', danger: true }))) {
+    if (note && (await confirmDialog(t('Notiz löschen?'), { confirm: t('Löschen'), danger: true }))) {
       await deleteNote(note)
       onClose()
     }
   }
 
   return (
-    <Sheet title={note ? 'Notiz' : 'Neue Notiz'} onClose={cancel} onSave={save} saveLabel="Sichern" saveDisabled={!canSave}>
+    <Sheet title={note ? t('Notiz') : t('Neue Notiz')} onClose={cancel} onSave={save} saveLabel={t('Sichern')} saveDisabled={!canSave}>
       <div className="list">
-        <Field label="Fach">
-          <SubjectSelect value={subjectId} onChange={setSubjectId} emptyLabel="Fach wählen …" />
+        <Field label={t('Fach')}>
+          <SubjectSelect value={subjectId} onChange={setSubjectId} emptyLabel={t('Fach wählen …')} />
         </Field>
-        <Field label="Datum">
+        <Field label={t('Datum')}>
           <input className="row-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
       </div>
       <p className="section-footer">{formatDate(parseISODate(date), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
 
-      <h3 className="section-title">Notiz</h3>
+      <h3 className="section-title">{t('Notiz')}</h3>
       <div className="list">
         <div className="row stack">
-          <textarea className="row-input" rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder="Was wurde besprochen? Was ist wichtig?" autoFocus={!note} />
+          <textarea className="row-input" rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('Was wurde besprochen? Was ist wichtig?')} autoFocus={!note} />
         </div>
       </div>
 
-      <h3 className="section-title">Fotos & Dokumente</h3>
+      <h3 className="section-title">{t('Fotos & Dokumente')}</h3>
       <div className="list">
         <div className="row stack">
           <AttachmentEditor
@@ -89,7 +90,7 @@ export function NoteSheet({ note, defaults, onClose }: { note?: Item<LessonNote>
       {note && (
         <div className="list" style={{ marginTop: 24 }}>
           <button type="button" className="row danger" onClick={del}>
-            Notiz löschen
+            {t('Notiz löschen')}
           </button>
         </div>
       )}

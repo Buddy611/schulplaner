@@ -1,4 +1,5 @@
 import { useCollection } from './repo'
+import { t } from './i18n'
 
 /** Ausfall, Vertretung oder Raumänderung für eine Stunde an einem bestimmten Datum */
 export const CHANGES = 'changes'
@@ -20,9 +21,9 @@ export interface LessonChange {
 }
 
 export const CHANGE_LABEL: Record<ChangeKind, string> = {
-  ausfall: 'Ausfall',
-  vertretung: 'Vertretung',
-  raum: 'Raumänderung',
+  ausfall: t('Ausfall'),
+  vertretung: t('Vertretung'),
+  raum: t('Raumänderung'),
 }
 
 export function useChanges() {

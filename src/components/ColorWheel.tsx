@@ -1,4 +1,5 @@
 import { useRef, useState, type PointerEvent } from 'react'
+import { t } from '../lib/i18n'
 
 function hexToHsv(hex: string) {
   const m = hex.replace('#', '')
@@ -76,7 +77,7 @@ export function ColorWheel({ value, onPick }: { value: string; onPick: (hex: str
       </div>
 
       <label className="brightness">
-        <span className="field-label">Helligkeit</span>
+        <span className="field-label">{t('Helligkeit')}</span>
         <input
           type="range"
           min={10}
@@ -99,10 +100,10 @@ export function ColorWheel({ value, onPick }: { value: string; onPick: (hex: str
           placeholder="#4285F4"
           autoCapitalize="off"
           spellCheck={false}
-          aria-label="Farbcode"
+          aria-label={t('Farbcode')}
         />
         <button type="button" className="btn" style={{ width: 'auto' }} disabled={!isHex(code)} onClick={() => onPick(normalizeHex(code))}>
-          Übernehmen
+          {t('Übernehmen')}
         </button>
       </div>
     </div>

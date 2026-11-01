@@ -36,6 +36,7 @@ import { PageHeader } from '../components/PageHeader'
 import { addDays, formatDate, toISODate } from '../lib/dates'
 import { periodTitle, sortPeriods } from '../lib/models'
 import { formatCountdown, isToday, useNow, useSchedule } from '../lib/schedule'
+import { t } from '../lib/i18n'
 
 export function Today() {
   const now = useNow()
@@ -58,8 +59,8 @@ export function Today() {
     <button
       type="button"
       className="icon-btn"
-      aria-label="Hausaufgabe eintragen"
-      title="Hausaufgabe eintragen"
+      aria-label={t('Hausaufgabe eintragen')}
+      title={t('Hausaufgabe eintragen')}
       onClick={() => setEditing({ defaults: { subjectId: currentSubjectId(schedule) } })}
     >
       +
@@ -70,11 +71,11 @@ export function Today() {
   if (!tt) {
     return (
       <div className="page">
-        <PageHeader title="Heute" />
+        <PageHeader title={t('Heute')} />
         <div className="card empty">
-          <p>Willkommen! Richte zuerst deinen Stundenplan ein.</p>
+          <p>{t('Willkommen! Richte zuerst deinen Stundenplan ein.')}</p>
           <Link to="/stundenplan/bearbeiten" className="btn" style={{ textDecoration: 'none' }}>
-            Stundenplan einrichten
+            {t('Stundenplan einrichten')}
           </Link>
         </div>
       </div>
@@ -92,12 +93,13 @@ export function Today() {
   const next = schedule.currentOrNext(now)
   const running = next && now >= next.start
 
+  const isTomorrow = Boolean(day && toISODate(day) === toISODate(addDays(now, 1)))
   const heading = !day
-    ? 'Kein Unterricht in Sicht'
+    ? t('Kein Unterricht in Sicht')
     : isToday(day)
-      ? 'Heute'
-      : toISODate(day) === toISODate(addDays(now, 1))
-        ? 'Morgen'
+      ? t('Heute')
+      : isTomorrow
+        ? t('Morgen')
         : formatDate(day, { weekday: 'long' })
 
   const visibleNav = resolveLayout(settings.navLayout, DEFAULT_NAV_LAYOUT)
@@ -105,16 +107,16 @@ export function Today() {
     .map((x) => NAV_ITEMS.find((n) => n.id === x.id)!)
   const moreItems = visibleNav.slice(5).filter((n) => n.id !== 'heute')
   const moreSub: Record<string, string> = {
-    stundenplan: 'Tag, Woche, Monat',
-    hausaufgaben: `${open.length} offen`,
-    klausuren: 'Kommende und vergangene Klausuren',
-    noten: 'Durchschnitt, Zielnoten, Zeugnis-Vorschau',
-    lernen: dueVocab ? `${dueVocab} Vokabeln fällig · Lernzettel` : 'Vokabeltrainer und Lernzettel',
-    notizen: 'Notizen und Tafelbilder zu den Stunden',
-    suche: 'Alles durchsuchen',
-    rueckblick: 'Diese Woche und was als Nächstes kommt',
-    fehlstunden: openAbsences ? `${openAbsences} Entschuldigung${openAbsences > 1 ? 'en' : ''} offen` : 'Alles entschuldigt',
-    vertretungen: 'Ausfälle, Vertretungen, Raumänderungen',
+    stundenplan: t('Tag, Woche, Monat'),
+    hausaufgaben: t('{n} offen', { n: open.length }),
+    klausuren: t('Kommende und vergangene Klausuren'),
+    noten: t('Durchschnitt, Zielnoten, Zeugnis-Vorschau'),
+    lernen: dueVocab ? t('{n} Vokabeln fällig · Lernzettel', { n: dueVocab }) : t('Vokabeltrainer und Lernzettel'),
+    notizen: t('Notizen und Tafelbilder zu den Stunden'),
+    suche: t('Alles durchsuchen'),
+    rueckblick: t('Diese Woche und was als Nächstes kommt'),
+    fehlstunden: openAbsences ? (openAbsences > 1 ? t('{n} Entschuldigungen offen', { n: openAbsences }) : t('1 Entschuldigung offen')) : t('Alles entschuldigt'),
+    vertretungen: t('Ausfälle, Vertretungen, Raumänderungen'),
   }
 
   // Abschnitte der Startseite – Reihenfolge und Sichtbarkeit unter Einstellungen → Startseite & Navigation
@@ -124,22 +126,22 @@ export function Today() {
         <IconBubble name="absence" tone="red" />
         <span>
           <strong>
-            {openAbsences} Entschuldigung{openAbsences > 1 ? 'en' : ''} noch nicht abgegeben
+            {openAbsences > 1 ? t('{n} Entschuldigungen noch nicht abgegeben', { n: openAbsences }) : t('1 Entschuldigung noch nicht abgegeben')}
           </strong>
-          <span className="sub">Antippen, um sie abzuhaken, sobald du sie abgegeben hast</span>
+          <span className="sub">{t('Antippen, um sie abzuhaken, sobald du sie abgegeben hast')}</span>
         </span>
       </Link>
     ),
     goals: warnings.length > 0 && (
       <>
-        <h2 className="section-title overdue">Unter deinem Ziel</h2>
+        <h2 className="section-title overdue">{t('Unter deinem Ziel')}</h2>
         <div className="list">
           {warnings.map(({ subject, result }) => (
             <Link key={subject.id} to={`/noten/${subject.id}`} className="row">
               <span className="color-bar" style={{ background: subject.color }} />
               <span className="label">
                 {subject.name}
-                <span className="sub">Ziel {goalLabel(subject.goal!, gradeData.settings.gradeSystem)} · im Zielnoten-Rechner siehst du, was du brauchst</span>
+                <span className="sub">{t('Ziel {goal} · im Zielnoten-Rechner siehst du, was du brauchst', { goal: goalLabel(subject.goal!, gradeData.settings.gradeSystem) })}</span>
               </span>
               <span className="grade-chip warn">{formatAverage(result.total, gradeData.settings.gradeSystem)}</span>
             </Link>
@@ -150,7 +152,7 @@ export function Today() {
     next: <>
 {next && (
         <div className="hero" style={{ borderColor: next.subject.color }}>
-          <div className="hero-label">{running ? 'Jetzt' : 'Als Nächstes'}</div>
+          <div className="hero-label">{running ? t('Jetzt') : t('Als Nächstes')}</div>
           <div className="hero-title">
             <span className="color-dot" style={{ background: next.subject.color, width: 14, height: 14 }} />
             {next.subject.name}
@@ -162,7 +164,7 @@ export function Today() {
           </div>
           <div className="hero-countdown">
             {running
-              ? `noch ${Math.max(1, Math.ceil((next.end.getTime() - now.getTime()) / 60_000))} Min.`
+              ? t('noch {n} Min.', { n: Math.max(1, Math.ceil((next.end.getTime() - now.getTime()) / 60_000)) })
               : isToday(next.start)
                 ? formatCountdown(Math.round((next.start.getTime() - now.getTime()) / 60_000))
                 : formatDate(next.start, { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -175,8 +177,8 @@ export function Today() {
         <Link to="/rueckblick" className="review-card">
           <IconBubble name="chart" tone="purple" />
           <span>
-            <strong>Dein Wochenrückblick</strong>
-            <span className="sub">Was du geschafft hast und was nächste Woche ansteht</span>
+            <strong>{t('Dein Wochenrückblick')}</strong>
+            <span className="sub">{t('Was du geschafft hast und was nächste Woche ansteht')}</span>
           </span>
         </Link>
       )}
@@ -189,7 +191,7 @@ export function Today() {
               <span className="countdown-big">{countdown.daysLeft}</span>
               <span>
                 <strong>{countdown.current.name}</strong>
-                <span className="sub">{countdown.daysLeft === 0 ? 'Letzter Ferientag' : `noch ${countdown.daysLeft} Tage Ferien`}</span>
+                <span className="sub">{countdown.daysLeft === 0 ? t('Letzter Ferientag') : t('noch {n} Tage Ferien', { n: countdown.daysLeft })}</span>
               </span>
             </>
           ) : (
@@ -198,9 +200,9 @@ export function Today() {
               <>
                 <span className="countdown-big">{countdown.schoolDays}</span>
                 <span>
-                  <strong>Schultage bis zu den {countdown.next.name}</strong>
+                  <strong>{t('Schultage bis zu den {name}', { name: countdown.next.name })}</strong>
                   <span className="sub">
-                    Start in {countdown.days} Tagen · {formatRange(countdown.next)}
+                    {t('Start in {n} Tagen', { n: countdown.days })} · {formatRange(countdown.next)}
                   </span>
                 </span>
               </>
@@ -214,7 +216,7 @@ export function Today() {
         <>
           <h2 className="section-title">
             {heading}
-            {!isToday(day) && heading !== 'Morgen' && `, ${formatDate(day, { day: 'numeric', month: 'long' })}`}
+            {!isToday(day) && !isTomorrow && `, ${formatDate(day, { day: 'numeric', month: 'long' })}`}
           </h2>
           <div className="list">
             {dayLessons.map((l) => {
@@ -233,7 +235,7 @@ export function Today() {
                     <span className="sub">{[l.room?.name, l.teacher?.name].filter(Boolean).join(' · ')}</span>
                   </span>
                   {l.change && <span className={`change-pill big ${l.change.kind}`}>{CHANGE_LABEL[l.change.kind]}</span>}
-                  {next && l.lesson.id === next.lesson.id && l.date === next.date && <span className="badge accent">{running ? 'jetzt' : 'nächste'}</span>}
+                  {next && l.lesson.id === next.lesson.id && l.date === next.date && <span className="badge accent">{running ? t('jetzt') : t('nächste')}</span>}
                 </Link>
               )
             })}
@@ -244,21 +246,21 @@ export function Today() {
     packing: <>
 {day && (
         <>
-          <h2 className="section-title">Einpacken für {isToday(day) ? 'heute' : heading === 'Morgen' ? 'morgen' : formatDate(day, { weekday: 'long' })}</h2>
+          <h2 className="section-title">{t('Einpacken für {day}', { day: isToday(day) ? t('heute') : isTomorrow ? t('morgen') : formatDate(day, { weekday: 'long' }) })}</h2>
           <PackingList key={toISODate(day)} schedule={schedule} day={day} />
         </>
       )}
 </>,
     homework: <>
 <h2 className="section-title">
-        Offene Hausaufgaben
+        {t('Offene Hausaufgaben')}
         <Link to="/hausaufgaben" className="section-link">
-          Alle
+          {t('Alle')}
         </Link>
       </h2>
       {soon.length === 0 ? (
         <div className="card empty" style={{ padding: 20 }}>
-          Keine Hausaufgaben in den nächsten 7 Tagen.
+          {t('Keine Hausaufgaben in den nächsten 7 Tagen.')}
         </div>
       ) : (
         <div className="list">
@@ -268,7 +270,7 @@ export function Today() {
               hw={h}
               onToggle={async () => {
                 await setDone(h, true)
-                snackbar.show('Erledigt', { label: 'Rückgängig', run: () => void setDone(h, false) })
+                snackbar.show(t('Erledigt'), { label: t('Rückgängig'), run: () => void setDone(h, false) })
               }}
               onOpen={() => setEditing({ hw: h })}
             />
@@ -277,20 +279,20 @@ export function Today() {
       )}
       {open.length > soon.length && (
         <p className="section-footer">
-          + {open.length - soon.length} weitere später fällig
+          {t('+ {n} weitere später fällig', { n: open.length - soon.length })}
         </p>
       )}
 </>,
     exams: <>
 <h2 className="section-title">
-        Kommende Klausuren
+        {t('Kommende Klausuren')}
         <Link to="/klausuren" className="section-link">
-          Alle
+          {t('Alle')}
         </Link>
       </h2>
       {nextExams.length === 0 ? (
         <div className="card empty" style={{ padding: 20 }}>
-          Keine Klausuren in den nächsten 4 Wochen.
+          {t('Keine Klausuren in den nächsten 4 Wochen.')}
         </div>
       ) : (
         <div className="list">
@@ -302,7 +304,7 @@ export function Today() {
       {examOpen && <ExamSheet exam={examOpen} onClose={() => setExamOpen(null)} />}
 </>,
     more: <>
-<h2 className="section-title">Mehr</h2>
+<h2 className="section-title">{t('Mehr')}</h2>
       <div className="list">
         {/* Alles, was nicht in der Leiste unten steht – damit es auf dem Handy erreichbar bleibt */}
         {moreItems.map((n) => (
@@ -310,8 +312,8 @@ export function Today() {
             {n.label}
           </LinkRow>
         ))}
-        <LinkRow to="/einstellungen/ferien" icon="sun" tone="yellow" sub="Ferien, Feiertage, eigene freie Tage">
-          Ferien
+        <LinkRow to="/einstellungen/ferien" icon="sun" tone="yellow" sub={t('Ferien, Feiertage, eigene freie Tage')}>
+          {t('Ferien')}
         </LinkRow>
       </div>
 </>,
@@ -320,8 +322,8 @@ export function Today() {
 
   return (
     <div className="page">
-      <PageHeader title="Heute">
-        <Link to="/suche" className="nav-btn" aria-label="Suchen">
+      <PageHeader title={t('Heute')}>
+        <Link to="/suche" className="nav-btn" aria-label={t('Suchen')}>
           <Icon name="search" />
         </Link>
         {quickAdd}

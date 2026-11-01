@@ -1,7 +1,11 @@
 /** Datums- und Zeit-Hilfen. Daten werden als lokales 'YYYY-MM-DD' gespeichert, Zeiten als 'HH:MM'. */
+import { lang, locale } from './i18n'
 
-export const DAY_NAMES = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
-export const DAY_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
+export const DAY_NAMES =
+  lang === 'en'
+    ? ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    : ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag']
+export const DAY_SHORT = lang === 'en' ? ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] : ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa']
 /** Schultage Montag (1) bis Freitag (5) */
 export const SCHOOL_DAYS = [1, 2, 3, 4, 5]
 
@@ -39,15 +43,15 @@ export function mondayOf(d: Date): Date {
 
 /** Kalenderwoche nach ISO 8601 (wie in deutschen Kalendern) */
 export function isoWeek(d: Date): number {
-  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
-  const day = t.getUTCDay() || 7
-  t.setUTCDate(t.getUTCDate() + 4 - day)
-  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1))
-  return Math.ceil(((t.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7)
+  const tp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  const day = tp.getUTCDay() || 7
+  tp.setUTCDate(tp.getUTCDate() + 4 - day)
+  const yearStart = new Date(Date.UTC(tp.getUTCFullYear(), 0, 1))
+  return Math.ceil(((tp.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7)
 }
 
 export function formatDate(d: Date, opts: Intl.DateTimeFormatOptions) {
-  return d.toLocaleDateString('de-DE', opts)
+  return d.toLocaleDateString(locale, opts)
 }
 
 /** Ganze Wochen zwischen zwei Montagen (gerundet, robust gegen Zeitumstellung) */

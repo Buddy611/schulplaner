@@ -13,6 +13,7 @@ import { useStudySheets, useVocabSets } from '../lib/study'
 import { ExamSheet } from './exams/ExamSheet'
 import { HomeworkSheet } from './homework/HomeworkSheet'
 import { NoteSheet } from './notes/NoteSheet'
+import { t } from '../lib/i18n'
 
 interface Hit {
   key: string
@@ -43,7 +44,7 @@ export function SearchPage() {
   useEffect(() => input.current?.focus(), [])
 
   const q = query.trim().toLowerCase()
-  const has = (...texts: (string | undefined)[]) => texts.some((t) => t?.toLowerCase().includes(q))
+  const has = (...texts: (string | undefined)[]) => texts.some((tp) => tp?.toLowerCase().includes(q))
   const subjectName = (id?: string) => (id && subjectMap.get(id)?.name) || ''
   const fmt = (iso: string) => formatDate(parseISODate(iso), { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -51,23 +52,23 @@ export function SearchPage() {
   if (q.length >= 2) {
     for (const s of subjects) {
       if (has(s.name, s.short, s.teacherId && teacherMap.get(s.teacherId)?.name))
-        hits.push({ key: s.id, icon: 'book', tone: 'cyan', title: s.name, sub: 'Fach · Noten ansehen', open: () => navigate(`/noten/${s.id}`) })
+        hits.push({ key: s.id, icon: 'book', tone: 'cyan', title: s.name, sub: t('Fach · Noten ansehen'), open: () => navigate(`/noten/${s.id}`) })
     }
     for (const h of homework ?? []) {
       if (has(h.title, h.notes, subjectName(h.subjectId)))
-        hits.push({ key: h.id, icon: 'list', tone: 'green', title: h.title, sub: `Hausaufgabe · ${subjectName(h.subjectId)}${h.done ? ' · erledigt' : ''}`, date: h.dueDate, open: () => setOpenHw(h) })
+        hits.push({ key: h.id, icon: 'list', tone: 'green', title: h.title, sub: `${t('Hausaufgabe')} · ${subjectName(h.subjectId)}${h.done ? ` · ${t('erledigt')}` : ''}`, date: h.dueDate, open: () => setOpenHw(h) })
     }
     for (const e of exams ?? []) {
-      if (has(e.topic, e.notes, e.type, subjectName(e.subjectId), ...(e.studyTopics ?? []).map((t) => t.text)))
-        hits.push({ key: e.id, icon: 'exam', tone: 'red', title: `${subjectName(e.subjectId)} ${e.type}`, sub: e.topic ?? 'Klausur', date: e.date, open: () => setOpenExam(e) })
+      if (has(e.topic, e.notes, e.type, subjectName(e.subjectId), ...(e.studyTopics ?? []).map((tp) => tp.text)))
+        hits.push({ key: e.id, icon: 'exam', tone: 'red', title: `${subjectName(e.subjectId)} ${t(e.type)}`, sub: e.topic ?? t('Klausur'), date: e.date, open: () => setOpenExam(e) })
     }
     for (const n of notes ?? []) {
       if (has(n.text, subjectName(n.subjectId)))
-        hits.push({ key: n.id, icon: 'note', tone: 'blue', title: n.text.split('\n')[0] || 'Notiz', sub: `Notiz · ${subjectName(n.subjectId)}`, date: n.date, open: () => setOpenNote(n) })
+        hits.push({ key: n.id, icon: 'note', tone: 'blue', title: n.text.split('\n')[0] || t('Notiz'), sub: `${t('Notiz')} · ${subjectName(n.subjectId)}`, date: n.date, open: () => setOpenNote(n) })
     }
     for (const s of sheets ?? []) {
       if (has(s.title, s.content, subjectName(s.subjectId)))
-        hits.push({ key: s.id, icon: 'note', tone: 'purple', title: s.title, sub: `Lernzettel${s.subjectId ? ` · ${subjectName(s.subjectId)}` : ''}`, open: () => navigate(`/lernen/zettel/${s.id}`) })
+        hits.push({ key: s.id, icon: 'note', tone: 'purple', title: s.title, sub: `${t('Lernzettel')}${s.subjectId ? ` · ${subjectName(s.subjectId)}` : ''}`, open: () => navigate(`/lernen/zettel/${s.id}`) })
     }
     for (const v of vocab ?? []) {
       const cards = v.cards.filter((c) => has(c.front, c.back))
@@ -77,30 +78,30 @@ export function SearchPage() {
           icon: 'translate',
           tone: 'indigo',
           title: cards[0] ? `${cards[0].front} – ${cards[0].back}` : v.name,
-          sub: `Vokabeln · ${v.name}${cards.length > 1 ? ` · ${cards.length} Treffer` : ''}`,
+          sub: `${t('Vokabeln')} · ${v.name}${cards.length > 1 ? ` · ${t('{n} Treffer', { n: cards.length })}` : ''}`,
           open: () => navigate(`/lernen/vokabeln/${v.id}`),
         })
     }
     for (const g of grades ?? []) {
       if (has(g.note, g.type) && g.note)
-        hits.push({ key: g.id, icon: 'grade', tone: 'pink', title: `${subjectName(g.subjectId)}: ${g.label}`, sub: `Note · ${g.note}`, date: g.date, open: () => navigate(`/noten/${g.subjectId}`) })
+        hits.push({ key: g.id, icon: 'grade', tone: 'pink', title: `${subjectName(g.subjectId)}: ${g.label}`, sub: `${t('Note')} · ${g.note}`, date: g.date, open: () => navigate(`/noten/${g.subjectId}`) })
     }
   }
   hits.sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
 
   return (
     <div className="page">
-      <PageHeader title="Suche" back={{ to: '/', label: 'Heute' }} />
+      <PageHeader title={t('Suche')} back={{ to: '/', label: t('Heute') }} />
       <input
         ref={input}
         className="input search"
         type="search"
-        placeholder="Hausaufgaben, Klausuren, Notizen, Vokabeln …"
+        placeholder={t('Hausaufgaben, Klausuren, Notizen, Vokabeln …')}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      {q.length < 2 && <p className="hint">Mindestens zwei Buchstaben eingeben. Gesucht wird auch in erledigten Hausaufgaben und alten Klausuren.</p>}
-      {q.length >= 2 && hits.length === 0 && <p className="hint">Nichts gefunden.</p>}
+      {q.length < 2 && <p className="hint">{t('Mindestens zwei Buchstaben eingeben. Gesucht wird auch in erledigten Hausaufgaben und alten Klausuren.')}</p>}
+      {q.length >= 2 && hits.length === 0 && <p className="hint">{t('Nichts gefunden.')}</p>}
       {hits.length > 0 && (
         <div className="list">
           {hits.slice(0, 80).map((h) => (

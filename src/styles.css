@@ -3377,3 +3377,8 @@ div.lesson-tile {
     font-size: 0.8125rem;
   }
 }
+
+/* Karten auf „Heute“ nicht direkt an eine Liste darüber kleben */
+:is(.list, .card) + :is(.review-card, .countdown-card, .hero) {
+  margin-top: 16px;
+}

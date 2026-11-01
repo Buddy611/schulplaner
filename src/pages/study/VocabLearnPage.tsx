@@ -4,6 +4,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { Segmented } from '../../components/ui'
 import { put, useRecord, type Item } from '../../lib/repo'
 import { answerMatches, isDue, review, VOCAB, type VocabCard, type VocabSet } from '../../lib/study'
+import { t } from '../../lib/i18n'
 
 type Direction = 'fremd' | 'deutsch' | 'mix'
 type Mode = 'karte' | 'schreiben'
@@ -40,8 +41,8 @@ export function VocabLearnPage() {
   if (set === null) {
     return (
       <div className="page">
-        <PageHeader title="Vokabeln" back={{ to: '/lernen', label: 'Lernen' }} />
-        <p className="hint">Dieses Set gibt es nicht mehr.</p>
+        <PageHeader title={t('Vokabeln')} back={{ to: '/lernen', label: t('Lernen') }} />
+        <p className="hint">{t('Dieses Set gibt es nicht mehr.')}</p>
       </div>
     )
   }
@@ -50,38 +51,38 @@ export function VocabLearnPage() {
     const count = all ? set.cards.length : set.cards.filter((c) => isDue(c)).length
     return (
       <div className="page">
-        <PageHeader title={set.name} back={{ to: `/lernen/vokabeln/${set.id}`, label: 'Zurück' }} />
-        <p className="subtitle">{all ? `Alle ${count} Vokabeln üben` : `${count} Vokabeln sind fällig`}</p>
-        <h2 className="section-title">Abfragen</h2>
+        <PageHeader title={set.name} back={{ to: `/lernen/vokabeln/${set.id}`, label: t('Zurück') }} />
+        <p className="subtitle">{all ? t('Alle {n} Vokabeln üben', { n: count }) : t('{n} Vokabeln sind fällig', { n: count })}</p>
+        <h2 className="section-title">{t('Abfragen')}</h2>
         <div className="list">
           <div className="row stack">
             <Segmented<Direction>
               value={pref.direction}
               onChange={(direction) => setPref({ ...pref, direction })}
               options={[
-                { value: 'fremd', label: 'Fremd → Deutsch' },
-                { value: 'deutsch', label: 'Deutsch → Fremd' },
-                { value: 'mix', label: 'Gemischt' },
+                { value: 'fremd', label: t('Fremd → Deutsch') },
+                { value: 'deutsch', label: t('Deutsch → Fremd') },
+                { value: 'mix', label: t('Gemischt') },
               ]}
             />
           </div>
         </div>
-        <h2 className="section-title">Art</h2>
+        <h2 className="section-title">{t('Art')}</h2>
         <div className="list">
           <div className="row stack">
             <Segmented<Mode>
               value={pref.mode}
               onChange={(mode) => setPref({ ...pref, mode })}
               options={[
-                { value: 'karte', label: 'Karteikarten' },
-                { value: 'schreiben', label: 'Schreiben' },
+                { value: 'karte', label: t('Karteikarten') },
+                { value: 'schreiben', label: t('Schreiben') },
               ]}
             />
           </div>
         </div>
         <p className="section-footer">
-          {pref.mode === 'karte' ? 'Karte antippen zum Umdrehen, dann selbst bewerten.' : 'Du tippst die Übersetzung ein, die App prüft sie.'} Gewusste Vokabeln
-          kommen nach 1, 2, 4, 7 und 14 Tagen wieder.
+          {pref.mode === 'karte' ? t('Karte antippen zum Umdrehen, dann selbst bewerten.') : t('Du tippst die Übersetzung ein, die App prüft sie.')}{' '}
+          {t('Gewusste Vokabeln kommen nach 1, 2, 4, 7 und 14 Tagen wieder.')}
         </p>
         <button
           type="button"
@@ -97,7 +98,7 @@ export function VocabLearnPage() {
             setStarted(true)
           }}
         >
-          Los geht's
+          {t('Los geht’s')}
         </button>
       </div>
     )
@@ -147,16 +148,16 @@ function Session({ set, all, direction, mode, onExit }: { set: Item<VocabSet>; a
   if (!card) {
     return (
       <div className="page">
-        <PageHeader title="Geschafft" back={{ to: `/lernen/vokabeln/${set.id}`, label: 'Zurück' }} />
+        <PageHeader title={t('Geschafft')} back={{ to: `/lernen/vokabeln/${set.id}`, label: t('Zurück') }} />
         <div className="grade-hero" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-          <div className="hero-label">Ergebnis</div>
+          <div className="hero-label">{t('Ergebnis')}</div>
           <div className="grade-big">
             {stats.right} / {stats.right + stats.wrong}
           </div>
-          <div className="muted">beim ersten Versuch bzw. nach Wiederholung gewusst</div>
+          <div className="muted">{t('beim ersten Versuch bzw. nach Wiederholung gewusst')}</div>
         </div>
         <button type="button" className="btn" style={{ marginTop: 16 }} onClick={onExit}>
-          Fertig
+          {t('Fertig')}
         </button>
       </div>
     )
@@ -166,7 +167,7 @@ function Session({ set, all, direction, mode, onExit }: { set: Item<VocabSet>; a
 
   return (
     <div className="page learn-page">
-      <PageHeader title={set.name} back={{ to: `/lernen/vokabeln/${set.id}`, label: 'Beenden' }} />
+      <PageHeader title={set.name} back={{ to: `/lernen/vokabeln/${set.id}`, label: t('Beenden') }} />
       <div className="progress learn-progress">
         <div style={{ width: `${progress * 100}%`, background: 'var(--accent)' }} />
       </div>
@@ -178,15 +179,15 @@ function Session({ set, all, direction, mode, onExit }: { set: Item<VocabSet>; a
         <>
           <button type="button" className={`flashcard ${revealed ? 'revealed' : ''}`} onClick={() => setRevealed(true)}>
             <span className="flash-question">{question}</span>
-            {revealed ? <span className="flash-answer">{solution}</span> : <span className="muted">Antippen zum Umdrehen</span>}
+            {revealed ? <span className="flash-answer">{solution}</span> : <span className="muted">{t('Antippen zum Umdrehen')}</span>}
           </button>
           {revealed && (
             <div className="btn-row">
               <button type="button" className="btn secondary" style={{ flex: 1 }} onClick={() => answer(false)}>
-                Nochmal
+                {t('Nochmal')}
               </button>
               <button type="button" className="btn" style={{ flex: 1 }} onClick={() => answer(true)}>
-                Gewusst
+                {t('Gewusst')}
               </button>
             </div>
           )}
@@ -195,7 +196,7 @@ function Session({ set, all, direction, mode, onExit }: { set: Item<VocabSet>; a
         <>
           <div className={`flashcard ${checked === true ? 'right' : checked === false ? 'wrong' : ''}`}>
             <span className="flash-question">{question}</span>
-            {checked !== null && <span className="flash-answer">{checked ? 'Richtig!' : solution}</span>}
+            {checked !== null && <span className="flash-answer">{checked ? t('Richtig!') : solution}</span>}
           </div>
           {checked === null ? (
             <form
@@ -206,20 +207,20 @@ function Session({ set, all, direction, mode, onExit }: { set: Item<VocabSet>; a
                 setChecked(answerMatches(input, solution))
               }}
             >
-              <input ref={inputRef} className="input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Übersetzung" autoCapitalize="off" autoCorrect="off" />
+              <input ref={inputRef} className="input" value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('Übersetzung')} autoCapitalize="off" autoCorrect="off" />
               <button type="submit" className="btn" style={{ width: 'auto' }}>
-                Prüfen
+                {t('Prüfen')}
               </button>
             </form>
           ) : (
             <div className="btn-row">
               {checked === false && (
                 <button type="button" className="btn secondary" style={{ flex: 1 }} onClick={() => answer(true)}>
-                  War doch richtig
+                  {t('War doch richtig')}
                 </button>
               )}
               <button type="button" className="btn" style={{ flex: 1 }} onClick={() => answer(checked)}>
-                Weiter
+                {t('Weiter')}
               </button>
             </div>
           )}

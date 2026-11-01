@@ -1,14 +1,29 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
 import { Field, Select, Sheet } from '../../components/ui'
 import { toISODate } from '../../lib/dates'
-import { ensureHolidays, formatRange, FREE_DAYS, useHolidayCache, useHolidays, type FreeDay } from '../../lib/holidays'
+import { ensureHolidays, fetchCountries, fetchRegions, formatRange, FREE_DAYS, regionKey, useHolidayCache, useHolidays, type FreeDay, type Place } from '../../lib/holidays'
 import { newId, put, remove, useCollection } from '../../lib/repo'
 import { STATES, updateSettings, useSettings } from '../../lib/settings'
+import { locale, t } from '../../lib/i18n'
 
 export function HolidaysPage() {
   const settings = useSettings()
-  const holidays = useHolidays(settings.state)
+  const country = settings.country ?? 'DE'
+  const region = regionKey(settings)
+  const holidays = useHolidays(region)
+  const [countries, setCountries] = useState<Place[]>([])
+  const [regions, setRegions] = useState<Place[]>([])
+
+  // Länder und Regionen kommen von der Ferien-Schnittstelle (und werden für offline gemerkt)
+  useEffect(() => {
+    void fetchCountries().then(setCountries, () => undefined)
+  }, [])
+  useEffect(() => {
+    if (country === 'DE') return setRegions(STATES.map((s) => ({ code: s.code, name: s.name })))
+    setRegions([])
+    void fetchRegions(country).then(setRegions, () => undefined)
+  }, [country])
   const cache = useHolidayCache()
   const own = useCollection<FreeDay>(FREE_DAYS)
   const [adding, setAdding] = useState(false)
@@ -17,49 +32,63 @@ export function HolidaysPage() {
   const upcoming = holidays.filter((h) => h.end >= today)
 
   async function reload() {
-    setStatus('Lädt …')
+    setStatus(t('Lädt …'))
     try {
-      await ensureHolidays(settings.state, true)
-      setStatus('Aktualisiert.')
+      await ensureHolidays(region, true)
+      setStatus(t('Aktualisiert.'))
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : 'Fehler beim Laden.')
+      setStatus(e instanceof Error ? e.message : t('Fehler beim Laden.'))
     }
   }
 
   return (
     <div className="page">
-      <PageHeader title="Ferien & Feiertage" back={{ to: '/einstellungen', label: 'Einstellungen' }}>
-        <button type="button" className="icon-btn" aria-label="Freien Tag hinzufügen" onClick={() => setAdding(true)}>
+      <PageHeader title={t('Ferien & Feiertage')} back={{ to: '/einstellungen', label: t('Einstellungen') }}>
+        <button type="button" className="icon-btn" aria-label={t('Freien Tag hinzufügen')} onClick={() => setAdding(true)}>
           +
         </button>
       </PageHeader>
 
       <div className="list">
-        <Field label="Bundesland">
+        <Field label={t('Land')}>
           <Select
-            title="Bundesland"
-            value={settings.state || undefined}
-            options={STATES.map((s) => ({ value: s.code, label: s.name }))}
-            onChange={(state) => updateSettings(settings, { state })}
+            title={t('Land')}
+            value={country}
+            options={(countries.length ? countries : [{ code: 'DE', name: t('Deutschland') }]).map((c) => ({ value: c.code, label: c.name }))}
+            onChange={(c) => c !== country && updateSettings(settings, { country: c === 'DE' ? undefined : c, state: '', regionName: countries.find((x) => x.code === c)?.name })}
           />
         </Field>
-        {settings.state && (
+        <Field label={country === 'DE' ? t('Bundesland') : t('Region')}>
+          <Select
+            title={country === 'DE' ? t('Bundesland') : t('Region')}
+            value={country === 'DE' ? settings.state || undefined : settings.state}
+            placeholder={country === 'DE' ? t('Bitte wählen …') : t('Ganzes Land')}
+            options={[
+              ...(country === 'DE' ? [] : [{ value: '', label: t('Ganzes Land') }]),
+              ...regions.map((r) => ({ value: r.code, label: r.name })),
+            ]}
+            onChange={(state) => updateSettings(settings, { state, regionName: regions.find((r) => r.code === state)?.name ?? countries.find((x) => x.code === country)?.name })}
+          />
+        </Field>
+        {region && (
           <button type="button" className="row action" onClick={reload} disabled={!navigator.onLine}>
-            <span className="label">Ferien neu laden</span>
-            <span className="value">{status || (cache?.fetchedAt ? `Stand ${new Date(cache.fetchedAt).toLocaleDateString('de-DE')}` : '')}</span>
+            <span className="label">{t('Ferien neu laden')}</span>
+            <span className="value">{status || (cache?.fetchedAt ? t('Stand {date}', { date: new Date(cache.fetchedAt).toLocaleDateString(locale) }) : '')}</span>
           </button>
         )}
       </div>
       <p className="section-footer">
-        Ferien und Feiertage kommen von openholidaysapi.org und werden für zwei Schuljahre im Voraus auf dem Gerät gespeichert – sie funktionieren
-        also auch offline. In dieser Zeit zeigt der Stundenplan keinen Unterricht, und „Nächste Stunde“ überspringt sie.
+        {t('Ferien und Feiertage kommen von openholidaysapi.org und werden für zwei Schuljahre im Voraus auf dem Gerät gespeichert – sie funktionieren also auch offline. In dieser Zeit zeigt der Stundenplan keinen Unterricht, und „Nächste Stunde“ überspringt sie.')}
       </p>
 
-      {!settings.state && <p className="hint">Wähle oben dein Bundesland, dann werden die Ferien geladen.</p>}
+      {!region && <p className="hint">{t('Wähle oben dein Bundesland, dann werden die Ferien geladen.')}</p>}
+      {region && cache?.state === region && !cache.items.some((h) => h.kind === 'ferien') && (
+        <p className="hint">{t('Für diese Auswahl gibt es keine Schulferien-Daten. Trag deine Ferien mit + als freie Tage ein.')}</p>
+      )}
 
       {upcoming.length > 0 && (
         <>
-          <h2 className="section-title">Kommende freie Tage</h2>
+          <h2 className="section-title">{t('Kommende freie Tage')}</h2>
           <div className="list">
             {upcoming.map((h, i) => {
               const ownEntry = h.kind === 'frei' ? own?.find((o) => o.start === h.start && o.name === h.name) : undefined
@@ -69,12 +98,12 @@ export function HolidaysPage() {
                   <span className="label">
                     {h.name}
                     <span className="sub">
-                      {formatRange(h)} · {h.kind === 'ferien' ? 'Ferien' : h.kind === 'feiertag' ? 'Feiertag' : 'Eigener freier Tag'}
+                      {formatRange(h)} · {h.kind === 'ferien' ? t('Ferien') : h.kind === 'feiertag' ? t('Feiertag') : t('Eigener freier Tag')}
                     </span>
                   </span>
                   {ownEntry && (
                     <button type="button" className="link-btn" style={{ color: 'var(--red)' }} onClick={() => remove(ownEntry.id)}>
-                      Entfernen
+                      {t('Entfernen')}
                     </button>
                   )}
                 </div>
@@ -103,19 +132,19 @@ function FreeDaySheet({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Sheet title="Freier Tag" onClose={onClose} onSave={save} saveLabel="Sichern" saveDisabled={!valid}>
+    <Sheet title={t('Freier Tag')} onClose={onClose} onSave={save} saveLabel={t('Sichern')} saveDisabled={!valid}>
       <div className="list">
-        <Field label="Bezeichnung">
-          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="z. B. Studientag, Klassenfahrt" autoFocus />
+        <Field label={t('Bezeichnung')}>
+          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. Studientag, Klassenfahrt')} autoFocus />
         </Field>
-        <Field label="Von">
+        <Field label={t('Von')}>
           <input className="row-input" type="date" value={start} onChange={(e) => (setStart(e.target.value), end < e.target.value && setEnd(e.target.value))} />
         </Field>
-        <Field label="Bis">
+        <Field label={t('Bis')}>
           <input className="row-input" type="date" value={end} min={start} onChange={(e) => setEnd(e.target.value)} />
         </Field>
       </div>
-      <p className="section-footer">An diesen Tagen zeigt der Stundenplan keinen Unterricht. Eigene freie Tage werden mit deinen Geräten synchronisiert.</p>
+      <p className="section-footer">{t('An diesen Tagen zeigt der Stundenplan keinen Unterricht. Eigene freie Tage werden mit deinen Geräten synchronisiert.')}</p>
     </Sheet>
   )
 }

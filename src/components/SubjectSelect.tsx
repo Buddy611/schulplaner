@@ -3,6 +3,7 @@ import { addDays, formatDate } from '../lib/dates'
 import { periodTitle, sortPeriods } from '../lib/models'
 import { useSchedule } from '../lib/schedule'
 import { EntitySelect, type SelectSuggestions } from './ui'
+import { locale, t } from '../lib/i18n'
 
 /**
  * Fach-Auswahl mit den Stunden von heute ganz oben unter "Vorgeschlagen"
@@ -23,10 +24,10 @@ export function SubjectSelect(props: Omit<ComponentProps<typeof EntitySelect>, '
     }
     if (day && lessons.length) {
       const periods = sortPeriods((schedule.timetableFor(day) ?? schedule.timetable).periods)
-      const hhmm = (d: Date) => d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+      const hhmm = (d: Date) => d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
       const isToday = day.toDateString() === now.toDateString()
       suggested = {
-        heading: isToday ? 'Vorgeschlagen · Heute' : `Vorgeschlagen · ${formatDate(day, { weekday: 'long' })}`,
+        heading: t('Vorgeschlagen · {day}', { day: isToday ? t('Heute') : formatDate(day, { weekday: 'long' }) }),
         options: lessons.map((l) => ({
           value: l.subject.id,
           label: l.subject.name,
@@ -37,5 +38,5 @@ export function SubjectSelect(props: Omit<ComponentProps<typeof EntitySelect>, '
     }
   }
 
-  return <EntitySelect {...props} title="Fach" items={subjects} suggested={suggested} allHeading="Alle Fächer" />
+  return <EntitySelect {...props} title={t('Fach')} items={subjects} suggested={suggested} allHeading={t('Alle Fächer')} />
 }

@@ -27,13 +27,24 @@ export interface Subject {
   roomId?: string
   /** Anteil schriftlich in Prozent – leer = Standard aus den Noten-Einstellungen */
   writtenWeight?: number
+  /** Haupt- oder Nebenfach (fehlt bei alten Fächern → nach Namen geraten, siehe subjectCategory) */
+  category?: SubjectCategory
   /** Was man für dieses Fach einpacken muss (Packliste) */
   materials?: string[]
   /** Notenziel – rutscht der Schnitt darunter, warnt die App */
-  goal?: { value: number; system: 'noten' | 'punkte' }
+  goal?: { value: number; system: 'noten' | 'punkte'; kind?: 'zeugnis' | 'schnitt' }
 }
 
 /** Ein Abschnitt im Zeitraster: Unterrichtsstunde oder Pause */
+export type SubjectCategory = 'haupt' | 'neben'
+
+// Übliche Hauptfächer (Kernfächer und Fremdsprachen) – nur für Fächer ohne eigene Angabe
+const HAUPT_NAMES = ['deutsch', 'mathematik', 'mathe', 'englisch', 'französisch', 'latein', 'spanisch', 'russisch', 'italienisch', 'griechisch', 'altgriechisch', 'chinesisch', 'türkisch', 'polnisch', 'niederländisch']
+
+export function subjectCategory(s: Pick<Subject, 'name' | 'category'>): SubjectCategory {
+  return s.category ?? (HAUPT_NAMES.includes(s.name.trim().toLowerCase()) ? 'haupt' : 'neben')
+}
+
 export interface Period {
   id: string
   kind: 'lesson' | 'break'
@@ -126,28 +137,28 @@ export const SUBJECT_COLORS = [
 
 /** Typische Schulfächer zum schnellen Anlegen (Namen später frei änderbar) */
 export const STANDARD_SUBJECTS: Omit<Subject, 'teacherId' | 'roomId'>[] = [
-  { name: 'Deutsch', short: 'De', color: '#e53935' },
-  { name: 'Mathematik', short: 'Ma', color: '#3949ab' },
-  { name: 'Englisch', short: 'En', color: '#fb8c00' },
-  { name: 'Französisch', short: 'Fr', color: '#1e88e5' },
-  { name: 'Latein', short: 'La', color: '#fdd835' },
-  { name: 'Spanisch', short: 'Sn', color: '#f4511e' },
-  { name: 'Biologie', short: 'Bi', color: '#7cb342' },
-  { name: 'Chemie', short: 'Ch', color: '#43a047' },
-  { name: 'Physik', short: 'Ph', color: '#757575' },
-  { name: 'Informatik', short: 'If', color: '#00897b' },
-  { name: 'Geschichte', short: 'Ge', color: '#29b6f6' },
-  { name: 'Erdkunde', short: 'Ek', color: '#8d6e63' },
-  { name: 'Politik', short: 'Po', color: '#ad1457' },
-  { name: 'Wirtschaft', short: 'Wi', color: '#6a1b9a' },
-  { name: 'Ev. Religion', short: 'eRe', color: '#c0ca33' },
-  { name: 'Kath. Religion', short: 'kRe', color: '#afb42b' },
-  { name: 'Ethik', short: 'Et', color: '#9e9d24' },
-  { name: 'Philosophie', short: 'Phi', color: '#5d4037' },
-  { name: 'Kunst', short: 'Ku', color: '#d81b60' },
-  { name: 'Musik', short: 'Mu', color: '#00838f' },
-  { name: 'Darstellendes Spiel', short: 'DS', color: '#6d4c41' },
-  { name: 'Sport', short: 'Sp', color: '#f06292' },
+  { name: 'Deutsch', short: 'De', color: '#e53935', category: 'haupt' },
+  { name: 'Mathematik', short: 'Ma', color: '#3949ab', category: 'haupt' },
+  { name: 'Englisch', short: 'En', color: '#fb8c00', category: 'haupt' },
+  { name: 'Französisch', short: 'Fr', color: '#1e88e5', category: 'haupt' },
+  { name: 'Latein', short: 'La', color: '#fdd835', category: 'haupt' },
+  { name: 'Spanisch', short: 'Sn', color: '#f4511e', category: 'haupt' },
+  { name: 'Biologie', short: 'Bi', color: '#7cb342', category: 'neben' },
+  { name: 'Chemie', short: 'Ch', color: '#43a047', category: 'neben' },
+  { name: 'Physik', short: 'Ph', color: '#757575', category: 'neben' },
+  { name: 'Informatik', short: 'If', color: '#00897b', category: 'neben' },
+  { name: 'Geschichte', short: 'Ge', color: '#29b6f6', category: 'neben' },
+  { name: 'Erdkunde', short: 'Ek', color: '#8d6e63', category: 'neben' },
+  { name: 'Politik', short: 'Po', color: '#ad1457', category: 'neben' },
+  { name: 'Wirtschaft', short: 'Wi', color: '#6a1b9a', category: 'neben' },
+  { name: 'Ev. Religion', short: 'eRe', color: '#c0ca33', category: 'neben' },
+  { name: 'Kath. Religion', short: 'kRe', color: '#afb42b', category: 'neben' },
+  { name: 'Ethik', short: 'Et', color: '#9e9d24', category: 'neben' },
+  { name: 'Philosophie', short: 'Phi', color: '#5d4037', category: 'neben' },
+  { name: 'Kunst', short: 'Ku', color: '#d81b60', category: 'neben' },
+  { name: 'Musik', short: 'Mu', color: '#00838f', category: 'neben' },
+  { name: 'Darstellendes Spiel', short: 'DS', color: '#6d4c41', category: 'neben' },
+  { name: 'Sport', short: 'Sp', color: '#f06292', category: 'neben' },
 ]
 
 /** Beispiel-Zeitraster für einen neuen Stundenplan – frei änderbar */

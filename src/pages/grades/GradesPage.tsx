@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
 import { ColorDot } from '../../components/ui'
-import { belowGoal, formatAverage, goalIn, halfYearOf, reportGrade, shiftHalfYear, type HalfYear } from '../../lib/grades'
+import { belowGoal, formatAverage, goalLabel, halfYearOf, reportGrade, shiftHalfYear, type HalfYear } from '../../lib/grades'
 import { HalfYearPicker } from '../../components/HalfYearPicker'
 import { toISODate } from '../../lib/dates'
 import { useHalfYearSettings } from '../../lib/useHalfYears'
 import { useGradeData } from '../../lib/useGradeData'
+import { subjectCategory } from '../../lib/models'
 import { GradeSheet } from './GradeSheet'
 
 /** Halbjahr aus der Adresse (?hj=2026-1) oder das aktuelle */
@@ -31,6 +32,10 @@ export function GradesPage() {
   const [adding, setAdding] = useState(false)
   if (!data.loaded) return null
   const sys = data.settings.gradeSystem
+  const groups = [
+    { title: 'Hauptfächer', rows: data.rows.filter((r) => subjectCategory(r.subject) === 'haupt') },
+    { title: 'Nebenfächer', rows: data.rows.filter((r) => subjectCategory(r.subject) === 'neben') },
+  ].filter((g) => g.rows.length > 0)
   const q = half.key === halfYearOf(toISODate(new Date()), data.settings).key ? '' : `?hj=${half.key}`
 
   return (
@@ -62,24 +67,29 @@ export function GradesPage() {
 
       {data.rows.length === 0 && <p className="hint">Lege zuerst unter Einstellungen → Fächer deine Fächer an.</p>}
 
-      <div className="list">
-        {data.rows.map(({ subject, result }) => (
-          <Link key={subject.id} to={`/noten/${subject.id}${q}`} className="row">
-            <ColorDot color={subject.color} size={14} />
-            <span className="label">
-              {subject.name}
-              <span className="sub">
-                {result.total == null
-                  ? 'Noch keine Noten'
-                  : `schriftlich ${formatAverage(result.written, sys)} · mündlich ${formatAverage(result.oral, sys)}`}
-              </span>
-            </span>
-            <span className={`grade-chip ${belowGoal(result.total, subject.goal, sys) ? 'warn' : ''}`} title={subject.goal ? 'Ziel: ' + formatAverage(goalIn(subject.goal, sys), sys) : undefined}>
-              {formatAverage(result.total, sys)}
-            </span>
-          </Link>
-        ))}
-      </div>
+      {groups.map(({ title, rows }) => (
+        <div key={title}>
+          {groups.length > 1 && <h2 className="section-title">{title}</h2>}
+          <div className="list">
+            {rows.map(({ subject, result }) => (
+              <Link key={subject.id} to={`/noten/${subject.id}${q}`} className="row">
+                <ColorDot color={subject.color} size={14} />
+                <span className="label">
+                  {subject.name}
+                  <span className="sub">
+                    {result.total == null
+                      ? 'Noch keine Noten'
+                      : `schriftlich ${formatAverage(result.written, sys)} · mündlich ${formatAverage(result.oral, sys)}`}
+                  </span>
+                </span>
+                <span className={`grade-chip ${belowGoal(result.total, subject.goal, sys) ? 'warn' : ''}`} title={subject.goal ? 'Ziel: ' + goalLabel(subject.goal, sys) : undefined}>
+                  {formatAverage(result.total, sys)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
       {data.withTotal.length > 0 && (
         <p className="section-footer">
           Der Gesamtdurchschnitt ist der Mittelwert aller Fächer mit Noten. Zeugnisnoten (gerundet): {data.withTotal.map((r) => `${r.subject.short} ${reportGrade(r.result.total, sys)}`).join(', ')}

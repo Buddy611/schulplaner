@@ -1,6 +1,6 @@
 import { toISODate } from './dates'
 import { computeSubject, halfYearOf, useGrades, type Grade, type GradeSystem, type HalfYear, type SubjectResult } from './grades'
-import { useLookups, type Subject } from './models'
+import { subjectCategory, useLookups, type Subject } from './models'
 import type { Item } from './repo'
 import { type Settings } from './settings'
 import { useHalfYearSettings } from './useHalfYears'
@@ -22,6 +22,11 @@ function systemFor(grades: Grade[], fallback: GradeSystem): GradeSystem {
   return punkte * 2 > grades.length ? 'punkte' : punkte * 2 < grades.length ? 'noten' : fallback
 }
 
+/** Standard-Anteil schriftlich eines Fachs laut Einstellungen (Haupt- oder Nebenfach) */
+export function categoryWrittenPercent(subject: Pick<Subject, 'name' | 'category'>, settings: Pick<Settings, 'writtenWeight' | 'writtenWeightNeben'>) {
+  return subjectCategory(subject) === 'neben' ? (settings.writtenWeightNeben ?? settings.writtenWeight) : settings.writtenWeight
+}
+
 /** Noten eines Halbjahres, je Fach berechnet, plus Gesamtschnitt */
 export function useGradeData(half: HalfYear | null) {
   const baseSettings = useHalfYearSettings()
@@ -35,7 +40,7 @@ export function useGradeData(half: HalfYear | null) {
 
   const rows: SubjectRow[] = subjects.map((subject) => {
     const grades = inHalf.filter((g) => g.subjectId === subject.id)
-    const writtenPercent = subject.writtenWeight ?? settings.writtenWeight
+    const writtenPercent = subject.writtenWeight ?? categoryWrittenPercent(subject, settings)
     return { subject, writtenPercent, grades, result: computeSubject(grades, settings, writtenPercent) }
   })
   const withTotal = rows.filter((r) => r.result.total != null)

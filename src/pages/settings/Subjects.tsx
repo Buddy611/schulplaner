@@ -2,8 +2,8 @@ import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { db } from '../../lib/db'
 import { PageHeader } from '../../components/PageHeader'
-import { ColorDot, ColorPicker, EntitySelect, Field, Sheet } from '../../components/ui'
-import { C, STANDARD_SUBJECTS, SUBJECT_COLORS, useLookups, type Lesson, type Subject } from '../../lib/models'
+import { ColorDot, ColorPicker, EntitySelect, Field, Segmented, Sheet } from '../../components/ui'
+import { C, STANDARD_SUBJECTS, SUBJECT_COLORS, subjectCategory, useLookups, type Lesson, type Subject, type SubjectCategory } from '../../lib/models'
 import { newId, put, remove, type Item } from '../../lib/repo'
 import { quickCreate } from './MasterData'
 
@@ -31,7 +31,7 @@ export function SubjectsPage() {
       {subjects.length > 0 && (
         <div className="list">
           {subjects.map((s) => {
-            const details = [s.teacherId && teacherMap.get(s.teacherId)?.name, s.roomId && roomMap.get(s.roomId)?.name]
+            const details = [subjectCategory(s) === 'haupt' ? 'Hauptfach' : 'Nebenfach', s.teacherId && teacherMap.get(s.teacherId)?.name, s.roomId && roomMap.get(s.roomId)?.name]
               .filter(Boolean)
               .join(' · ')
             return (
@@ -104,13 +104,16 @@ function StandardSubjectsSheet({ existing, onClose }: { existing: string[]; onCl
       ) : (
         <>
           <p className="section-footer" style={{ marginBottom: 12 }}>
-            Hake deine Fächer an. Farbe, Kürzel, Lehrer und Raum kannst du danach beim Fach ändern.
+            Hake deine Fächer an. Haupt-/Nebenfach, Farbe, Kürzel, Lehrer und Raum kannst du danach beim Fach ändern.
           </p>
           <div className="list">
             {available.map((s) => (
               <label key={s.name} className="row" style={{ cursor: 'pointer' }}>
                 <ColorDot color={s.color} size={14} />
-                <span className="label">{s.name}</span>
+                <span className="label">
+                  {s.name}
+                  <span className="sub">{s.category === 'haupt' ? 'Hauptfach' : 'Nebenfach'}</span>
+                </span>
                 <span className="value">{s.short}</span>
                 <input type="checkbox" className="checkbox" checked={selected.has(s.name)} onChange={() => toggle(s.name)} />
               </label>
@@ -137,6 +140,7 @@ export function SubjectSheet({
   const [name, setName] = useState(subject?.name ?? '')
   const [short, setShort] = useState(subject?.short ?? '')
   const [color, setColor] = useState(subject?.color ?? defaultColor)
+  const [category, setCategory] = useState<SubjectCategory>(subject ? subjectCategory(subject) : 'neben')
   const [teacherId, setTeacherId] = useState(subject?.teacherId)
   const [roomId, setRoomId] = useState(subject?.roomId)
   const [materials, setMaterials] = useState<string[]>(subject?.materials ?? [])
@@ -157,6 +161,8 @@ export function SubjectSheet({
       teacherId,
       roomId,
       writtenWeight: subject?.writtenWeight,
+      category,
+      goal: subject?.goal,
       materials: newMaterial.trim() && !materials.includes(newMaterial.trim()) ? [...materials, newMaterial.trim()] : materials,
     }
     await put<Subject>(C.subjects, id, data)
@@ -189,6 +195,21 @@ export function SubjectSheet({
           <input className="row-input" value={short} onChange={(e) => setShort(e.target.value)} placeholder={name.trim().slice(0, 3) || 'z. B. Ma'} maxLength={6} />
         </Field>
       </div>
+
+      <h3 className="section-title">Art</h3>
+      <div className="list">
+        <div className="row stack">
+          <Segmented<SubjectCategory>
+            value={category}
+            onChange={setCategory}
+            options={[
+              { value: 'haupt', label: 'Hauptfach' },
+              { value: 'neben', label: 'Nebenfach' },
+            ]}
+          />
+        </div>
+      </div>
+      <p className="section-footer">Haupt- und Nebenfächer können schriftlich/mündlich unterschiedlich zählen (Einstellungen → Noten).</p>
 
       <h3 className="section-title">Farbe</h3>
       <div className="list">

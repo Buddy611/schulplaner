@@ -73,15 +73,34 @@ export function reportGrade(v: number | null, system: GradeSystem) {
   return String(Math.min(6, Math.max(1, Math.round(v))))
 }
 
-/** Liegt der Schnitt unter dem Ziel des Fachs? (in beiden Notensystemen) */
-export function belowGoal(total: number | null, goal: { value: number; system: GradeSystem } | undefined, system: GradeSystem) {
-  if (total == null || !goal) return false
-  const g = convert(goal.value, goal.system, system)
-  return system === 'punkte' ? total < g - 1e-9 : total > g + 1e-9
+/** Notenziel eines Fachs: eine Zeugnisnote (z. B. "eine 1") oder ein genauer Schnitt */
+export interface Goal {
+  value: number
+  system: GradeSystem
+  /** 'zeugnis' = gerundete Zeugnisnote; fehlt = genauer Schnitt (ältere Ziele) */
+  kind?: 'zeugnis' | 'schnitt'
 }
 
-export function goalIn(goal: { value: number; system: GradeSystem }, system: GradeSystem) {
-  return convert(goal.value, goal.system, system)
+/**
+ * Schlechtester Schnitt, der das Ziel noch erfüllt – im Notensystem `system`.
+ * Zeugnisnote 1 → Schnitt unter 1,5 (1,5 wird zur 2 gerundet); 13 Punkte → ab 12,5.
+ */
+export function goalThreshold(goal: Goal, system: GradeSystem) {
+  const raw = goal.kind === 'zeugnis' ? (goal.system === 'punkte' ? goal.value - 0.5 : goal.value + 0.5 - 1e-6) : goal.value
+  return convert(raw, goal.system, system)
+}
+
+/** "1" bzw. "13 P" für Zeugnisziele, sonst der Schnitt */
+export function goalLabel(goal: Goal, system: GradeSystem) {
+  if (goal.kind === 'zeugnis') return goal.system === 'punkte' ? `${goal.value} P` : String(goal.value)
+  return formatAverage(convert(goal.value, goal.system, system), system)
+}
+
+/** Liegt der Schnitt unter dem Ziel des Fachs? (in beiden Notensystemen) */
+export function belowGoal(total: number | null, goal: Goal | undefined, system: GradeSystem) {
+  if (total == null || !goal) return false
+  const g = goalThreshold(goal, system)
+  return system === 'punkte' ? total < g - 1e-9 : total > g + 1e-9
 }
 
 /** Ist ein Wert besser als ein anderer? (bei Noten kleiner, bei Punkten größer) */
@@ -248,22 +267,23 @@ export function computeSubject(grades: Item<Grade>[], settings: Settings, writte
 }
 
 /**
- * Zielnoten-Rechner: Welche Note braucht man in der nächsten Arbeit vom Typ `type`
- * (oder mündlich), damit das Fach auf `target` kommt? Wird schrittweise ausprobiert,
- * damit alle Regeln (Zwischenstand, Gewichte, schriftlich/mündlich) genau stimmen.
+ * Zielnoten-Rechner: Welchen Schnitt braucht man in den geplanten nächsten Noten
+ * (`planned`: je Note ein Klausurtyp oder null = mündlich), damit das Fach auf `target` kommt?
+ * Alle geplanten Noten bekommen denselben Wert; der wird schrittweise gesucht, damit alle Regeln
+ * (Zwischenstand, Gewichte, schriftlich/mündlich) genau stimmen.
  * Ergebnis: benötigter Wert, oder 'unreachable' / 'safe'.
  */
 export function requiredGrade(
   grades: Item<Grade>[],
   settings: Settings,
   writtenPercent: number,
-  type: string | null,
+  planned: (string | null)[],
   target: number,
 ): number | 'unreachable' | 'safe' {
   const sys = settings.gradeSystem
   const [best, worst] = sys === 'punkte' ? [15, 0] : [1, 6]
-  const fake = (value: number): Item<Grade> => ({
-    id: '__ziel',
+  const fake = (value: number, type: string | null, i: number): Item<Grade> => ({
+    id: `__ziel${i}`,
     subjectId: '',
     kind: type ? 'schriftlich' : 'muendlich',
     type: type ?? undefined,
@@ -271,9 +291,9 @@ export function requiredGrade(
     label: '',
     system: sys,
     date: '9999-12-31',
-    createdAt: Number.MAX_SAFE_INTEGER,
+    createdAt: Number.MAX_SAFE_INTEGER - planned.length + i,
   })
-  const totalWith = (v: number) => computeSubject([...grades, fake(v)], settings, writtenPercent).total!
+  const totalWith = (v: number) => computeSubject([...grades, ...planned.map((t, i) => fake(v, t, i))], settings, writtenPercent).total!
   const reaches = (v: number) => (sys === 'punkte' ? totalWith(v) >= target - 1e-9 : totalWith(v) <= target + 1e-9)
   if (!reaches(best)) return 'unreachable'
   if (reaches(worst)) return 'safe'

@@ -22,8 +22,10 @@ export interface Settings {
   tendency: 'third' | 'quarter' | 'half'
   /** Eine Notenbesprechung zählt so viel wie N einzelne mündliche Noten danach */
   besprechungWeight: number
-  /** Standard-Anteil schriftlich in Prozent (pro Fach änderbar) */
+  /** Standard-Anteil schriftlich in Prozent für Hauptfächer (pro Fach änderbar) */
   writtenWeight: number
+  /** Anteil schriftlich in % für Nebenfächer (fehlt → wie Hauptfächer) */
+  writtenWeightNeben?: number
   /** Gewicht je Klausurtyp, z. B. Test zählt halb */
   typeWeights: Record<string, number>
   /** Zählt der Typ schriftlich oder mündlich? (z. B. Test → mündlich) */

@@ -1,5 +1,6 @@
 import { PageHeader } from '../../components/PageHeader'
 import { Field, ResetButton, Segmented, Switch } from '../../components/ui'
+import { WeightPicker } from '../../components/WeightPicker'
 import { useHalfYearSettings } from '../../lib/useHalfYears'
 import { DEFAULT_SETTINGS, updateSettings, useSettings, type Settings } from '../../lib/settings'
 
@@ -33,11 +34,24 @@ export function GradeSettingsPage() {
         also in Noten, auch wenn du später auf Punkte wechselst.
       </p>
 
-      <h2 className="section-title">Gewichtung</h2>
+      <h2 className="section-title">Gewichtung schriftlich / mündlich</h2>
       <div className="list">
-        <Field label="Standard-Anteil schriftlich in %">
-          <NumberInput value={settings.writtenWeight} min={0} max={100} onChange={(writtenWeight) => set({ writtenWeight })} />
-        </Field>
+        <div className="row stack">
+          <span className="field-label">Hauptfächer</span>
+          <WeightPicker value={settings.writtenWeight} onChange={(v) => set({ writtenWeight: v ?? DEFAULT_SETTINGS.writtenWeight })} />
+        </div>
+        <div className="row stack">
+          <span className="field-label">Nebenfächer</span>
+          <WeightPicker value={settings.writtenWeightNeben ?? settings.writtenWeight} onChange={(writtenWeightNeben) => set({ writtenWeightNeben })} />
+        </div>
+      </div>
+      <p className="section-footer">
+        Erste Zahl schriftlich, zweite mündlich (in %). Mit „Eigene“ tippst du einen genauen Wert ein. Ob ein Fach Haupt- oder Nebenfach ist, stellst du unter
+        Einstellungen → Fächer ein; einzelne Fächer kannst du auf ihrer Notenseite auch abweichend gewichten.
+      </p>
+
+      <h2 className="section-title">Notenbesprechung</h2>
+      <div className="list">
         <Field label="Notenbesprechung zählt wie … Noten">
           <NumberInput value={settings.besprechungWeight} min={0.1} max={50} onChange={(besprechungWeight) => set({ besprechungWeight })} />
         </Field>
@@ -112,6 +126,7 @@ export function GradeSettingsPage() {
           set({
             tendency: DEFAULT_SETTINGS.tendency,
             writtenWeight: DEFAULT_SETTINGS.writtenWeight,
+            writtenWeightNeben: undefined,
             besprechungWeight: DEFAULT_SETTINGS.besprechungWeight,
             typeWeights: DEFAULT_SETTINGS.typeWeights,
             typeCategory: DEFAULT_SETTINGS.typeCategory,

@@ -2,12 +2,13 @@ import { halfYearName } from '../../components/HalfYearPicker'
 import { useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../../components/PageHeader'
+import { WeightPicker } from '../../components/WeightPicker'
 import { Segmented } from '../../components/ui'
 import { formatDate, parseISODate } from '../../lib/dates'
-import { formatAverage, goalIn, history, KIND_LABEL, requiredGrade, type Grade, type Part } from '../../lib/grades'
-import { C, type Subject } from '../../lib/models'
+import { convert, formatAverage, goalLabel, goalThreshold, history, KIND_LABEL, requiredGrade, type Goal, type Grade, type Part } from '../../lib/grades'
+import { C, subjectCategory, type Subject } from '../../lib/models'
 import { patch, type Item } from '../../lib/repo'
-import { useGradeData } from '../../lib/useGradeData'
+import { categoryWrittenPercent, useGradeData } from '../../lib/useGradeData'
 import type { Settings } from '../../lib/settings'
 import { GradeChart } from './GradeChart'
 import { useHalfYearParam } from './GradesPage'
@@ -33,11 +34,6 @@ export function SubjectGradesPage() {
 
   const { subject, result, writtenPercent } = row
   const sys = data.settings.gradeSystem
-  const usesDefault = subject.writtenWeight == null
-  
-  function setWeight(v: string) {
-    void patch<Subject>(C.subjects, subject.id, { writtenWeight: v === 'standard' ? undefined : Number(v) })
-  }
 
   return (
     <div className="page">
@@ -100,21 +96,17 @@ export function SubjectGradesPage() {
       <h2 className="section-title">Gewichtung schriftlich / mündlich</h2>
       <div className="list">
         <div className="row stack">
-          <Segmented<string>
-            value={usesDefault ? 'standard' : String(subject.writtenWeight)}
-            onChange={setWeight}
-            options={[
-              { value: 'standard', label: 'Standard' },
-              { value: '40', label: '40/60' },
-              { value: '50', label: '50/50' },
-              { value: '60', label: '60/40' },
-              { value: '70', label: '70/30' },
-            ]}
+          <WeightPicker
+            value={subject.writtenWeight}
+            onChange={(writtenWeight) => void patch<Subject>(C.subjects, subject.id, { writtenWeight })}
+            presets={[40, 50, 60]}
+            standardLabel="Standard"
           />
         </div>
       </div>
       <p className="section-footer">
-        Standard ist {data.settings.writtenWeight} % schriftlich / {100 - data.settings.writtenWeight} % mündlich (Einstellungen → Noten).
+        Standard für {subjectCategory(subject) === 'haupt' ? 'Hauptfächer' : 'Nebenfächer'} ist {categoryWrittenPercent(subject, data.settings)} % schriftlich /{' '}
+        {100 - categoryWrittenPercent(subject, data.settings)} % mündlich (Einstellungen → Noten, Haupt-/Nebenfach unter Einstellungen → Fächer).
       </p>
 
       <TargetCalculator key={sys} row={row} settings={data.settings} />
@@ -164,49 +156,105 @@ function PartList({ parts, sys, empty, onOpen }: { parts: Part[]; sys: 'noten' |
   )
 }
 
-/** Welche Note brauche ich in der nächsten schriftlichen Arbeit für mein Ziel? */
+const MUENDLICH = '__muendlich'
+
+/** Welche Noten brauche ich in den nächsten Arbeiten (eine oder mehrere) für mein Ziel? */
 function TargetCalculator({ row, settings }: { row: ReturnType<typeof useGradeData>['rows'][number]; settings: Settings }) {
   const sys = settings.gradeSystem
   const goal = row.subject.goal
-  const [target, setTarget] = useState(goal ? String(Math.round(goalIn(goal, sys) * 100) / 100).replace('.', ',') : sys === 'punkte' ? '11' : '2,0')
-  const [type, setType] = useState(settings.examTypes[0])
-  const t = Number(target.replace(',', '.'))
-  const valid = !Number.isNaN(t) && (sys === 'punkte' ? t >= 0 && t <= 15 : t >= 1 && t <= 6)
-  const needed = valid ? requiredGrade(row.grades, settings, row.writtenPercent, type === '__muendlich' ? null : type, t) : null
-  const label = type === '__muendlich' ? 'mündlichen Note' : `nächsten Arbeit (${type})`
+  // Ziel als Zeugnisnote ("eine 1") – oder, für Genaue, als Schnitt
+  const [mode, setMode] = useState<'zeugnis' | 'schnitt'>(goal && goal.kind !== 'zeugnis' ? 'schnitt' : 'zeugnis')
+  const [reportTarget, setReportTarget] = useState(() => {
+    if (goal?.kind === 'zeugnis') return goal.system === sys ? goal.value : Math.round(convert(goal.value, goal.system, sys))
+    return sys === 'punkte' ? 11 : 2
+  })
+  const [target, setTarget] = useState(goal && goal.kind !== 'zeugnis' ? String(Math.round(convert(goal.value, goal.system, sys) * 100) / 100).replace('.', ',') : sys === 'punkte' ? '11' : '2,0')
+  // Wie viele Noten welcher Art kommen noch? (Klausurtypen + mündlich)
+  const [counts, setCounts] = useState<Record<string, number>>({ [settings.examTypes[0] ?? MUENDLICH]: 1 })
+  const kinds = [...settings.examTypes, MUENDLICH]
+  const planned = kinds.flatMap((k) => Array<string | null>(counts[k] ?? 0).fill(k === MUENDLICH ? null : k))
+  const exact = Number(target.replace(',', '.'))
+  const chosen: Goal = mode === 'zeugnis' ? { value: reportTarget, system: sys, kind: 'zeugnis' } : { value: exact, system: sys, kind: 'schnitt' }
+  const valid = mode === 'zeugnis' || (!Number.isNaN(exact) && (sys === 'punkte' ? exact >= 0 && exact <= 15 : exact >= 1 && exact <= 6))
+  const t = valid ? goalThreshold(chosen, sys) : NaN
+  const reportOptions = sys === 'punkte' ? Array.from({ length: 15 }, (_, i) => 15 - i) : [1, 2, 3, 4, 5]
+  const needed = valid && planned.length ? requiredGrade(row.grades, settings, row.writtenPercent, planned, t) : null
+  const unit = sys === 'punkte' ? ' Punkte' : ''
+  const change = (k: string, d: number) => setCounts({ ...counts, [k]: Math.max(0, Math.min(10, (counts[k] ?? 0) + d)) })
 
+  // Angezeigten Wert zur sicheren Seite runden (2,999 → 2,99), sonst stünde dort eine Note, die knapp nicht reicht
+  const shown = (v: number) => formatAverage(sys === 'punkte' ? Math.ceil((v - 1e-7) * 10) / 10 : Math.floor((v + 1e-7) * 100) / 100, sys)
   let message = ''
-  if (needed === 'unreachable') message = `Leider nicht mehr erreichbar – selbst mit ${sys === 'punkte' ? '15 Punkten' : 'einer 1'} reicht es nicht.`
-  else if (needed === 'safe') message = `Schon sicher – selbst mit ${sys === 'punkte' ? '0 Punkten' : 'einer 6'} bleibst du bei ${formatAverage(t, sys)} oder besser.`
-  else if (needed != null) message = `Du brauchst mindestens ${formatAverage(needed, sys)}${sys === 'punkte' ? ' Punkte' : ''} in der ${label}.`
+  const one = planned.length === 1
+  const goalText = mode === 'zeugnis' ? `eine ${goalLabel(chosen, sys)} auf dem Zeugnis` : `einen Schnitt von ${formatAverage(exact, sys)}`
+  if (needed === 'unreachable') message = `${goalText[0].toUpperCase() + goalText.slice(1)} ist leider nicht mehr erreichbar – selbst mit ${sys === 'punkte' ? '15 Punkten' : 'lauter Einsen'} reicht es nicht.`
+  else if (needed === 'safe') message = `Schon sicher – selbst mit ${sys === 'punkte' ? '0 Punkten' : 'einer 6'} reicht es für ${goalText}.`
+  else if (needed != null && one) message = `Für ${goalText} brauchst du mindestens ${shown(needed)}${unit} in der nächsten ${planned[0] ? `Arbeit (${planned[0]})` : 'mündlichen Note'}.`
+  else if (needed != null) message = `Für ${goalText} brauchst du in den ${planned.length} Noten im Schnitt mindestens ${shown(needed)}${unit}.`
 
   return (
     <>
       <h2 className="section-title">Zielnoten-Rechner</h2>
       <div className="list">
         <div className="row stack">
-          <span className="field-label">Ich möchte im Fach auf …</span>
-          <input className="input" inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} placeholder={sys === 'punkte' ? 'z. B. 11' : 'z. B. 2,0'} />
+          <Segmented<'zeugnis' | 'schnitt'>
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: 'zeugnis', label: 'Zeugnisnote' },
+              { value: 'schnitt', label: 'Genauer Schnitt' },
+            ]}
+          />
+          {mode === 'zeugnis' ? (
+            <>
+              <span className="field-label" style={{ marginTop: 12 }}>
+                Auf dem Zeugnis möchte ich {sys === 'punkte' ? 'mindestens' : 'mindestens eine'} …
+              </span>
+              <div className="chips">
+                {reportOptions.map((n) => (
+                  <button key={n} type="button" className={`chip ${n === reportTarget ? 'active' : ''}`} onClick={() => setReportTarget(n)}>
+                    {sys === 'punkte' ? `${n} P` : n}
+                  </button>
+                ))}
+              </div>
+              <span className="muted" style={{ fontSize: '0.8125rem' }}>
+                Dafür muss der Schnitt {sys === 'punkte' ? `mindestens ${formatAverage(reportTarget - 0.5, sys)}` : `unter ${formatAverage(reportTarget + 0.5, sys)}`} sein (gerundet wie
+                auf dem Zeugnis).
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="field-label" style={{ marginTop: 12 }}>
+                Ich möchte im Fach einen Schnitt von …
+              </span>
+              <input className="input" inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} placeholder={sys === 'punkte' ? 'z. B. 11' : 'z. B. 2,0'} />
+            </>
+          )}
           <span className="field-label" style={{ marginTop: 12 }}>
-            … kommen. Nächste Note:
+            Bis zum Halbjahresende kommen noch:
           </span>
-          <div className="chips">
-            {settings.examTypes.map((x) => (
-              <button key={x} type="button" className={`chip ${x === type ? 'active' : ''}`} onClick={() => setType(x)}>
-                {x}
-              </button>
+          <div className="planned-list">
+            {kinds.map((k) => (
+              <div key={k} className={`planned-row ${counts[k] ? 'active' : ''}`}>
+                <span>{k === MUENDLICH ? 'Mündlich' : k}</span>
+                <button type="button" className="arrow-btn" aria-label={`Eine ${k === MUENDLICH ? 'mündliche Note' : k} weniger`} disabled={!counts[k]} onClick={() => change(k, -1)}>
+                  −
+                </button>
+                <strong>{counts[k] ?? 0}</strong>
+                <button type="button" className="arrow-btn" aria-label={`Eine ${k === MUENDLICH ? 'mündliche Note' : k} mehr`} onClick={() => change(k, 1)}>
+                  +
+                </button>
+              </div>
             ))}
-            <button type="button" className={`chip ${type === '__muendlich' ? 'active' : ''}`} onClick={() => setType('__muendlich')}>
-              Mündlich
-            </button>
           </div>
+          {valid && planned.length === 0 && <p className="target-result">Wähle oben mindestens eine kommende Note.</p>}
           {message && <p className="target-result">{message}</p>}
           {valid && (
             <div className="goal-row">
               <span className="muted">
-                {goal ? `Gespeichertes Ziel: ${formatAverage(goalIn(goal, sys), sys)}` : 'Kein Ziel gespeichert'}
+                {goal ? `Gespeichertes Ziel: ${goal.kind === 'zeugnis' ? 'Zeugnis ' : 'Schnitt '}${goalLabel(goal, sys)}` : 'Kein Ziel gespeichert'}
               </span>
-              <button type="button" className="link-btn strong" onClick={() => patch<Subject>(C.subjects, row.subject.id, { goal: { value: t, system: sys } })}>
+              <button type="button" className="link-btn strong" onClick={() => patch<Subject>(C.subjects, row.subject.id, { goal: chosen })}>
                 Als Ziel speichern
               </button>
               {goal && (
@@ -219,7 +267,10 @@ function TargetCalculator({ row, settings }: { row: ReturnType<typeof useGradeDa
           {!valid && <p className="error-text">Bitte eine Zahl {sys === 'punkte' ? 'von 0 bis 15' : 'von 1 bis 6'} eingeben.</p>}
         </div>
       </div>
-      <p className="section-footer">Rechnet mit allen bisherigen Noten in diesem Halbjahr inklusive Zwischenstand und Gewichtung.</p>
+      <p className="section-footer">
+        Rechnet mit allen bisherigen Noten in diesem Halbjahr inklusive Zwischenstand und Gewichtung. Bei mehreren Noten ist es der Wert, den du in jeder davon
+        brauchst – ist eine besser, darf eine andere schlechter sein.
+      </p>
     </>
   )
 }

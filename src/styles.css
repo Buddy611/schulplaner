@@ -3310,3 +3310,70 @@ div.lesson-tile {
 .select-heading:first-child {
   margin-top: 0;
 }
+
+/* Zielnoten-Rechner: kommende Noten zählen */
+.planned-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.planned-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-2);
+}
+
+.planned-row > span {
+  flex: 1;
+}
+
+.planned-row.active {
+  color: var(--text);
+}
+
+.planned-row strong {
+  min-width: 1.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Eigener Wert schriftlich/mündlich */
+.weight-custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  color: var(--text-2);
+  font-size: 0.875rem;
+}
+
+.weight-custom label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weight-custom .input {
+  width: 4.5em;
+  text-align: center;
+}
+
+/* Viele schmale Felder (z. B. Gewichtung): ohne Häkchen, damit alles auf das Handy passt */
+.segmented.compact button {
+  padding: 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.segmented.compact button.active::before {
+  content: none;
+}
+
+@media (max-width: 499px) {
+  .segmented.compact button {
+    font-size: 0.8125rem;
+  }
+}

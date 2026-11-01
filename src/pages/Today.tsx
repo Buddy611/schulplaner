@@ -29,7 +29,7 @@ import { formatRange, holidayCountdown } from '../lib/holidays'
 import { LinkRow } from '../components/ui'
 import { PackingList } from './PackingList'
 import { useGradeData } from '../lib/useGradeData'
-import { belowGoal, formatAverage, goalIn } from '../lib/grades'
+import { belowGoal, formatAverage, goalLabel } from '../lib/grades'
 import { Icon, IconBubble } from '../components/Icons'
 import { isDue, useVocabSets } from '../lib/study'
 import { PageHeader } from '../components/PageHeader'
@@ -139,7 +139,7 @@ export function Today() {
               <span className="color-bar" style={{ background: subject.color }} />
               <span className="label">
                 {subject.name}
-                <span className="sub">Ziel {formatAverage(goalIn(subject.goal!, gradeData.settings.gradeSystem), gradeData.settings.gradeSystem)} · im Zielnoten-Rechner siehst du, was du brauchst</span>
+                <span className="sub">Ziel {goalLabel(subject.goal!, gradeData.settings.gradeSystem)} · im Zielnoten-Rechner siehst du, was du brauchst</span>
               </span>
               <span className="grade-chip warn">{formatAverage(result.total, gradeData.settings.gradeSystem)}</span>
             </Link>

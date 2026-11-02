@@ -36,7 +36,7 @@ import { PageHeader } from '../components/PageHeader'
 import { addDays, formatDate, toISODate } from '../lib/dates'
 import { periodTitle, sortPeriods } from '../lib/models'
 import { formatCountdown, isToday, useNow, useSchedule } from '../lib/schedule'
-import { t } from '../lib/i18n'
+import { locale, t } from '../lib/i18n'
 
 export function Today() {
   const now = useNow()
@@ -92,6 +92,7 @@ export function Today() {
   const dayLessons = day ? schedule.lessonsOn(day) : []
   const next = schedule.currentOrNext(now)
   const running = next && now >= next.start
+  const hhmm = (d: Date) => d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 
   const isTomorrow = Boolean(day && toISODate(day) === toISODate(addDays(now, 1)))
   const heading = !day
@@ -158,7 +159,8 @@ export function Today() {
             {next.subject.name}
           </div>
           <div className="hero-meta">
-            {periodTitle(periods, next.period)} · {next.period.start}–{next.period.end}
+            {periodTitle(periods, next.period)}
+            {next.endPeriod.id !== next.period.id && ` – ${periodTitle(periods, next.endPeriod)}`} · {hhmm(next.start)}–{hhmm(next.end)}
             {next.room && ` · ${next.room.name}`}
             {next.teacher && ` · ${next.teacher.name}`}
           </div>

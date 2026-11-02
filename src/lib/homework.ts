@@ -71,7 +71,7 @@ export function currentSubjectId(schedule: ReturnType<typeof useSchedule>, now =
 /** Offene Hausaufgaben, die zu einer konkreten Stunde gehören */
 export function homeworkForLesson(open: Item<Homework>[], l: ScheduledLesson) {
   return open.filter(
-    (h) => h.dueDate === l.date && h.subjectId === l.subject.id && (!h.duePeriodId || h.duePeriodId === l.period.id),
+    (h) => h.dueDate === l.date && h.subjectId === l.subject.id && (!h.duePeriodId || h.duePeriodId === l.period.id || h.duePeriodId === l.endPeriod.id),
   )
 }
 

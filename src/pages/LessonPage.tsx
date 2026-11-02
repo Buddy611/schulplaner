@@ -148,7 +148,7 @@ export function LessonPage() {
   const row = grades.rows.find((r) => r.subject.id === subject.id)
   const average = row?.result.total != null ? formatAverage(row.result.total, grades.settings.gradeSystem) : '–'
   const lessonExams = examsForLesson(exams, l)
-  const lessonNotes = notes.filter((n) => n.date === l.date && n.subjectId === subject.id && (!n.periodId || n.periodId === l.period.id))
+  const lessonNotes = notes.filter((n) => n.date === l.date && n.subjectId === subject.id && (!n.periodId || n.periodId === l.period.id || n.periodId === l.endPeriod.id))
 
   const hwDefaults = { subjectId: subject.id, dueDate: l.date, duePeriodId: l.period.id }
   const thisDay = formatDate(day, { weekday: 'long', day: 'numeric', month: 'short' })

@@ -350,7 +350,7 @@ function DayView({
                   </div>
                 ))}
                 {(notes ?? [])
-                  .filter((n) => n.date === l.date && n.subjectId === l.subject.id && (!n.periodId || n.periodId === l.period.id))
+                  .filter((n) => n.date === l.date && n.subjectId === l.subject.id && (!n.periodId || n.periodId === l.period.id || n.periodId === l.endPeriod.id))
                   .map((n) => (
                     <button key={n.id} type="button" className="day-note" onClick={() => setNoting({ note: n })}>
                       <Icon name="note" size={16} />

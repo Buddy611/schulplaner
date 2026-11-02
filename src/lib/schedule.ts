@@ -97,14 +97,31 @@ export function useSchedule() {
       return true
     })
     chosen.sort((a, b) => a.slots.start - b.slots.start)
+    // Doppelstunden: Dasselbe Fach direkt hintereinander (auch über eine Pause) zählt als EINE Stunde –
+    // für Countdown, "nächste Stunde" bei Hausaufgaben, Ausfälle und die Anzeige im Plan
+    const blocks: typeof chosen = []
+    for (const x of chosen) {
+      const prev = blocks[blocks.length - 1]
+      if (
+        prev &&
+        prev.slots.end + 1 === x.slots.start &&
+        prev.l.subjectId === x.l.subjectId &&
+        (prev.l.roomId ?? '') === (x.l.roomId ?? '') &&
+        (prev.l.teacherId ?? '') === (x.l.teacherId ?? '')
+      ) {
+        blocks[blocks.length - 1] = { l: prev.l, slots: { start: prev.slots.start, end: x.slots.end } }
+      } else blocks.push(x)
+    }
 
     const result: ScheduledLesson[] = []
-    for (const { l: lesson, slots } of chosen) {
+    for (const { l: lesson, slots } of blocks) {
       const period = lessonPeriods[Math.floor(slots.start / 2)]
       const endPeriod = lessonPeriods[Math.floor(slots.end / 2)]
       const planned = lookups.subjectMap.get(lesson.subjectId)
       if (!planned) continue
-      const change = changes?.find((c) => c.date === iso && c.periodId === period.id)
+      // Änderung an der ersten oder (bei Doppelstunden) einer späteren Stunde des Blocks
+      const inBlock = new Set(lessonPeriods.slice(Math.floor(slots.start / 2), Math.floor(slots.end / 2) + 1).map((p) => p.id))
+      const change = changes?.find((c) => c.date === iso && c.periodId === period.id) ?? changes?.find((c) => c.date === iso && inBlock.has(c.periodId))
       const subject = (change?.kind === 'vertretung' && change.subjectId && lookups.subjectMap.get(change.subjectId)) || planned
       const roomId = change?.roomId ?? lesson.roomId ?? planned.roomId
       const teacherId = (change?.kind === 'vertretung' && change.teacherId) || lesson.teacherId || planned.teacherId

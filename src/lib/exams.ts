@@ -48,7 +48,7 @@ export function upcomingExams(list: Item<Exam>[] | undefined) {
 
 /** Klausuren, die genau in dieser Stunde stattfinden */
 export function examsForLesson(exams: Item<Exam>[], l: ScheduledLesson) {
-  return exams.filter((e) => e.date === l.date && (e.periodId === l.period.id || e.periodId === l.endPeriod.id))
+  return exams.filter((e) => e.date === l.date && (e.subjectId === l.subject.id || e.subjectId === l.lesson.subjectId) && (e.periodId === l.period.id || e.periodId === l.endPeriod.id))
 }
 
 /** Klausuren an einem Tag ohne feste Stunde */

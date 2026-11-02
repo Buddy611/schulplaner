@@ -63,7 +63,7 @@ function toMinutes(t: string) {
   return h * 60 + m
 }
 
-async function send(subs: Sub[], payload: { title: string; body: string; url?: string }) {
+async function send(subs: Sub[], payload: { title: string; body: string; url?: string; tag?: string }) {
   let sent = 0
   for (const s of subs) {
     try {
@@ -82,14 +82,11 @@ async function send(subs: Sub[], payload: { title: string; body: string; url?: s
 const TEXTS = {
   de: {
     hw1: 'Hausaufgabe für morgen',
-    hwN: (n: number) => `${n} Hausaufgaben für morgen`,
-    more: (n: number) => `… und ${n} weitere`,
     subject: 'Fach',
     topics: (done: number, total: number) => ` · ${done}/${total} Themen gelernt`,
     tomorrow: 'morgen',
     inDays: (n: number) => `in ${n} Tagen`,
     exam: (subject: string, type: string, when: string) => `${subject}-${type} ${when}`,
-    both: 'Hausaufgaben & Klausuren',
     examTitle: 'Klausur-Erinnerung',
     excuses: (n: number) => (n > 1 ? `${n} Entschuldigungen noch nicht abgegeben` : '1 Entschuldigung noch nicht abgegeben'),
     excuseTitle: 'Entschuldigung abgeben',
@@ -97,14 +94,11 @@ const TEXTS = {
   },
   en: {
     hw1: 'Homework for tomorrow',
-    hwN: (n: number) => `${n} homework items for tomorrow`,
-    more: (n: number) => `… and ${n} more`,
     subject: 'Subject',
     topics: (done: number, total: number) => ` · ${done}/${total} topics studied`,
     tomorrow: 'tomorrow',
     inDays: (n: number) => `in ${n} days`,
     exam: (subject: string, type: string, when: string) => `${subject} ${EXAM_TYPES_EN[type] ?? type} ${when}`,
-    both: 'Homework & exams',
     examTitle: 'Exam reminder',
     excuses: (n: number) => (n > 1 ? `${n} excuse notes not handed in yet` : '1 excuse note not handed in yet'),
     excuseTitle: 'Hand in your excuse note',
@@ -136,34 +130,33 @@ async function remindUser(userId: string, subs: Sub[], now: { date: string; minu
   if (logError) return 0
 
   const subjects = new Map(rows.filter((r) => r.collection === 'subjects').map((r) => [r.id, (r.data as { name: string }).name]))
-  const lines: string[] = []
-  let title = ''
+  // Jede Erinnerung kommt als eigene Nachricht (Hausaufgabe, Klausur, Entschuldigungen)
+  const messages: { title: string; body: string; tag: string }[] = []
 
   if (cfg.homework !== false) {
     const tomorrow = addDays(now.date, 1)
     const due = rows
       .filter((r) => r.collection === 'homework')
-      .map((r) => r.data as { subjectId: string; title: string; dueDate: string; done: boolean })
+      .map((r) => ({ id: r.id as string, ...(r.data as { subjectId: string; title: string; dueDate: string; done: boolean }) }))
       .filter((h) => !h.done && h.dueDate === tomorrow)
-    if (due.length) {
-      title = due.length === 1 ? tx.hw1 : tx.hwN(due.length)
-      for (const h of due.slice(0, 4)) lines.push(`${subjects.get(h.subjectId) ?? tx.subject}: ${h.title}`)
-      if (due.length > 4) lines.push(tx.more(due.length - 4))
-    }
+    for (const h of due) messages.push({ title: tx.hw1, body: `${subjects.get(h.subjectId) ?? tx.subject}: ${h.title}`, tag: `hw-${h.id}` })
   }
 
   const examDays = cfg.examDays ?? [7, 3, 1]
   const exams = rows
     .filter((r) => r.collection === 'exams')
-    .map((r) => r.data as { subjectId: string; type: string; date: string; topic?: string; studyTopics?: { done: boolean }[] })
+    .map((r) => ({ id: r.id as string, ...(r.data as { subjectId: string; type: string; date: string; topic?: string; studyTopics?: { done: boolean }[] }) }))
   for (const e of exams) {
     for (const d of examDays) {
       if (e.date !== addDays(now.date, d)) continue
       const topics = e.studyTopics ?? []
       const progress = topics.length ? tx.topics(topics.filter((t) => t.done).length, topics.length) : ''
       const when = d === 1 ? tx.tomorrow : tx.inDays(d)
-      lines.push(`${tx.exam(subjects.get(e.subjectId) ?? tx.subject, e.type, when)}${e.topic ? ` (${e.topic})` : ''}${progress}`)
-      title = title ? tx.both : tx.examTitle
+      messages.push({
+        title: tx.examTitle,
+        body: `${tx.exam(subjects.get(e.subjectId) ?? tx.subject, e.type, when)}${e.topic ? ` (${e.topic})` : ''}${progress}`,
+        tag: `exam-${e.id}`,
+      })
     }
   }
 
@@ -174,14 +167,13 @@ async function remindUser(userId: string, subs: Sub[], now: { date: string; minu
       .filter((r) => r.collection === 'absences')
       .map((r) => r.data as { date: string; excused: boolean })
       .filter((a) => !a.excused && a.date <= limit).length
-    if (open) {
-      lines.push(tx.excuses(open))
-      if (!title) title = tx.excuseTitle
-    }
+    if (open) messages.push({ title: tx.excuseTitle, body: tx.excuses(open), tag: 'excuses' })
   }
 
-  if (!lines.length) return 0
-  return send(subs, { title, body: lines.join('\n'), url: '/schulplaner/#/' })
+  // Nicht zu viele auf einmal: höchstens 8 Nachrichten pro Tag
+  let sent = 0
+  for (const m of messages.slice(0, 8)) sent += await send(subs, { ...m, url: '/schulplaner/#/' })
+  return sent
 }
 
 Deno.serve(async (req) => {

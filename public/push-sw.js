@@ -12,6 +12,8 @@ self.addEventListener('push', (event) => {
       body: data.body,
       icon: 'pwa-192x192.png',
       badge: 'pwa-64x64.png',
+      // eigene Kennung je Erinnerung → jede bleibt als einzelne Nachricht stehen
+      tag: data.tag,
       data: { url: data.url || './' },
     }),
   )

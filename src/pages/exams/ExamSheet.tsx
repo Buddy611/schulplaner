@@ -2,7 +2,7 @@ import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { AttachmentEditor } from '../../components/Attachments'
 import { EntitySelect, Field, Sheet } from '../../components/ui'
-import { addDays, formatDate, parseISODate, toISODate } from '../../lib/dates'
+import { formatDate, parseISODate, toISODate } from '../../lib/dates'
 import { deleteExam, EXAMS, type Exam, type StudyTopic } from '../../lib/exams'
 import { removeFiles, type Attachment } from '../../lib/files'
 import { C, periodTitle, sortPeriods } from '../../lib/models'
@@ -10,7 +10,7 @@ import { newId, put, type Item } from '../../lib/repo'
 import { useSchedule } from '../../lib/schedule'
 import { useSettings } from '../../lib/settings'
 import { quickCreate } from '../settings/MasterData'
-import { daysUntil } from '../../lib/homework'
+import { daysUntil, nextLessonsOfSubject } from '../../lib/homework'
 import { useGrades } from '../../lib/grades'
 import { GradeSheet } from '../grades/GradeSheet'
 import { SubjectSelect } from '../../components/SubjectSelect'
@@ -28,9 +28,14 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
   const { rooms } = schedule.lookups
   const [subjectId, setSubjectId] = useState(exam?.subjectId ?? defaults?.subjectId)
   const [type, setType] = useState(exam?.type ?? settings.examTypes[0] ?? 'Klausur')
-  const [date, setDate] = useState(exam?.date ?? defaults?.date ?? toISODate(addDays(new Date(), 7)))
-  const [periodId, setPeriodId] = useState<string | undefined>(exam?.periodId ?? defaults?.periodId)
-  const [roomId, setRoomId] = useState(exam?.roomId)
+  // Neue Klausur ohne Datum: die nächste Stunde des Fachs vorschlagen
+  const [suggested] = useState(() =>
+    !exam && !defaults?.date && defaults?.subjectId ? nextLessonsOfSubject(schedule, defaults.subjectId, new Date(), 1)[0] : undefined,
+  )
+  const [date, setDate] = useState(exam?.date ?? defaults?.date ?? suggested?.date ?? toISODate(new Date()))
+  const [dateTouched, setDateTouched] = useState(Boolean(exam || defaults?.date))
+  const [periodId, setPeriodId] = useState<string | undefined>(exam?.periodId ?? defaults?.periodId ?? suggested?.period.id)
+  const [roomId, setRoomId] = useState(exam?.roomId ?? suggested?.room?.id)
   const [topic, setTopic] = useState(exam?.topic ?? '')
   const [notes, setNotes] = useState(exam?.notes ?? '')
   const [studyTopics, setStudyTopics] = useState<StudyTopic[]>(exam?.studyTopics ?? [])
@@ -47,12 +52,22 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
   const lessonsThatDay = subjectId ? allThatDay.filter((l) => l.subject.id === subjectId) : []
   // Alle Unterrichtsstunden des Tages zur Auswahl (auch wenn dort ein anderes Fach ist)
   const otherPeriods = periods.filter((p) => p.kind === 'lesson' && !lessonsThatDay.some((l) => l.period.id === p.id))
-  const [timeMode, setTimeMode] = useState<'stunde' | 'zeit' | 'tag'>(exam?.startTime ? 'zeit' : (exam?.periodId ?? defaults?.periodId) ? 'stunde' : 'tag')
+  const [timeMode, setTimeMode] = useState<'stunde' | 'zeit' | 'tag'>(exam?.startTime ? 'zeit' : (exam?.periodId ?? defaults?.periodId ?? suggested) ? 'stunde' : 'tag')
   const [startTime, setStartTime] = useState(exam?.startTime ?? '08:00')
   const [endTime, setEndTime] = useState(exam?.endTime ?? '09:30')
   const [pickingPeriod, setPickingPeriod] = useState(false)
   const types = settings.examTypes.includes(type) ? settings.examTypes : [...settings.examTypes, type]
   const canSave = Boolean(subjectId && date)
+
+  // Fach gewählt, Datum noch nicht selbst geändert: zur nächsten Stunde dieses Fachs springen
+  function pickSubject(nextSubject: string | undefined) {
+    setSubjectId(nextSubject)
+    const next = !dateTouched && nextSubject ? nextLessonsOfSubject(schedule, nextSubject, new Date(), 1)[0] : undefined
+    if (next) {
+      setDate(next.date)
+      pickLesson(nextSubject, next.date)
+    } else pickLesson(nextSubject, date)
+  }
 
   // Fach oder Datum geändert: passende Stunde automatisch wählen (falls das Fach an dem Tag Unterricht hat)
   function pickLesson(nextSubject: string | undefined, nextDate: string) {
@@ -130,10 +145,7 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
           <SubjectSelect
             value={subjectId}
             emptyLabel={t('Fach wählen …')}
-            onChange={(id) => {
-              setSubjectId(id)
-              pickLesson(id, date)
-            }}
+            onChange={pickSubject}
           />
         </Field>
         <Field label={t('Thema')}>
@@ -150,6 +162,7 @@ export function ExamSheet({ exam, defaults, onClose }: { exam?: Item<Exam>; defa
             value={date}
             onChange={(e) => {
               setDate(e.target.value)
+              setDateTouched(true)
               pickLesson(subjectId, e.target.value)
             }}
           />

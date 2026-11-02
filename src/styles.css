@@ -3382,3 +3382,92 @@ div.lesson-tile {
 :is(.list, .card) + :is(.review-card, .countdown-card, .hero) {
   margin-top: 16px;
 }
+
+/* Fachnamen in Stundenplan-Kacheln lesbar halten: umbrechen statt abschneiden,
+   Schrift passt sich der Kachelbreite an, in sehr schmalen Kacheln das Kürzel */
+.tt-cell.filled {
+  container-type: inline-size;
+}
+
+@media (min-width: 700px) {
+  .tt-cell .name {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+    line-height: 1.15;
+    font-size: clamp(0.8125rem, 11cqi, 1.15rem);
+  }
+
+  .tt-cell.half .name {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    font-size: clamp(0.75rem, 10cqi, 0.95rem);
+  }
+
+  @container (max-width: 84px) {
+    .tt-cell.filled .name {
+      display: none;
+    }
+
+    .tt-cell.filled .short {
+      display: block;
+    }
+  }
+}
+
+/* Halbe Stunden: nur der Name, mittig; Hinweise (Klausur, Änderung, Hausaufgaben) als kleiner Punkt in der Ecke */
+.tt-cell.filled {
+  position: relative;
+}
+
+.tt-cell.half {
+  justify-content: center;
+}
+
+.tt-cell.half .room,
+.tt-cell.half .teacher {
+  display: none;
+}
+
+.tt-cell.half .exam-pill,
+.tt-cell.half .change-pill,
+.tt-cell.half .tt-badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 9px;
+  height: 9px;
+  min-width: 0;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 0;
+  overflow: hidden;
+}
+
+.tt-cell.half .change-pill {
+  right: 15px;
+}
+
+.tt-cell.half .tt-badge {
+  right: 27px;
+}
+
+@media (min-width: 700px) {
+  .tt-cell.filled.half {
+    justify-content: center;
+  }
+}
+
+@media (min-width: 700px) {
+  /* Halbe Stunden: zwei kleine Zeilen statt abgeschnitten */
+  .tt-cell.half .name {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    font-size: clamp(0.6875rem, 9cqi, 0.875rem);
+    line-height: 1.1;
+  }
+}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Hct, hexFromArgb } from '@material/material-color-utilities'
 import { createPortal } from 'react-dom'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { IconBubble, type IconName, type Tone } from './Icons'
 import { confirmDialog } from './dialogs'
 import { ColorWheel } from './ColorWheel'
@@ -166,6 +166,58 @@ export function ColorPicker({ value, colors, onChange }: { value: string; colors
   )
 }
 
+/*
+ * Zurück-Taste/-Geste (Android, Browser): Jedes offene Fenster legt einen Eintrag in den Verlauf.
+ * "Zurück" schließt dann zuerst das oberste Fenster statt die Seite zu verlassen.
+ * Schließt man ein Fenster selbst (✕, Sichern), wird sein Eintrag wieder entfernt.
+ */
+let sheetDepth = 0
+let backPending = false
+const afterBack: (() => void)[] = []
+window.addEventListener('popstate', () => {
+  if (!backPending) return
+  backPending = false
+  afterBack.splice(0).forEach((run) => run())
+})
+
+const depthOf = (state: unknown) => (state as { sheetDepth?: number } | null)?.sheetDepth ?? 0
+
+function useBackToClose(closeRef: { current: () => void }) {
+  useEffect(() => {
+    const depth = ++sheetDepth
+    let active = false
+    const push = () => {
+      // Zustand des Routers mitnehmen, damit er den Eintrag als dieselbe Seite erkennt
+      history.pushState({ ...(history.state ?? {}), sheetDepth: depth }, '')
+      active = true
+    }
+    // Ein gerade geschlossenes Fenster räumt seinen Eintrag noch weg → danach erst eintragen
+    if (backPending) afterBack.push(push)
+    else push()
+    const onPop = () => {
+      if (active && depthOf(history.state) < depth) {
+        active = false
+        closeRef.current()
+      }
+    }
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && depth === sheetDepth && closeRef.current()
+    window.addEventListener('popstate', onPop)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      sheetDepth--
+      window.removeEventListener('popstate', onPop)
+      window.removeEventListener('keydown', onKey)
+      const i = afterBack.indexOf(push)
+      if (i >= 0) afterBack.splice(i, 1)
+      // Selbst geschlossen und unser Eintrag liegt noch oben → wieder entfernen
+      else if (active && depthOf(history.state) === depth) {
+        backPending = true
+        history.back()
+      }
+    }
+  }, [closeRef])
+}
+
 let scrollLocks = 0
 function lockScroll() {
   scrollLocks++
@@ -204,13 +256,15 @@ export function Sheet({
   closeRef.current = onClose
   useEffect(() => {
     lockScroll()
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current()
-    window.addEventListener('keydown', onKey)
-    return () => {
-      unlockScroll()
-      window.removeEventListener('keydown', onKey)
-    }
+    return unlockScroll
   }, [])
+  useBackToClose(closeRef)
+  // Über die Leiste woanders hingetippt → Eingabe-Seite schließen
+  const { pathname } = useLocation()
+  const openedAt = useRef(pathname)
+  useEffect(() => {
+    if (page && pathname !== openedAt.current) closeRef.current()
+  }, [page, pathname])
 
   return createPortal(
     <div className={`sheet-backdrop ${page ? 'page' : ''}`} onClick={page ? undefined : onClose}>

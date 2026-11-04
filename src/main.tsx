@@ -17,11 +17,14 @@ const isTextField = (el: EventTarget | null) =>
 document.addEventListener('focusin', (e) => {
   if (isTextField(e.target)) document.documentElement.classList.add('keyboard-open')
 })
-document.addEventListener('focusout', () => {
+const checkKeyboard = () =>
   setTimeout(() => {
     if (!isTextField(document.activeElement)) document.documentElement.classList.remove('keyboard-open')
   }, 50)
-})
+document.addEventListener('focusout', checkKeyboard)
+// Verschwindet ein Eingabefeld (z. B. nach "Sichern"), meldet der Browser das nicht immer –
+// beim nächsten Tippen also nachsehen, ob die Tastatur wirklich noch offen ist
+document.addEventListener('pointerup', checkKeyboard, true)
 
 // Service Worker: speichert die App für den Offline-Start und holt Updates automatisch,
 // sobald Internet da ist (beim Start, beim Wiederverbinden und stündlich).

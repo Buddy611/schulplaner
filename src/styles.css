@@ -3549,3 +3549,18 @@ div.lesson-tile {
   background: var(--fill);
   color: var(--text-2);
 }
+
+/* Eingabe-Seiten lassen die Leiste unten bzw. die Seitenleiste frei */
+.sheet-backdrop.page {
+  bottom: var(--tabbar-h, 0px);
+}
+
+.sheet.page {
+  height: 100%;
+}
+
+@media (min-width: 900px) {
+  .sheet-backdrop.page {
+    left: 300px;
+  }
+}

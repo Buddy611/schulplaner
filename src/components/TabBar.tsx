@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
 import { timetableForDate, useActiveTimetable } from '../lib/models'
 import { toISODate } from '../lib/dates'
@@ -77,8 +78,19 @@ export function TabBar() {
   const items = useNavEntries()
     .filter((e) => e !== 'trenner')
     .slice(0, 5)
+  // Höhe der Leiste merken – Eingabe-Seiten hören genau darüber auf (0, wenn sie ausgeblendet ist)
+  const ref = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const set = () => document.documentElement.style.setProperty('--tabbar-h', `${el.offsetHeight}px`)
+    const ro = new ResizeObserver(set)
+    ro.observe(el)
+    set()
+    return () => ro.disconnect()
+  }, [])
   return (
-    <nav className="tabbar">
+    <nav className="tabbar" ref={ref}>
       {items.map((tp) => (
         <NavLink key={tp.to} to={tp.to} end={tp.to === '/'}>
           <span className="indicator">{iconFor(tp)}</span>

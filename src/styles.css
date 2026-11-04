@@ -3471,3 +3471,81 @@ div.lesson-tile {
     line-height: 1.1;
   }
 }
+
+/* ---------- Eingabe als ganze Seite (Hausaufgabe, Klausur, Note …) ---------- */
+.sheet-backdrop.page {
+  align-items: stretch;
+  background: var(--bg);
+  animation: none;
+}
+
+.sheet.page {
+  max-width: none;
+  max-height: none;
+  height: 100dvh;
+  border-radius: 0;
+  animation: page-in 0.22s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.sheet.page::before {
+  display: none;
+}
+
+.sheet.page .sheet-header {
+  min-height: 56px;
+  padding: calc(6px + env(safe-area-inset-top)) 12px 6px;
+  border-bottom: 1px solid var(--separator);
+}
+
+.sheet.page .sheet-body {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding-top: 16px;
+}
+
+@keyframes page-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet.page {
+    animation: none;
+  }
+}
+
+.sheet.page .sheet-header {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.sheet.page .sheet-header h2 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheet.page .sheet-header h2 {
+  text-align: left;
+  font-size: 1.25rem;
+}
+
+.sheet.page .sheet-header .link-btn.strong {
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.sheet.page .sheet-header .link-btn.strong:disabled {
+  background: var(--fill);
+  color: var(--text-2);
+}

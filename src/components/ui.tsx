@@ -176,13 +176,17 @@ function unlockScroll() {
   if (scrollLocks === 0) document.documentElement.classList.remove('scroll-locked')
 }
 
-/** Fenster, das von unten hereinfährt (wie bei iOS) */
+/**
+ * Fenster für Eingaben: Formulare mit "Sichern" (Hausaufgabe, Klausur, Note …) öffnen sich als
+ * ganze Seite – dort scrollt nur der Inhalt, nichts wackelt. Kleine Auswahllisten fahren von unten herein.
+ */
 export function Sheet({
   title,
   onClose,
   onSave,
   saveLabel = t('Fertig'),
   saveDisabled,
+  page = Boolean(onSave),
   children,
 }: {
   title: string
@@ -190,6 +194,8 @@ export function Sheet({
   onSave?: () => void
   saveLabel?: string
   saveDisabled?: boolean
+  /** als ganze Seite statt von unten (Standard: bei Formularen mit "Sichern") */
+  page?: boolean
   children: ReactNode
 }) {
   // Hintergrund nicht scrollen, solange mindestens ein Fenster offen ist (Zähler, damit
@@ -207,12 +213,20 @@ export function Sheet({
   }, [])
 
   return createPortal(
-    <div className="sheet-backdrop" onClick={onClose}>
-      <div className="sheet" role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
+    <div className={`sheet-backdrop ${page ? 'page' : ''}`} onClick={page ? undefined : onClose}>
+      <div className={`sheet ${page ? 'page' : ''}`} role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <header className="sheet-header">
-          <button type="button" className="link-btn" onClick={onClose}>
-            {t('Abbrechen')}
-          </button>
+          {page ? (
+            <button type="button" className="nav-btn" aria-label={t('Abbrechen')} onClick={onClose}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          ) : (
+            <button type="button" className="link-btn" onClick={onClose}>
+              {t('Abbrechen')}
+            </button>
+          )}
           <h2>{title}</h2>
           {onSave ? (
             <button type="button" className="link-btn strong" onClick={onSave} disabled={saveDisabled}>

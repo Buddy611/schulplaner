@@ -105,7 +105,7 @@ export function HomeworkSheet({
           <SubjectSelect value={subjectId} onChange={setSubjectId} emptyLabel={t('Fach wählen …')} />
         </Field>
         <Field label={t('Aufgabe')}>
-          <textarea className="row-input" rows={2} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('z. B. S. 42 Nr. 3a–c')} autoFocus={!homework} />
+          <textarea className="row-input" rows={2} value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t('z. B. S. 42 Nr. 3a–c')} />
         </Field>
       </div>
 

@@ -69,7 +69,7 @@ export function NoteSheet({ note, defaults, onClose }: { note?: Item<LessonNote>
       <h3 className="section-title">{t('Notiz')}</h3>
       <div className="list">
         <div className="row stack">
-          <textarea className="row-input" rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('Was wurde besprochen? Was ist wichtig?')} autoFocus={!note} />
+          <textarea className="row-input" rows={6} value={text} onChange={(e) => setText(e.target.value)} placeholder={t('Was wurde besprochen? Was ist wichtig?')} />
         </div>
       </div>
 

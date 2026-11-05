@@ -243,7 +243,6 @@ function ImportSheet({ onClose, onImport }: { onClose: () => void; onImport: (li
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={'marriage - Ehe, Heirat\ngender - Geschlecht\nto get married - heiraten'}
-            autoFocus
           />
         </div>
       </div>

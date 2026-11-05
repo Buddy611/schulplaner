@@ -219,7 +219,13 @@ function useBackToClose(closeRef: { current: () => void }) {
 }
 
 let scrollLocks = 0
+let lockedY = 0
+// Solange ein Fenster offen ist, bleibt die Seite dahinter stehen (iOS schiebt sie sonst beim Tippen weg)
+window.addEventListener('scroll', () => {
+  if (scrollLocks > 0 && window.scrollY !== lockedY) window.scrollTo(0, lockedY)
+})
 function lockScroll() {
+  if (scrollLocks === 0) lockedY = window.scrollY
   scrollLocks++
   document.documentElement.classList.add('scroll-locked')
 }
@@ -239,6 +245,7 @@ export function Sheet({
   saveLabel = t('Fertig'),
   saveDisabled,
   page = Boolean(onSave),
+  className = '',
   children,
 }: {
   title: string
@@ -248,6 +255,7 @@ export function Sheet({
   saveDisabled?: boolean
   /** als ganze Seite statt von unten (Standard: bei Formularen mit "Sichern") */
   page?: boolean
+  className?: string
   children: ReactNode
 }) {
   // Hintergrund nicht scrollen, solange mindestens ein Fenster offen ist (Zähler, damit
@@ -268,7 +276,7 @@ export function Sheet({
 
   return createPortal(
     <div className={`sheet-backdrop ${page ? 'page' : ''}`} onClick={page ? undefined : onClose}>
-      <div className={`sheet ${page ? 'page' : ''}`} role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
+      <div className={`sheet ${page ? 'page' : ''} ${className}`} role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
         <header className="sheet-header">
           {page ? (
             <button type="button" className="nav-btn" aria-label={t('Abbrechen')} onClick={onClose}>

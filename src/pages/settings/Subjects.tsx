@@ -190,7 +190,7 @@ export function SubjectSheet({
     <Sheet title={subject ? t('Fach bearbeiten') : t('Neues Fach')} onClose={onClose} onSave={save} saveDisabled={!name.trim()}>
       <div className="list">
         <Field label={t('Name')}>
-          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. Mathematik')} autoFocus={!subject} />
+          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. Mathematik')} />
         </Field>
         <Field label={t('Kürzel')}>
           <input className="row-input" value={short} onChange={(e) => setShort(e.target.value)} placeholder={name.trim().slice(0, 3) || 'z. B. Ma'} maxLength={6} />

@@ -135,7 +135,7 @@ function FreeDaySheet({ onClose }: { onClose: () => void }) {
     <Sheet title={t('Freier Tag')} onClose={onClose} onSave={save} saveLabel={t('Sichern')} saveDisabled={!valid}>
       <div className="list">
         <Field label={t('Bezeichnung')}>
-          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. Studientag, Klassenfahrt')} autoFocus />
+          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. Studientag, Klassenfahrt')} />
         </Field>
         <Field label={t('Von')}>
           <input className="row-input" type="date" value={start} onChange={(e) => (setStart(e.target.value), end < e.target.value && setEnd(e.target.value))} />

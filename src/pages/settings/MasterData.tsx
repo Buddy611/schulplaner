@@ -64,7 +64,7 @@ function TeacherSheet({ teacher, onClose }: { teacher?: Item<Teacher>; onClose: 
     <Sheet title={teacher ? 'Lehrer bearbeiten' : 'Neuer Lehrer'} onClose={onClose} onSave={save} saveDisabled={!name.trim()}>
       <div className="list">
         <Field label={t('Name')}>
-          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. Frau Meyer')} autoFocus />
+          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. Frau Meyer')} />
         </Field>
         <Field label={t('Kürzel')}>
           <input className="row-input" value={short} onChange={(e) => setShort(e.target.value)} placeholder={t('optional')} />
@@ -126,7 +126,7 @@ function RoomSheet({ room, onClose }: { room?: Item<Room>; onClose: () => void }
     <Sheet title={room ? 'Raum bearbeiten' : 'Neuer Raum'} onClose={onClose} onSave={save} saveDisabled={!name.trim()}>
       <div className="list">
         <Field label={t('Name')}>
-          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. A204')} autoFocus />
+          <input className="row-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('z. B. A204')} />
         </Field>
       </div>
       {room && (

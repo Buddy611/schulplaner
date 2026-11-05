@@ -47,7 +47,7 @@ export function PasswordSheet({ email, onClose }: { email: string; onClose: () =
     <Sheet title={t('Passwort ändern')} onClose={onClose} onSave={save} saveLabel={busy ? t('Speichern …') : t('Speichern')} saveDisabled={!canSave}>
       <div className="list">
         <Field label={t('Aktuelles Passwort')}>
-          <input className="row-input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} autoFocus />
+          <input className="row-input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} />
         </Field>
       </div>
       <div className="list" style={{ marginTop: 16 }}>

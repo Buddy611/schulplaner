@@ -26,6 +26,20 @@ document.addEventListener('focusout', checkKeyboard)
 // beim nächsten Tippen also nachsehen, ob die Tastatur wirklich noch offen ist
 document.addEventListener('pointerup', checkKeyboard, true)
 
+// Sichtbarer Bereich (ohne Tastatur): Eingabe-Seiten passen sich daran an, statt dass
+// iOS die ganze Seite samt Seitenleiste nach oben schiebt
+const vv = window.visualViewport
+if (vv) {
+  const root = document.documentElement
+  const update = () => {
+    root.style.setProperty('--vvh', `${vv.height}px`)
+    root.style.setProperty('--vv-top', `${vv.offsetTop}px`)
+  }
+  vv.addEventListener('resize', update)
+  vv.addEventListener('scroll', update)
+  update()
+}
+
 // Service Worker: speichert die App für den Offline-Start und holt Updates automatisch,
 // sobald Internet da ist (beim Start, beim Wiederverbinden und stündlich).
 registerSW({

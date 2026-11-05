@@ -2763,8 +2763,9 @@ body {
   overscroll-behavior: none;
 }
 
-html.scroll-locked,
-html.scroll-locked body {
+/* Nur html sperren: Wird auch body gesperrt, bezieht der Browser die mitlaufende
+   Seitenleiste auf body und schiebt sie um die bisherige Scrollhöhe nach oben */
+html.scroll-locked {
   overflow: hidden;
 }
 

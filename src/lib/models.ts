@@ -30,6 +30,8 @@ export interface Subject {
   writtenWeight?: number
   /** Haupt- oder Nebenfach (fehlt bei alten Fächern → nach Namen geraten, siehe subjectCategory) */
   category?: SubjectCategory
+  /** Fach ohne Noten (z. B. "Sonstiges" für Hausaufgaben ohne Fach oder Vertretungsstunden) */
+  general?: boolean
   /** Was man für dieses Fach einpacken muss (Packliste) */
   materials?: string[]
   /** Notenziel – rutscht der Schnitt darunter, warnt die App */
@@ -161,6 +163,7 @@ export const STANDARD_SUBJECTS: Omit<Subject, 'teacherId' | 'roomId'>[] = (
     { name: 'Musik', short: 'Mu', color: '#00838f', category: 'neben' },
     { name: 'Darstellendes Spiel', short: 'DS', color: '#6d4c41', category: 'neben' },
     { name: 'Sport', short: 'Sp', color: '#f06292', category: 'neben' },
+    { name: 'Sonstiges', short: 'So', color: '#9e9e9e', category: 'neben', general: true },
   ] satisfies Omit<Subject, 'teacherId' | 'roomId'>[]
 ).map((x) => ({ ...x, name: t(x.name), short: t(x.short + '|Kürzel') }))
 

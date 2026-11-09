@@ -38,7 +38,7 @@ export function useGradeData(half: HalfYear | null) {
   const system = systemFor(inHalf, baseSettings.gradeSystem)
   const settings: Settings = { ...baseSettings, gradeSystem: system }
 
-  const rows: SubjectRow[] = subjects.map((subject) => {
+  const rows: SubjectRow[] = subjects.filter((s) => !s.general).map((subject) => {
     const grades = inHalf.filter((g) => g.subjectId === subject.id)
     const writtenPercent = subject.writtenWeight ?? categoryWrittenPercent(subject, settings)
     return { subject, writtenPercent, grades, result: computeSubject(grades, settings, writtenPercent) }

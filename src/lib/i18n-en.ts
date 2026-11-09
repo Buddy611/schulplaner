@@ -870,4 +870,9 @@ export const en: Record<string, string> = {
   'Beschriften': 'Annotate',
   'Beschriften nicht möglich': 'Can’t annotate',
   'Wird vorbereitet …': 'Preparing …',
+  'Sonstiges': 'Other',
+  'So|Kürzel': 'Ot',
+  'Fach ohne Noten': 'Subject without grades',
+  'Z. B. „Sonstiges“ für Hausaufgaben ohne Fach oder Vertretungsstunden – erscheint nicht bei den Noten': 'E.g. “Other” for homework without a subject or substitute lessons – not shown under grades',
+  'Ohne Noten': 'No grades',
 }

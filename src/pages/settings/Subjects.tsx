@@ -2,7 +2,7 @@ import { confirmDialog } from '../../components/dialogs'
 import { useState } from 'react'
 import { db } from '../../lib/db'
 import { PageHeader } from '../../components/PageHeader'
-import { ColorDot, ColorPicker, EntitySelect, Field, Segmented, Sheet } from '../../components/ui'
+import { ColorDot, ColorPicker, EntitySelect, Field, Segmented, Sheet, Switch } from '../../components/ui'
 import { C, STANDARD_SUBJECTS, SUBJECT_COLORS, subjectCategory, useLookups, type Lesson, type Subject, type SubjectCategory } from '../../lib/models'
 import { newId, put, remove, type Item } from '../../lib/repo'
 import { quickCreate } from './MasterData'
@@ -32,7 +32,7 @@ export function SubjectsPage() {
       {subjects.length > 0 && (
         <div className="list">
           {subjects.map((s) => {
-            const details = [subjectCategory(s) === 'haupt' ? t('Hauptfach') : t('Nebenfach'), s.teacherId && teacherMap.get(s.teacherId)?.name, s.roomId && roomMap.get(s.roomId)?.name]
+            const details = [s.general ? t('Ohne Noten') : subjectCategory(s) === 'haupt' ? t('Hauptfach') : t('Nebenfach'), s.teacherId && teacherMap.get(s.teacherId)?.name, s.roomId && roomMap.get(s.roomId)?.name]
               .filter(Boolean)
               .join(' · ')
             return (
@@ -113,7 +113,7 @@ function StandardSubjectsSheet({ existing, onClose }: { existing: string[]; onCl
                 <ColorDot color={s.color} size={14} />
                 <span className="label">
                   {s.name}
-                  <span className="sub">{s.category === 'haupt' ? t('Hauptfach') : t('Nebenfach')}</span>
+                  <span className="sub">{s.general ? t('Ohne Noten') : s.category === 'haupt' ? t('Hauptfach') : t('Nebenfach')}</span>
                 </span>
                 <span className="value">{s.short}</span>
                 <input type="checkbox" className="checkbox" checked={selected.has(s.name)} onChange={() => toggle(s.name)} />
@@ -142,6 +142,7 @@ export function SubjectSheet({
   const [short, setShort] = useState(subject?.short ?? '')
   const [color, setColor] = useState(subject?.color ?? defaultColor)
   const [category, setCategory] = useState<SubjectCategory>(subject ? subjectCategory(subject) : 'neben')
+  const [general, setGeneral] = useState(Boolean(subject?.general))
   const [teacherId, setTeacherId] = useState(subject?.teacherId)
   const [roomId, setRoomId] = useState(subject?.roomId)
   const [materials, setMaterials] = useState<string[]>(subject?.materials ?? [])
@@ -163,6 +164,7 @@ export function SubjectSheet({
       roomId,
       writtenWeight: subject?.writtenWeight,
       category,
+      general: general || undefined,
       goal: subject?.goal,
       materials: newMaterial.trim() && !materials.includes(newMaterial.trim()) ? [...materials, newMaterial.trim()] : materials,
     }
@@ -211,6 +213,16 @@ export function SubjectSheet({
         </div>
       </div>
       <p className="section-footer">{t('Haupt- und Nebenfächer können schriftlich/mündlich unterschiedlich zählen (Einstellungen → Noten).')}</p>
+
+      <div className="list">
+        <div className="row">
+          <span className="label">
+            {t('Fach ohne Noten')}
+            <span className="sub">{t('Z. B. „Sonstiges“ für Hausaufgaben ohne Fach oder Vertretungsstunden – erscheint nicht bei den Noten')}</span>
+          </span>
+          <Switch checked={general} onChange={setGeneral} />
+        </div>
+      </div>
 
       <h3 className="section-title">{t('Farbe')}</h3>
       <div className="list">
